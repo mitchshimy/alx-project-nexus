@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import styled from 'styled-components';
 import MovieCard from '../components/MovieCard';
+import Favorites from '../components/Favorites';
 
 type Movie = {
   id: number;
@@ -46,6 +47,7 @@ export default function Home() {
 
   return (
     <div style={{ padding: 24 }}>
+      <Favorites />
       <h1>Trending Movies</h1>
       <Grid>
         {movies.map((movie) => (
