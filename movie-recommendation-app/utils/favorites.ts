@@ -1,30 +1,71 @@
-function dispatchFavoritesChanged() {
-  if (typeof window !== 'undefined') {
-    window.dispatchEvent(new Event('favorites-changed'));
-  }
-}
+type FavoriteMovieIds = number[];
 
-export function getFavorites(): number[] {
+const FAVORITES_KEY = 'favoriteMovies';
+
+// Get all favorite movie IDs from localStorage
+export function getFavorites(): FavoriteMovieIds {
   if (typeof window === 'undefined') return [];
-  const favs = localStorage.getItem('favorites');
-  return favs ? JSON.parse(favs) : [];
-}
-
-export function addFavorite(id: number) {
-  const favs = getFavorites();
-  if (!favs.includes(id)) {
-    favs.push(id);
-    localStorage.setItem('favorites', JSON.stringify(favs));
-    dispatchFavoritesChanged();
+  
+  try {
+    const favorites = localStorage.getItem(FAVORITES_KEY);
+    return favorites ? JSON.parse(favorites) : [];
+  } catch (error) {
+    console.error('Error reading favorites:', error);
+    return [];
   }
 }
 
-export function removeFavorite(id: number) {
-  const favs = getFavorites().filter((favId) => favId !== id);
-  localStorage.setItem('favorites', JSON.stringify(favs));
-  dispatchFavoritesChanged();
+// Toggle a movie's favorite status
+export function toggleFavorite(movieId: number): void {
+  if (typeof window === 'undefined') return;
+
+  try {
+    const favorites = getFavorites();
+    const newFavorites = favorites.includes(movieId)
+      ? favorites.filter(id => id !== movieId)
+      : [...favorites, movieId];
+
+    localStorage.setItem(FAVORITES_KEY, JSON.stringify(newFavorites));
+    window.dispatchEvent(new Event('favorites-changed'));
+  } catch (error) {
+    console.error('Error toggling favorite:', error);
+  }
 }
 
-export function isFavorite(id: number): boolean {
-  return getFavorites().includes(id);
-} 
+// Check if a movie is favorited
+export function isFavorite(movieId: number): boolean {
+  if (typeof window === 'undefined') return false;
+  return getFavorites().includes(movieId);
+}
+
+// Add a movie to favorites
+export function addFavorite(movieId: number): void {
+  if (typeof window === 'undefined') return;
+
+  try {
+    const favorites = getFavorites();
+    if (!favorites.includes(movieId)) {
+      const newFavorites = [...favorites, movieId];
+      localStorage.setItem(FAVORITES_KEY, JSON.stringify(newFavorites));
+      window.dispatchEvent(new Event('favorites-changed'));
+    }
+  } catch (error) {
+    console.error('Error adding favorite:', error);
+  }
+}
+
+// Remove a movie from favorites
+export function removeFavorite(movieId: number): void {
+  if (typeof window === 'undefined') return;
+
+  try {
+    const favorites = getFavorites();
+    if (favorites.includes(movieId)) {
+      const newFavorites = favorites.filter(id => id !== movieId);
+      localStorage.setItem(FAVORITES_KEY, JSON.stringify(newFavorites));
+      window.dispatchEvent(new Event('favorites-changed'));
+    }
+  } catch (error) {
+    console.error('Error removing favorite:', error);
+  }
+}

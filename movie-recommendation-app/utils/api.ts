@@ -1,21 +1,31 @@
-const API_BASE_URL = 'https://api.themoviedb.org/3';
+import { TMDBMovie, TMDBResponse } from '@/types/tmdb';
 
-const getHeaders = () => ({
-  Authorization: `Bearer ${process.env.TMDB_READ_TOKEN}`,
-  'Content-Type': 'application/json;charset=utf-8',
-});
+const BASE_URL = 'https://api.themoviedb.org/3';
 
-export async function fetchTrendingMovies() {
-  console.log('TMDB_READ_TOKEN:', process.env.TMDB_READ_TOKEN); // Add this line
-  const res = await fetch(`${API_BASE_URL}/trending/movie/week`, {
-    headers: getHeaders(),
-  });
-  if (!res.ok) {
-    const errorText = await res.text();
-    console.error('TMDB API error:', errorText); // Add this line
-    throw new Error('Failed to fetch trending movies');
+export async function fetchTMDB<T>(
+  endpoint: string,
+  params?: Record<string, string>
+): Promise<T> {
+  const url = new URL(`${BASE_URL}${endpoint}`);
+  if (params) {
+    url.search = new URLSearchParams(params).toString();
   }
+
+  const res = await fetch(url, {
+    headers: {
+      Authorization: `Bearer ${process.env.TMDB_READ_TOKEN}`,
+      'Content-Type': 'application/json',
+    },
+  });
+
+  if (!res.ok) {
+    throw new Error(`TMDB API error: ${res.statusText}`);
+  }
+
   return res.json();
 }
 
-// You can add more API functions here, e.g., fetchMovieDetails, fetchRecommendations, etc.
+// Cached version of trending movies
+export async function getTrendingMovies(page = 1): Promise<TMDBResponse<TMDBMovie>> {
+  return fetchTMDB('/trending/movie/week', { page: page.toString() });
+}

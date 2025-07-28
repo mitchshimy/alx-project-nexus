@@ -1,22 +1,22 @@
 import type { NextApiRequest, NextApiResponse } from 'next';
+import { getTrendingMovies } from '@/utils/tmdbClient';
 
-export default async function handler(req: NextApiRequest, res: NextApiResponse) {
-  const { page } = req.query;
-  const API_BASE_URL = 'https://api.themoviedb.org/3';
-  const url = `${API_BASE_URL}/trending/movie/week?page=${page || 1}`;
-
-  const tmdbToken = process.env.TMDB_READ_TOKEN;
-  if (!tmdbToken) {
-    return res.status(500).json({ error: 'TMDB_READ_TOKEN not set' });
+export default async function handler(
+  req: NextApiRequest,
+  res: NextApiResponse
+) {
+  try {
+    const { page = '1' } = req.query;
+    const data = await getTrendingMovies(Number(page));
+    
+    // Cache response for 1 hour
+    res.setHeader('Cache-Control', 'public, s-maxage=3600');
+    res.status(200).json(data);
+  } catch (error) {
+    console.error('API Error:', error);
+    res.status(500).json({
+      error: 'Failed to fetch trending movies',
+      message: error instanceof Error ? error.message : 'Unknown error'
+    });
   }
-
-  const apiRes = await fetch(url, {
-    headers: {
-      Authorization: `Bearer ${tmdbToken}`,
-      'Content-Type': 'application/json;charset=utf-8',
-    },
-  });
-
-  const data = await apiRes.json();
-  res.status(apiRes.status).json(data);
-} 
+}

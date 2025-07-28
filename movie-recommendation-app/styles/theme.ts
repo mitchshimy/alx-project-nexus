@@ -1,4 +1,6 @@
-const theme = {
+import { DefaultTheme } from 'styled-components';
+
+const theme: DefaultTheme = {
   colors: {
     primary: '#0070f3',
     secondary: '#1db954',
@@ -10,4 +12,4 @@ const theme = {
   spacing: (factor: number) => `${factor * 8}px`,
 };
 
-export default theme; 
+export default theme;

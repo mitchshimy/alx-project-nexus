@@ -1,104 +1,104 @@
 import styled from 'styled-components';
 import Link from 'next/link';
-import { useEffect, useState } from 'react';
-import { isFavorite, addFavorite, removeFavorite } from '../utils/favorites';
-
-interface MovieCardProps {
-  title: string;
-  posterPath: string | null;
-  id: number;
-}
+import { TMDBMovie } from '@/types/tmdb';
+import { useState, useEffect } from 'react';
+import { FaHeart, FaRegHeart } from 'react-icons/fa';
+import { isFavorite, toggleFavorite } from '@/utils/favorites';
 
 const Card = styled.a`
-  background: ${({ theme }) => (theme as any).colors.card};
-  border-radius: 12px;
-  box-shadow: 0 2px 8px rgba(0,0,0,0.07);
-  overflow: hidden;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  transition: transform 0.2s;
-  cursor: pointer;
-  text-decoration: none;
   position: relative;
-  min-width: 0;
-  outline: none;
-  &:hover, &:focus {
-    transform: translateY(-4px) scale(1.03);
-    box-shadow: 0 4px 16px rgba(0,0,0,0.12);
+  display: block;
+  border-radius: 8px;
+  overflow: hidden;
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+  transition: transform 0.3s ease, box-shadow 0.3s ease;
+  aspect-ratio: 2/3;
+  cursor: pointer;
+
+  &:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 6px 12px rgba(0, 0, 0, 0.15);
   }
 `;
 
 const Poster = styled.img`
   width: 100%;
-  height: 320px;
+  height: 100%;
   object-fit: cover;
-  background: #eee;
-  @media (max-width: 600px) {
-    height: 200px;
-  }
 `;
 
-const Title = styled.h2`
+const Overlay = styled.div`
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  background: linear-gradient(to top, rgba(0, 0, 0, 0.8), transparent);
+  padding: 1rem;
+  color: white;
+`;
+
+const Title = styled.h3`
+  margin: 0;
   font-size: 1rem;
-  font-weight: 600;
-  margin: 12px 0;
-  text-align: center;
-  color: ${({ theme }) => (theme as any).colors.text};
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 `;
 
 const FavoriteButton = styled.button`
   position: absolute;
-  top: 12px;
-  right: 12px;
-  background: none;
+  top: 10px;
+  right: 10px;
+  background: rgba(0, 0, 0, 0.5);
   border: none;
+  border-radius: 50%;
+  width: 36px;
+  height: 36px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
   cursor: pointer;
-  font-size: 1.5rem;
-  color: #e0245e;
-  z-index: 2;
-  transition: transform 0.1s;
-  &:active { transform: scale(1.2); }
-  &:focus { outline: 2px solid #e0245e; }
+  color: white;
+  transition: all 0.3s ease;
+
+  &:hover {
+    background: rgba(0, 0, 0, 0.8);
+    transform: scale(1.1);
+  }
 `;
 
-export default function MovieCard({ title, posterPath, id }: MovieCardProps) {
-  const imageUrl = posterPath
-    ? `https://image.tmdb.org/t/p/w500${posterPath}`
-    : '/no-poster.png'; // fallback image
-  const [favorite, setFavorite] = useState(false);
+interface MovieCardProps {
+  movie: TMDBMovie;
+}
+
+export default function MovieCard({ movie }: MovieCardProps) {
+  const [isFavorited, setIsFavorited] = useState(false);
 
   useEffect(() => {
-    setFavorite(isFavorite(id));
-  }, [id]);
+    setIsFavorited(isFavorite(movie.id));
+  }, [movie.id]);
 
-  const handleFavorite = (e: React.MouseEvent | React.KeyboardEvent) => {
-    e.preventDefault();
-    if (favorite) {
-      removeFavorite(id);
-      setFavorite(false);
-    } else {
-      addFavorite(id);
-      setFavorite(true);
-    }
+  const handleFavoriteClick = (e: React.MouseEvent) => {
+    e.preventDefault(); // Prevent Link from navigating
+    toggleFavorite(movie.id);
+    setIsFavorited(!isFavorited);
   };
 
+  const posterSrc = movie.poster_path
+    ? `https://image.tmdb.org/t/p/w500${movie.poster_path}`
+    : '/no-poster.png';
+
   return (
-    <Link href={`/movies/${id}`} passHref legacyBehavior>
-      <Card tabIndex={0} aria-label={`View details for ${title}`}> {/* Keyboard focusable */}
-        <FavoriteButton
-          onClick={handleFavorite}
-          aria-label={favorite ? 'Remove from favorites' : 'Add to favorites'}
-          tabIndex={0}
-          onKeyDown={e => {
-            if (e.key === 'Enter' || e.key === ' ') handleFavorite(e);
-          }}
-        >
-          {favorite ? '❤️' : '🤍'}
+    <Link href={`/movies/${movie.id}`} passHref>
+      <Card>
+        <Poster src={posterSrc} alt={movie.title} />
+        <Overlay>
+          <Title>{movie.title}</Title>
+        </Overlay>
+        <FavoriteButton onClick={handleFavoriteClick}>
+          {isFavorited ? <FaHeart color="#e0245e" /> : <FaRegHeart />}
         </FavoriteButton>
-        <Poster src={imageUrl} alt={posterPath ? `${title} poster` : `${title} (no poster available)`} />
-        <Title>{title}</Title>
       </Card>
     </Link>
   );
-} 
+}
