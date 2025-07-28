@@ -89,6 +89,25 @@ const Select = styled.select`
   font-size: 1rem;
 `;
 
+const PageContainer = styled.div`
+  padding: 24px;
+  max-width: 1200px;
+  margin: 0 auto;
+`;
+
+const SectionTitle = styled.h1`
+  font-size: 2rem;
+  margin-bottom: 12px;
+  margin-top: 0;
+`;
+
+const EmptyState = styled.p`
+  text-align: center;
+  color: #888;
+  font-size: 1.1rem;
+  margin: 40px 0;
+`;
+
 export default function Home() {
   const [movies, setMovies] = useState<Movie[]>([]);
   const [loading, setLoading] = useState(true);
@@ -144,15 +163,15 @@ export default function Home() {
     filteredMovies = [...filteredMovies].sort((a, b) => (b.release_date || '').localeCompare(a.release_date || ''));
   }
 
-  if (loading) return <p>Loading trending movies...</p>;
-  if (error) return <p>Error: {error}</p>;
+  if (loading) return <PageContainer><Header /><EmptyState>Loading trending movies...</EmptyState></PageContainer>;
+  if (error) return <PageContainer><Header /><EmptyState>Error: {error}</EmptyState></PageContainer>;
 
   return (
-    <div style={{ padding: 24 }}>
+    <PageContainer>
       <Header />
       <Favorites />
       <SectionDivider />
-      <h1>Trending Movies</h1>
+      <SectionTitle>Trending Movies</SectionTitle>
       <FilterRow>
         <SearchBar
           type="text"
@@ -175,16 +194,22 @@ export default function Home() {
           <option value="release">Sort: Release Date</option>
         </Select>
       </FilterRow>
-      <Grid>
-        {filteredMovies.map((movie) => (
-          <MovieCard key={movie.id} id={movie.id} title={movie.title} posterPath={movie.poster_path} />
-        ))}
-      </Grid>
-      {hasMore && filteredMovies.length > 0 && (
-        <LoadMoreButton onClick={loadMore} disabled={loadingMore}>
-          {loadingMore ? 'Loading...' : 'Load More'}
-        </LoadMoreButton>
+      {filteredMovies.length === 0 ? (
+        <EmptyState>No movies found. Try a different search or filter.</EmptyState>
+      ) : (
+        <>
+          <Grid>
+            {filteredMovies.map((movie) => (
+              <MovieCard key={movie.id} id={movie.id} title={movie.title} posterPath={movie.poster_path} />
+            ))}
+          </Grid>
+          {hasMore && filteredMovies.length > 0 && (
+            <LoadMoreButton onClick={loadMore} disabled={loadingMore}>
+              {loadingMore ? 'Loading...' : 'Load More'}
+            </LoadMoreButton>
+          )}
+        </>
       )}
-    </div>
+    </PageContainer>
   );
 }

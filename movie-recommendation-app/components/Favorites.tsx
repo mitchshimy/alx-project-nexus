@@ -17,7 +17,22 @@ const Grid = styled.div`
   margin-top: 16px;
 `;
 
+function useFavoritesSync() {
+  const [version, setVersion] = useState(0);
+  useEffect(() => {
+    const handler = () => setVersion((v) => v + 1);
+    window.addEventListener('favorites-changed', handler);
+    window.addEventListener('storage', handler);
+    return () => {
+      window.removeEventListener('favorites-changed', handler);
+      window.removeEventListener('storage', handler);
+    };
+  }, []);
+  return version;
+}
+
 export default function Favorites() {
+  const version = useFavoritesSync();
   const [movies, setMovies] = useState<Movie[]>([]);
   const [loading, setLoading] = useState(true);
 
@@ -38,7 +53,7 @@ export default function Favorites() {
       setMovies(results.filter(Boolean));
       setLoading(false);
     });
-  }, []);
+  }, [version]);
 
   if (loading) return <p>Loading favorites...</p>;
   if (movies.length === 0) return <p>No favorite movies yet.</p>;

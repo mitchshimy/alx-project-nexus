@@ -21,7 +21,9 @@ const Card = styled.a`
   cursor: pointer;
   text-decoration: none;
   position: relative;
-  &:hover {
+  min-width: 0;
+  outline: none;
+  &:hover, &:focus {
     transform: translateY(-4px) scale(1.03);
     box-shadow: 0 4px 16px rgba(0,0,0,0.12);
   }
@@ -32,6 +34,9 @@ const Poster = styled.img`
   height: 320px;
   object-fit: cover;
   background: #eee;
+  @media (max-width: 600px) {
+    height: 200px;
+  }
 `;
 
 const Title = styled.h2`
@@ -54,6 +59,7 @@ const FavoriteButton = styled.button`
   z-index: 2;
   transition: transform 0.1s;
   &:active { transform: scale(1.2); }
+  &:focus { outline: 2px solid #e0245e; }
 `;
 
 export default function MovieCard({ title, posterPath, id }: MovieCardProps) {
@@ -66,7 +72,7 @@ export default function MovieCard({ title, posterPath, id }: MovieCardProps) {
     setFavorite(isFavorite(id));
   }, [id]);
 
-  const handleFavorite = (e: React.MouseEvent) => {
+  const handleFavorite = (e: React.MouseEvent | React.KeyboardEvent) => {
     e.preventDefault();
     if (favorite) {
       removeFavorite(id);
@@ -79,11 +85,18 @@ export default function MovieCard({ title, posterPath, id }: MovieCardProps) {
 
   return (
     <Link href={`/movies/${id}`} passHref legacyBehavior>
-      <Card>
-        <FavoriteButton onClick={handleFavorite} aria-label={favorite ? 'Remove from favorites' : 'Add to favorites'}>
+      <Card tabIndex={0} aria-label={`View details for ${title}`}> {/* Keyboard focusable */}
+        <FavoriteButton
+          onClick={handleFavorite}
+          aria-label={favorite ? 'Remove from favorites' : 'Add to favorites'}
+          tabIndex={0}
+          onKeyDown={e => {
+            if (e.key === 'Enter' || e.key === ' ') handleFavorite(e);
+          }}
+        >
           {favorite ? '❤️' : '🤍'}
         </FavoriteButton>
-        <Poster src={imageUrl} alt={title} />
+        <Poster src={imageUrl} alt={posterPath ? `${title} poster` : `${title} (no poster available)`} />
         <Title>{title}</Title>
       </Card>
     </Link>
