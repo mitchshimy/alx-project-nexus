@@ -49,7 +49,7 @@ export default function Home() {
       <h1>Trending Movies</h1>
       <Grid>
         {movies.map((movie) => (
-          <MovieCard key={movie.id} title={movie.title} posterPath={movie.poster_path} />
+          <MovieCard key={movie.id} id={movie.id} title={movie.title} posterPath={movie.poster_path} />
         ))}
       </Grid>
     </div>
