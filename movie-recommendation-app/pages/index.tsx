@@ -9,12 +9,28 @@ type Movie = {
   title: string;
   poster_path: string | null;
   overview: string;
+  genre_ids: number[];
+  vote_average: number;
+  release_date: string;
+};
+
+type Genre = {
+  id: number;
+  name: string;
 };
 
 async function fetchTrendingMovies(page = 1) {
   const res = await fetch(`/api/trending?page=${page}`);
   if (!res.ok) {
     throw new Error('Failed to fetch trending movies');
+  }
+  return res.json();
+}
+
+async function fetchGenres() {
+  const res = await fetch('/api/genres');
+  if (!res.ok) {
+    throw new Error('Failed to fetch genres');
   }
   return res.json();
 }
@@ -58,6 +74,21 @@ const LoadMoreButton = styled.button`
   &:hover { background: ${({ theme }) => (theme as any).colors.secondary}; }
 `;
 
+const FilterRow = styled.div`
+  display: flex;
+  flex-wrap: wrap;
+  gap: 16px;
+  align-items: center;
+  margin-bottom: 16px;
+`;
+
+const Select = styled.select`
+  padding: 8px 12px;
+  border-radius: 6px;
+  border: 1px solid #ccc;
+  font-size: 1rem;
+`;
+
 export default function Home() {
   const [movies, setMovies] = useState<Movie[]>([]);
   const [loading, setLoading] = useState(true);
@@ -66,6 +97,9 @@ export default function Home() {
   const [page, setPage] = useState(1);
   const [hasMore, setHasMore] = useState(true);
   const [loadingMore, setLoadingMore] = useState(false);
+  const [genres, setGenres] = useState<Genre[]>([]);
+  const [selectedGenre, setSelectedGenre] = useState<number | ''>('');
+  const [sort, setSort] = useState<'default' | 'rating' | 'release'>('default');
 
   useEffect(() => {
     fetchTrendingMovies(1)
@@ -78,6 +112,9 @@ export default function Home() {
         setError(err.message);
         setLoading(false);
       });
+    fetchGenres()
+      .then((data) => setGenres(data.genres))
+      .catch(() => setGenres([]));
   }, []);
 
   const loadMore = () => {
@@ -95,9 +132,17 @@ export default function Home() {
       });
   };
 
-  const filteredMovies = movies.filter((movie) =>
-    movie.title.toLowerCase().includes(search.toLowerCase())
-  );
+  let filteredMovies = movies.filter((movie) => {
+    const matchesSearch = movie.title.toLowerCase().includes(search.toLowerCase());
+    const matchesGenre = selectedGenre === '' || movie.genre_ids.includes(Number(selectedGenre));
+    return matchesSearch && matchesGenre;
+  });
+
+  if (sort === 'rating') {
+    filteredMovies = [...filteredMovies].sort((a, b) => b.vote_average - a.vote_average);
+  } else if (sort === 'release') {
+    filteredMovies = [...filteredMovies].sort((a, b) => (b.release_date || '').localeCompare(a.release_date || ''));
+  }
 
   if (loading) return <p>Loading trending movies...</p>;
   if (error) return <p>Error: {error}</p>;
@@ -108,12 +153,28 @@ export default function Home() {
       <Favorites />
       <SectionDivider />
       <h1>Trending Movies</h1>
-      <SearchBar
-        type="text"
-        placeholder="Search movies..."
-        value={search}
-        onChange={(e) => setSearch(e.target.value)}
-      />
+      <FilterRow>
+        <SearchBar
+          type="text"
+          placeholder="Search movies..."
+          value={search}
+          onChange={(e) => setSearch(e.target.value)}
+        />
+        <Select
+          value={selectedGenre}
+          onChange={(e) => setSelectedGenre(e.target.value === '' ? '' : Number(e.target.value))}
+        >
+          <option value="">All Genres</option>
+          {genres.map((genre) => (
+            <option key={genre.id} value={genre.id}>{genre.name}</option>
+          ))}
+        </Select>
+        <Select value={sort} onChange={e => setSort(e.target.value as any)}>
+          <option value="default">Sort: Default</option>
+          <option value="rating">Sort: Rating</option>
+          <option value="release">Sort: Release Date</option>
+        </Select>
+      </FilterRow>
       <Grid>
         {filteredMovies.map((movie) => (
           <MovieCard key={movie.id} id={movie.id} title={movie.title} posterPath={movie.poster_path} />
