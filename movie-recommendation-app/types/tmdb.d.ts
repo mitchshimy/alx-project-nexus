@@ -16,6 +16,41 @@ export interface TMDBMovie {
   credits?: TMDBCredits;
 }
 
+export interface TMDBTVShow {
+  id: number;
+  name: string;
+  title?: string; // For compatibility with TMDBMovie
+  poster_path: string | null;
+  overview: string;
+  genre_ids: number[];
+  genres?: Genre[];
+  vote_average: number;
+  first_air_date: string;
+  release_date?: string; // For compatibility with TMDBMovie
+  backdrop_path?: string | null;
+  popularity?: number;
+  vote_count?: number;
+  media_type?: 'tv';
+}
+
+export interface TMDBSearchResult {
+  id: number;
+  title?: string;
+  name?: string;
+  poster_path: string | null;
+  overview: string;
+  genre_ids: number[];
+  vote_average: number;
+  release_date?: string;
+  first_air_date?: string;
+  backdrop_path?: string | null;
+  popularity?: number;
+  vote_count?: number;
+  media_type: 'movie' | 'tv' | 'person';
+  adult?: boolean;
+  video?: boolean;
+}
+
 export interface Genre {
   id: number;
   name: string;

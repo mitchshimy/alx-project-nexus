@@ -1,4 +1,4 @@
-import { TMDBRequestOptions, TMDBResponse, TMDBMovie, Genre } from '@/types/tmdb';
+import { TMDBRequestOptions, TMDBResponse, TMDBMovie, Genre, TMDBSearchResult } from '@/types/tmdb';
 
 const BASE_URL = 'https://api.themoviedb.org/3';
 const API_TIMEOUT = 8000;
@@ -123,6 +123,84 @@ export async function getSimilarMovies(
       page,
       language: DEFAULT_LANGUAGE,
       region: DEFAULT_REGION,
+    },
+  });
+}
+
+export async function getMovies(
+  page = 1,
+  language = DEFAULT_LANGUAGE,
+  region = DEFAULT_REGION
+): Promise<TMDBResponse<TMDBMovie>> {
+  return fetchTMDB('/discover/movie', {
+    params: {
+      page,
+      language,
+      region,
+      sort_by: 'popularity.desc',
+    },
+  });
+}
+
+export async function getTVShows(
+  page = 1,
+  language = DEFAULT_LANGUAGE,
+  region = DEFAULT_REGION
+): Promise<TMDBResponse<TMDBMovie>> {
+  return fetchTMDB('/discover/tv', {
+    params: {
+      page,
+      language,
+      region,
+      sort_by: 'popularity.desc',
+    },
+  });
+}
+
+export async function searchMulti(
+  query: string,
+  page = 1,
+  language = DEFAULT_LANGUAGE,
+  region = DEFAULT_REGION
+): Promise<TMDBResponse<TMDBSearchResult>> {
+  return fetchTMDB('/search/multi', {
+    params: {
+      query,
+      page,
+      language,
+      region,
+    },
+  });
+}
+
+export async function searchMovies(
+  query: string,
+  page = 1,
+  language = DEFAULT_LANGUAGE,
+  region = DEFAULT_REGION
+): Promise<TMDBResponse<TMDBMovie>> {
+  return fetchTMDB('/search/movie', {
+    params: {
+      query,
+      page,
+      language,
+      region,
+    },
+  });
+}
+
+export async function searchTVShows(
+  query: string,
+  page = 1,
+  language = DEFAULT_LANGUAGE,
+  region = DEFAULT_REGION
+): Promise<TMDBResponse<TMDBMovie>> {
+  return fetchTMDB('/search/tv', {
+    params: {
+      query,
+      page,
+      language,
+      region,
     },
   });
 }

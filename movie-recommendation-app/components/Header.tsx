@@ -1,25 +1,69 @@
+// components/Header.tsx
 import styled from 'styled-components';
 import Link from 'next/link';
+import { useState } from 'react';
+import { useRouter } from 'next/router';
+
+interface HeaderProps {
+  isSidebarOpen: boolean;
+  toggleSidebar: () => void;
+}
+
+const HeaderWrapper = styled.div`
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  z-index: 1000;
+`;
 
 const HeaderBar = styled.header`
-  width: 100%;
   background: rgba(255, 255, 255, 0.95);
   backdrop-filter: blur(10px);
   color: #111;
-  padding: 1.5rem 2rem;
-  position: fixed;
-  top: 0;
-  z-index: 1000;
+  padding: 1.2rem 0.5rem;
   box-shadow: 0 2px 20px rgba(0, 0, 0, 0.05);
   border-bottom: 1px solid rgba(0, 0, 0, 0.05);
 `;
 
-const HeaderContainer = styled.div`
+const HeaderContainer = styled.div<{ isSidebarOpen: boolean }>`
   max-width: 1400px;
-  margin: 0 auto;
+  padding: 0 1rem;
   display: flex;
   justify-content: space-between;
   align-items: center;
+  margin-left: ${({ isSidebarOpen }) => (isSidebarOpen ? '0' : '70px')};
+  transition: margin-left 0.3s ease;
+
+  @media (max-width: 768px) {
+    flex-direction: column;
+    gap: 1rem;
+  }
+`;
+
+const LeftSection = styled.div`
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  padding-left: 0;
+`;
+
+const Hamburger = styled.button`
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 40px;
+  height: 40px;
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 0;
+
+  svg {
+    width: 24px;
+    height: 24px;
+    stroke: #111;
+  }
 `;
 
 const TitleLink = styled(Link)`
@@ -27,7 +71,7 @@ const TitleLink = styled(Link)`
 
   h1 {
     margin: 0;
-    font-size: 1.8rem;
+    font-size: 1.7rem;
     font-weight: 700;
     color: #111;
 
@@ -37,10 +81,35 @@ const TitleLink = styled(Link)`
   }
 `;
 
-const Nav = styled.nav`
+const CenterSection = styled.div`
+  flex: 1;
   display: flex;
-  gap: 2rem;
+  justify-content: center;
+`;
+
+const SearchForm = styled.form`
+  width: 100%;
+  max-width: 500px;
+`;
+
+const SearchInput = styled.input`
+  width: 100%;
+  padding: 0.6rem 1.2rem;
+  border-radius: 20px;
+  border: 1px solid #ccc;
+  font-size: 1rem;
+  transition: border 0.2s ease;
+
+  &:focus {
+    outline: none;
+    border-color: #e50914;
+  }
+`;
+
+const RightSection = styled.div`
+  display: flex;
   align-items: center;
+  gap: 1.5rem;
 `;
 
 const NavLink = styled(Link)`
@@ -48,51 +117,67 @@ const NavLink = styled(Link)`
   text-decoration: none;
   font-weight: 500;
   font-size: 1rem;
-  transition: all 0.2s ease;
+  transition: color 0.2s ease;
 
   &:hover {
     color: #e50914;
   }
 `;
 
-const SearchButton = styled.button`
-  background: #f5f5f5;
-  border: none;
-  border-radius: 20px;
-  padding: 0.6rem 1.2rem;
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
-  cursor: pointer;
-  transition: all 0.2s ease;
+export default function Header({ isSidebarOpen, toggleSidebar }: HeaderProps) {
+  const [searchTerm, setSearchTerm] = useState('');
+  const router = useRouter();
 
-  &:hover {
-    background: #e0e0e0;
-  }
-`;
+  const handleSearch = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (searchTerm.trim()) {
+      router.push(`/trending?search=${encodeURIComponent(searchTerm.trim())}`);
+    }
+  };
 
-export default function Header() {
   return (
-    <HeaderBar>
-      <HeaderContainer>
-        <TitleLink href="/">
-          <h1>
-            Shimy<span>Movies</span>
-          </h1>
-        </TitleLink>
+    <HeaderWrapper>
+      <HeaderBar>
+        <HeaderContainer isSidebarOpen={isSidebarOpen}>
+          <LeftSection>
+            <Hamburger
+              onClick={toggleSidebar}
+              aria-label="Toggle sidebar"
+            >
+              <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M4 6h16M4 12h16M4 18h16"
+                />
+              </svg>
+            </Hamburger>
 
-        <Nav>
-          <NavLink href="/">Home</NavLink>
-          <NavLink href="/trending">Trending</NavLink>
-          <NavLink href="/favorites">Favorites</NavLink>
-          <SearchButton>
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#555">
-              <path d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
-            </svg>
-            Search
-          </SearchButton>
-        </Nav>
-      </HeaderContainer>
-    </HeaderBar>
+            <TitleLink href="/">
+              <h1>
+                Shimy<span>Movies</span>
+              </h1>
+            </TitleLink>
+          </LeftSection>
+
+          <CenterSection>
+            <SearchForm onSubmit={handleSearch}>
+              <SearchInput 
+                type="text" 
+                placeholder="Search for movies, shows..." 
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+              />
+            </SearchForm>
+          </CenterSection>
+
+          <RightSection>
+            <NavLink href="/signin">Sign In</NavLink>
+            <NavLink href="/signup">Sign Up</NavLink>
+          </RightSection>
+        </HeaderContainer>
+      </HeaderBar>
+    </HeaderWrapper>
   );
 }
