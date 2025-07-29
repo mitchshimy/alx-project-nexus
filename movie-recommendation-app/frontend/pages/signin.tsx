@@ -1,6 +1,8 @@
 import { useState } from 'react';
+import { useRouter } from 'next/router';
 import styled from 'styled-components';
 import Link from 'next/link';
+import { authAPI } from '../utils/api';
 
 const Container = styled.div`
   display: flex;
@@ -142,23 +144,76 @@ const Footer = styled.div`
   }
 `;
 
+const ErrorMessage = styled.div`
+  color: #ff6b6b;
+  background: rgba(255, 107, 107, 0.1);
+  border: 1px solid rgba(255, 107, 107, 0.3);
+  border-radius: 8px;
+  padding: 0.75rem;
+  margin-bottom: 1rem;
+  font-size: 0.9rem;
+`;
+
+const SuccessMessage = styled.div`
+  color: #51cf66;
+  background: rgba(81, 207, 102, 0.1);
+  border: 1px solid rgba(81, 207, 102, 0.3);
+  border-radius: 8px;
+  padding: 0.75rem;
+  margin-bottom: 1rem;
+  font-size: 0.9rem;
+`;
+
 export default function SignIn() {
+  const router = useRouter();
   const [formData, setFormData] = useState({
     email: '',
     password: '',
   });
   const [loading, setLoading] = useState(false);
+  const [error, setError] = useState('');
+  const [success, setSuccess] = useState('');
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
+    setError('');
+    setSuccess('');
     
-    // Simulate API call
-    setTimeout(() => {
-      console.log('Sign in attempt:', formData);
+    try {
+      const response = await authAPI.login({
+        email: formData.email,
+        password: formData.password,
+      });
+      
+      setSuccess('Sign in successful! Redirecting...');
+      
+      // Redirect to home page after successful login
+      setTimeout(() => {
+        router.push('/');
+        // Force a page refresh to update the header
+        window.location.reload();
+      }, 1000);
+      
+    } catch (err: any) {
+      console.error('Sign in error:', err);
+      
+      if (err.message.includes('Invalid credentials') || err.message.includes('No active account')) {
+        setError('Account not found. Please check your email and password, or sign up for a new account.');
+      } else if (err.message.includes('email')) {
+        setError('Please enter a valid email address.');
+      } else if (err.message.includes('password')) {
+        setError('Password is required.');
+      } else if (err.message.includes('Network error')) {
+        setError('Connection error. Please check your internet connection and try again.');
+      } else if (err.message.includes('500')) {
+        setError('Server error. Please try again later.');
+      } else {
+        setError('An error occurred. Please try again.');
+      }
+    } finally {
       setLoading(false);
-      // Here you would typically handle authentication
-    }, 1000);
+    }
   };
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -166,12 +221,17 @@ export default function SignIn() {
       ...formData,
       [e.target.name]: e.target.value,
     });
+    // Clear error when user starts typing
+    if (error) setError('');
   };
 
   return (
     <Container>
       <FormCard>
         <Title>Sign In</Title>
+        
+        {error && <ErrorMessage>{error}</ErrorMessage>}
+        {success && <SuccessMessage>{success}</SuccessMessage>}
         
         <Form onSubmit={handleSubmit}>
           <InputGroup>
@@ -184,6 +244,7 @@ export default function SignIn() {
               value={formData.email}
               onChange={handleChange}
               required
+              disabled={loading}
             />
           </InputGroup>
 
@@ -197,6 +258,7 @@ export default function SignIn() {
               value={formData.password}
               onChange={handleChange}
               required
+              disabled={loading}
             />
           </InputGroup>
 
@@ -209,7 +271,7 @@ export default function SignIn() {
           <span>or</span>
         </Divider>
 
-        <SocialButton type="button">
+        <SocialButton type="button" disabled={loading}>
           Continue with Google
         </SocialButton>
 

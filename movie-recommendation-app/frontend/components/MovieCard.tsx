@@ -17,6 +17,24 @@ const Card = styled.div`
     transform: translateY(-5px);
     box-shadow: 0 8px 25px rgba(0, 0, 0, 0.15);
   }
+  
+  @media (max-width: 768px) {
+    border-radius: 12px;
+    
+    &:hover {
+      transform: translateY(-3px);
+      box-shadow: 0 6px 20px rgba(0, 0, 0, 0.12);
+    }
+  }
+  
+  @media (max-width: 480px) {
+    border-radius: 10px;
+    
+    &:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+    }
+  }
 `;
 
 const Poster = styled.div<{ posterPath: string }>`
@@ -31,6 +49,14 @@ const Poster = styled.div<{ posterPath: string }>`
   background-position: center;
   background-repeat: no-repeat;
   position: relative;
+  
+  @media (max-width: 768px) {
+    height: 250px;
+  }
+  
+  @media (max-width: 480px) {
+    height: 200px;
+  }
 `;
 
 const Overlay = styled.div`
@@ -45,9 +71,19 @@ const Overlay = styled.div`
   justify-content: center;
   opacity: 0;
   transition: opacity 0.3s ease;
+  flex-direction: column;
+  gap: 10px;
 
   ${Card}:hover & {
     opacity: 1;
+  }
+  
+  @media (max-width: 768px) {
+    gap: 8px;
+  }
+  
+  @media (max-width: 480px) {
+    gap: 6px;
   }
 `;
 
@@ -67,10 +103,30 @@ const ActionButton = styled.button<{ isActive?: boolean }>`
     transform: scale(1.05);
     background: ${props => props.isActive ? '#c0392b' : '#2980b9'};
   }
+  
+  @media (max-width: 768px) {
+    padding: 8px 16px;
+    font-size: 13px;
+    margin: 0 3px;
+  }
+  
+  @media (max-width: 480px) {
+    padding: 6px 12px;
+    font-size: 12px;
+    margin: 0 2px;
+  }
 `;
 
 const Content = styled.div`
   padding: 15px;
+  
+  @media (max-width: 768px) {
+    padding: 12px;
+  }
+  
+  @media (max-width: 480px) {
+    padding: 10px;
+  }
 `;
 
 const Title = styled.h3`
@@ -83,6 +139,16 @@ const Title = styled.h3`
   -webkit-line-clamp: 2;
   -webkit-box-orient: vertical;
   overflow: hidden;
+  
+  @media (max-width: 768px) {
+    font-size: 15px;
+    margin-bottom: 6px;
+  }
+  
+  @media (max-width: 480px) {
+    font-size: 14px;
+    margin-bottom: 5px;
+  }
 `;
 
 const Meta = styled.div`
@@ -90,6 +156,14 @@ const Meta = styled.div`
   justify-content: space-between;
   align-items: center;
   margin-top: 10px;
+  
+  @media (max-width: 768px) {
+    margin-top: 8px;
+  }
+  
+  @media (max-width: 480px) {
+    margin-top: 6px;
+  }
 `;
 
 const Rating = styled.span`
@@ -99,11 +173,29 @@ const Rating = styled.span`
   border-radius: 12px;
   font-size: 12px;
   font-weight: 600;
+  
+  @media (max-width: 768px) {
+    padding: 3px 6px;
+    font-size: 11px;
+  }
+  
+  @media (max-width: 480px) {
+    padding: 2px 5px;
+    font-size: 10px;
+  }
 `;
 
 const Year = styled.span`
   color: #666;
   font-size: 12px;
+  
+  @media (max-width: 768px) {
+    font-size: 11px;
+  }
+  
+  @media (max-width: 480px) {
+    font-size: 10px;
+  }
 `;
 
 const LoadingOverlay = styled.div`
@@ -118,6 +210,14 @@ const LoadingOverlay = styled.div`
   justify-content: center;
   color: white;
   font-size: 14px;
+  
+  @media (max-width: 768px) {
+    font-size: 13px;
+  }
+  
+  @media (max-width: 480px) {
+    font-size: 12px;
+  }
 `;
 
 interface MovieCardProps {

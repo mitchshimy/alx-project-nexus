@@ -18,14 +18,23 @@ const SidebarWrapper = styled.div<{ isOpen: boolean }>`
   left: 0;
   height: 100vh;
   z-index: 999;
-  transition: width 0.3s ease;
+  transition: all 0.3s ease;
   width: ${({ isOpen }) => (isOpen ? '220px' : '70px')};
+  
+  @media (max-width: 768px) {
+    width: ${({ isOpen }) => (isOpen ? '100%' : '0')};
+    transform: ${({ isOpen }) => (isOpen ? 'translateX(0)' : 'translateX(-100%)')};
+    opacity: ${({ isOpen }) => (isOpen ? '1' : '0')};
+    pointer-events: ${({ isOpen }) => (isOpen ? 'auto' : 'none')};
+  }
+  
+  @media (max-width: 480px) {
+    width: ${({ isOpen }) => (isOpen ? '100%' : '0')};
+  }
 `;
 
-const ContentWrapper = styled.div<{ isOpen: boolean }>`
+const ContentWrapper = styled.div`
   flex: 1;
-  margin-left: ${({ isOpen }) => (isOpen ? '220px' : '70px')};
-  transition: margin-left 0.3s ease;
   min-height: 100vh;
   display: flex;
   flex-direction: column;
@@ -48,6 +57,18 @@ const MainContent = styled.main`
     height: 1px;
     background: linear-gradient(90deg, transparent, rgba(229, 9, 20, 0.5), transparent);
   }
+  
+  @media (max-width: 1024px) {
+    padding: 7rem 1.5rem 2rem;
+  }
+  
+  @media (max-width: 768px) {
+    padding: 6rem 1rem 2rem;
+  }
+  
+  @media (max-width: 480px) {
+    padding: 8rem 0.5rem 1.5rem;
+  }
 `;
 
 const Footer = styled.footer`
@@ -57,6 +78,14 @@ const Footer = styled.footer`
   text-align: center;
   backdrop-filter: blur(10px);
   border-top: 1px solid rgba(255, 255, 255, 0.05);
+  
+  @media (max-width: 768px) {
+    padding: 3rem 1rem;
+  }
+  
+  @media (max-width: 480px) {
+    padding: 2rem 0.5rem;
+  }
 `;
 
 const FooterContent = styled.div`
@@ -66,6 +95,17 @@ const FooterContent = styled.div`
   grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
   gap: 3rem;
   text-align: left;
+  
+  @media (max-width: 768px) {
+    grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+    gap: 2rem;
+  }
+  
+  @media (max-width: 480px) {
+    grid-template-columns: 1fr;
+    gap: 1.5rem;
+    text-align: center;
+  }
 `;
 
 const FooterSection = styled.div`
@@ -87,12 +127,22 @@ const FooterSection = styled.div`
       background: #e50914;
       border-radius: 2px;
     }
+    
+    @media (max-width: 480px) {
+      font-size: 1rem;
+      margin-bottom: 1rem;
+    }
   }
 
   p {
     color: rgba(255, 255, 255, 0.7);
     line-height: 1.6;
     margin-bottom: 1.5rem;
+    
+    @media (max-width: 480px) {
+      font-size: 0.9rem;
+      margin-bottom: 1rem;
+    }
   }
 
   ul {
@@ -107,6 +157,10 @@ const FooterSection = styled.div`
       &:hover {
         transform: translateX(5px);
       }
+      
+      @media (max-width: 480px) {
+        margin-bottom: 0.6rem;
+      }
 
       a {
         color: rgba(255, 255, 255, 0.6);
@@ -114,6 +168,7 @@ const FooterSection = styled.div`
         transition: all 0.2s ease;
         display: flex;
         align-items: center;
+        font-size: 0.9rem;
 
         &::before {
           content: '→';
@@ -131,6 +186,11 @@ const FooterSection = styled.div`
             margin-right: 12px;
           }
         }
+        
+        @media (max-width: 480px) {
+          justify-content: center;
+          font-size: 0.85rem;
+        }
       }
     }
   }
@@ -143,6 +203,12 @@ const Copyright = styled.div`
   color: rgba(255, 255, 255, 0.4);
   font-size: 0.9rem;
   letter-spacing: 0.5px;
+  
+  @media (max-width: 480px) {
+    margin-top: 2rem;
+    padding-top: 1.5rem;
+    font-size: 0.8rem;
+  }
 `;
 
 const FloatingParticles = styled.div`
@@ -191,6 +257,7 @@ export default function Layout({ children }: LayoutProps) {
       <Head>
         <title>SHIMY | Modern Movie Discovery</title>
         <meta name="description" content="Discover the best movies in a sleek, modern interface." />
+        <meta name="viewport" content="width=device-width, initial-scale=1.0" />
         <link
           href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap"
           rel="stylesheet"
@@ -203,7 +270,7 @@ export default function Layout({ children }: LayoutProps) {
           <Sidebar isOpen={isSidebarOpen} onClose={() => setSidebarOpen(false)} />
         </SidebarWrapper>
 
-        <ContentWrapper isOpen={isSidebarOpen}>
+        <ContentWrapper>
           <Header isSidebarOpen={isSidebarOpen} toggleSidebar={toggleSidebar} />
           <MainContent>{children}</MainContent>
           <Footer>

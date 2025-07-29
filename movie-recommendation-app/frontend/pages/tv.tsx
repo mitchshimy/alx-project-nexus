@@ -88,16 +88,35 @@ export default function TVShows() {
 
   useEffect(() => {
     const onScroll = () => {
-      const scrolledToBottom =
-        window.innerHeight + window.scrollY >= document.body.scrollHeight - 90;
-
+      // Calculate scroll position more accurately
+      const scrollTop = window.pageYOffset || document.documentElement.scrollTop;
+      const windowHeight = window.innerHeight;
+      const documentHeight = document.documentElement.scrollHeight;
+      
+      // Trigger when user is 200px from bottom (more generous threshold)
+      const scrolledToBottom = scrollTop + windowHeight >= documentHeight - 200;
+      
+      // Add debouncing to prevent multiple rapid calls
       if (scrolledToBottom && !loading && hasMore) {
+        console.log('Scroll trigger: Loading more TV shows...'); // Debug
         loadMoreShows();
       }
     };
 
-    window.addEventListener('scroll', onScroll);
-    return () => window.removeEventListener('scroll', onScroll);
+    // Use throttled scroll listener for better performance
+    let ticking = false;
+    const throttledScroll = () => {
+      if (!ticking) {
+        requestAnimationFrame(() => {
+          onScroll();
+          ticking = false;
+        });
+        ticking = true;
+      }
+    };
+
+    window.addEventListener('scroll', throttledScroll, { passive: true });
+    return () => window.removeEventListener('scroll', throttledScroll);
   }, [loadMoreShows, loading, hasMore]);
 
   useEffect(() => {

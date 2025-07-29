@@ -1,6 +1,8 @@
 import { useState } from 'react';
+import { useRouter } from 'next/router';
 import styled from 'styled-components';
 import Link from 'next/link';
+import { authAPI } from '../utils/api';
 
 const Container = styled.div`
   display: flex;
@@ -142,7 +144,28 @@ const Footer = styled.div`
   }
 `;
 
+const ErrorMessage = styled.div`
+  color: #ff6b6b;
+  background: rgba(255, 107, 107, 0.1);
+  border: 1px solid rgba(255, 107, 107, 0.3);
+  border-radius: 8px;
+  padding: 0.75rem;
+  margin-bottom: 1rem;
+  font-size: 0.9rem;
+`;
+
+const SuccessMessage = styled.div`
+  color: #51cf66;
+  background: rgba(81, 207, 102, 0.1);
+  border: 1px solid rgba(81, 207, 102, 0.3);
+  border-radius: 8px;
+  padding: 0.75rem;
+  margin-bottom: 1rem;
+  font-size: 0.9rem;
+`;
+
 export default function SignUp() {
+  const router = useRouter();
   const [formData, setFormData] = useState({
     name: '',
     email: '',
@@ -150,23 +173,69 @@ export default function SignUp() {
     confirmPassword: '',
   });
   const [loading, setLoading] = useState(false);
+  const [error, setError] = useState('');
+  const [success, setSuccess] = useState('');
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
     if (formData.password !== formData.confirmPassword) {
-      alert('Passwords do not match');
+      setError('Passwords do not match');
+      return;
+    }
+    
+    if (formData.password.length < 8) {
+      setError('Password must be at least 8 characters long');
       return;
     }
     
     setLoading(true);
+    setError('');
+    setSuccess('');
     
-    // Simulate API call
-    setTimeout(() => {
-      console.log('Sign up attempt:', formData);
+    try {
+      // Split name into first and last name
+      const nameParts = formData.name.trim().split(' ');
+      const firstName = nameParts[0] || '';
+      const lastName = nameParts.slice(1).join(' ') || '';
+      
+      const response = await authAPI.register({
+        email: formData.email,
+        username: formData.email.split('@')[0], // Use email prefix as username
+        password: formData.password,
+        confirm_password: formData.confirmPassword,
+        first_name: firstName,
+        last_name: lastName,
+      });
+      
+      setSuccess('Account created successfully! Redirecting to sign in...');
+      
+      // Redirect to sign in page after successful registration
+      setTimeout(() => {
+        router.push('/signin');
+      }, 2000);
+      
+    } catch (err: any) {
+      console.error('Sign up error:', err);
+      
+      if (err.message.includes('email') && err.message.includes('already')) {
+        setError('This email is already registered. Please use a different email or sign in.');
+      } else if (err.message.includes('username') && err.message.includes('already')) {
+        setError('This username is already taken. Please try a different email.');
+      } else if (err.message.includes('password')) {
+        setError('Password must be at least 8 characters long.');
+      } else if (err.message.includes('email')) {
+        setError('Please enter a valid email address.');
+      } else if (err.message.includes('Network error')) {
+        setError('Connection error. Please check your internet connection and try again.');
+      } else if (err.message.includes('500')) {
+        setError('Server error. Please try again later.');
+      } else {
+        setError('An error occurred. Please try again.');
+      }
+    } finally {
       setLoading(false);
-      // Here you would typically handle registration
-    }, 1000);
+    }
   };
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -174,12 +243,17 @@ export default function SignUp() {
       ...formData,
       [e.target.name]: e.target.value,
     });
+    // Clear error when user starts typing
+    if (error) setError('');
   };
 
   return (
     <Container>
       <FormCard>
         <Title>Sign Up</Title>
+        
+        {error && <ErrorMessage>{error}</ErrorMessage>}
+        {success && <SuccessMessage>{success}</SuccessMessage>}
         
         <Form onSubmit={handleSubmit}>
           <InputGroup>
@@ -192,6 +266,7 @@ export default function SignUp() {
               value={formData.name}
               onChange={handleChange}
               required
+              disabled={loading}
             />
           </InputGroup>
 
@@ -205,6 +280,7 @@ export default function SignUp() {
               value={formData.email}
               onChange={handleChange}
               required
+              disabled={loading}
             />
           </InputGroup>
 
@@ -218,6 +294,7 @@ export default function SignUp() {
               value={formData.password}
               onChange={handleChange}
               required
+              disabled={loading}
             />
           </InputGroup>
 
@@ -231,6 +308,7 @@ export default function SignUp() {
               value={formData.confirmPassword}
               onChange={handleChange}
               required
+              disabled={loading}
             />
           </InputGroup>
 
@@ -243,7 +321,7 @@ export default function SignUp() {
           <span>or</span>
         </Divider>
 
-        <SocialButton type="button">
+        <SocialButton type="button" disabled={loading}>
           Continue with Google
         </SocialButton>
 

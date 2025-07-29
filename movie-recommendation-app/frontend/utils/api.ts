@@ -24,30 +24,53 @@ export const removeAuthToken = (): void => {
 // API request helper with authentication
 const apiRequest = async (endpoint: string, options: RequestInit = {}) => {
   const token = getAuthToken();
-  const headers: HeadersInit = {
+  const headers: Record<string, string> = {
     'Content-Type': 'application/json',
-    ...options.headers,
+    ...(options.headers as Record<string, string> || {}),
   };
 
   if (token) {
     headers.Authorization = `Bearer ${token}`;
   }
 
-  const response = await fetch(`${API_BASE_URL}${endpoint}`, {
-    ...options,
-    headers,
-  });
+  try {
+    const response = await fetch(`${API_BASE_URL}${endpoint}`, {
+      ...options,
+      headers,
+    });
 
-  if (!response.ok) {
-    if (response.status === 401) {
-      // Token expired or invalid
-      removeAuthToken();
-      window.location.href = '/signin';
+    if (!response.ok) {
+      if (response.status === 401) {
+        // Token expired or invalid
+        removeAuthToken();
+        window.location.href = '/signin';
+      }
+      
+      // Try to get error details from response
+      let errorMessage = `API request failed: ${response.statusText}`;
+      try {
+        const errorData = await response.json();
+        if (errorData.detail) {
+          errorMessage = errorData.detail;
+        } else if (errorData.message) {
+          errorMessage = errorData.message;
+        } else if (errorData.error) {
+          errorMessage = errorData.error;
+        }
+      } catch (e) {
+        // If we can't parse the error response, use the status text
+      }
+      
+      throw new Error(errorMessage);
     }
-    throw new Error(`API request failed: ${response.statusText}`);
-  }
 
-  return response.json();
+    return response.json();
+  } catch (error) {
+    if (error instanceof TypeError && error.message.includes('fetch')) {
+      throw new Error('Network error. Please check your connection and try again.');
+    }
+    throw error;
+  }
 };
 
 // Authentication APIs

@@ -65,14 +65,17 @@ export default function Movies() {
     try {
       const data = await movieAPI.getMovies({ type: 'movies', page });
       if (data?.results?.length) {
+        console.log('Movies page - Received data:', data); // Debug
         setMovies(prev => {
-          const existingIds = new Set(prev.map(m => m.id));
-          const uniqueNew = data.results.filter(m => !existingIds.has(m.id));
+          const existingIds = new Set(prev.map((m: TMDBMovie) => m.id));
+          const uniqueNew = data.results.filter((m: TMDBMovie) => !existingIds.has(m.id));
+          console.log('Movies page - New movies to add:', uniqueNew.length); // Debug
           return [...prev, ...uniqueNew];
         });
         setPage(prev => prev + 1);
         setHasMore(data.page < data.total_pages);
       } else {
+        console.log('Movies page - No results:', data); // Debug
         setHasMore(false);
       }
     } catch (err) {
@@ -88,16 +91,35 @@ export default function Movies() {
 
   useEffect(() => {
     const onScroll = () => {
-      const scrolledToBottom =
-        window.innerHeight + window.scrollY >= document.body.scrollHeight - 90;
-
+      // Calculate scroll position more accurately
+      const scrollTop = window.pageYOffset || document.documentElement.scrollTop;
+      const windowHeight = window.innerHeight;
+      const documentHeight = document.documentElement.scrollHeight;
+      
+      // Trigger when user is 200px from bottom (more generous threshold)
+      const scrolledToBottom = scrollTop + windowHeight >= documentHeight - 200;
+      
+      // Add debouncing to prevent multiple rapid calls
       if (scrolledToBottom && !loading && hasMore) {
+        console.log('Scroll trigger: Loading more movies...'); // Debug
         loadMoreMovies();
       }
     };
 
-    window.addEventListener('scroll', onScroll);
-    return () => window.removeEventListener('scroll', onScroll);
+    // Use throttled scroll listener for better performance
+    let ticking = false;
+    const throttledScroll = () => {
+      if (!ticking) {
+        requestAnimationFrame(() => {
+          onScroll();
+          ticking = false;
+        });
+        ticking = true;
+      }
+    };
+
+    window.addEventListener('scroll', throttledScroll, { passive: true });
+    return () => window.removeEventListener('scroll', throttledScroll);
   }, [loadMoreMovies, loading, hasMore]);
 
   useEffect(() => {
