@@ -1,8 +1,7 @@
 import { useState, useEffect } from 'react';
 import styled from 'styled-components';
 import MovieCard from '@/components/MovieCard';
-import { getFavorites } from '@/utils/favorites';
-import { getMovieDetails } from '@/utils/tmdbClient';
+import { movieAPI } from '@/utils/api';
 import { TMDBMovie } from '@/types/tmdb';
 import Layout from '@/components/Layout';
 
@@ -26,31 +25,17 @@ const ErrorMessage = styled.div`
 `;
 
 export default function Favorites() {
-  const [movies, setMovies] = useState<TMDBMovie[]>([]);
+  const [favorites, setFavorites] = useState<TMDBMovie[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     const loadFavorites = async () => {
-      const favIds = getFavorites();
-      if (favIds.length === 0) {
-        setLoading(false);
-        return;
-      }
-
       try {
-        const favMovies = await Promise.all(
-          favIds.map(id => 
-            getMovieDetails(id)
-              .catch(e => {
-                console.error(`Failed to load movie ${id}:`, e);
-                return null;
-              })
-          )
-        );
-        setMovies(favMovies.filter((movie): movie is TMDBMovie => movie !== null));
-      } catch (error) {
-        setError(error instanceof Error ? error.message : 'Failed to load favorites');
+        const data = await movieAPI.getFavorites();
+        setFavorites(data.results || []);
+      } catch (err) {
+        console.error('Error loading favorites:', err);
       } finally {
         setLoading(false);
       }
@@ -82,14 +67,14 @@ export default function Favorites() {
   return (
     <>
       <h1>Your Favorites</h1>
-      {movies.length === 0 ? (
+      {favorites.length === 0 ? (
         <EmptyState>
           <h3>No favorites yet</h3>
           <p>Start adding movies to see them here</p>
         </EmptyState>
       ) : (
         <MovieGrid>
-          {movies.map(movie => (
+          {favorites.map(movie => (
             <MovieCard 
               key={movie.id} 
               movie={movie} 

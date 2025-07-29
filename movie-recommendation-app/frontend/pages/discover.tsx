@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import styled from 'styled-components';
 import MovieCard from '@/components/MovieCard';
-import { getMovies, getTVShows, getGenres } from '@/utils/tmdbClient';
+import { movieAPI } from '@/utils/api';
 import { TMDBMovie, Genre } from '@/types/tmdb';
 
 const Section = styled.section`
@@ -76,8 +76,8 @@ export default function Discover() {
   const [page, setPage] = useState(1);
   const [loading, setLoading] = useState(false);
   const [hasMore, setHasMore] = useState(true);
-  const [filter, setFilter] = useState('all');
   const [contentType, setContentType] = useState<'movies' | 'tv'>('movies');
+  const [filter, setFilter] = useState('all');
   const [genres, setGenres] = useState<Genre[]>([]);
 
   const loadMoreContent = useCallback(async () => {
@@ -85,14 +85,14 @@ export default function Discover() {
 
     setLoading(true);
     try {
-      const data = contentType === 'movies' 
-        ? await getMovies(page)
-        : await getTVShows(page);
-        
+      const data = await movieAPI.getMovies({ 
+        type: contentType, 
+        page 
+      });
       if (data?.results?.length) {
         setContent(prev => {
-          const existingIds = new Set(prev.map(m => m.id));
-          const uniqueNew = data.results.filter(m => !existingIds.has(m.id));
+          const existingIds = new Set(prev.map((m: TMDBMovie) => m.id));
+          const uniqueNew = data.results.filter((m: TMDBMovie) => !existingIds.has(m.id));
           return [...prev, ...uniqueNew];
         });
         setPage(prev => prev + 1);
@@ -132,7 +132,7 @@ export default function Discover() {
   useEffect(() => {
     const fetchGenres = async () => {
       try {
-        const data = await getGenres();
+        const data = await movieAPI.getGenres();
         setGenres(data.genres);
       } catch (err) {
         console.error('Error fetching genres:', err);

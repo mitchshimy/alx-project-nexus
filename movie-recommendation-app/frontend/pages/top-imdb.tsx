@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import styled from 'styled-components';
 import MovieCard from '@/components/MovieCard';
-import { getTopRatedMovies, getGenres } from '@/utils/tmdbClient';
+import { movieAPI } from '@/utils/api';
 import { TMDBMovie, Genre } from '@/types/tmdb';
 
 const Section = styled.section`
@@ -50,7 +50,7 @@ const Loading = styled.div`
   color: #666;
 `;
 
-export default function TopIMDb() {
+export default function TopIMDB() {
   const [movies, setMovies] = useState<TMDBMovie[]>([]);
   const [page, setPage] = useState(1);
   const [loading, setLoading] = useState(false);
@@ -63,11 +63,11 @@ export default function TopIMDb() {
 
     setLoading(true);
     try {
-      const data = await getTopRatedMovies(page);
+      const data = await movieAPI.getMovies({ type: 'top_rated', page });
       if (data?.results?.length) {
         setMovies(prev => {
-          const existingIds = new Set(prev.map(m => m.id));
-          const uniqueNew = data.results.filter(m => !existingIds.has(m.id));
+          const existingIds = new Set(prev.map((m: TMDBMovie) => m.id));
+          const uniqueNew = data.results.filter((m: TMDBMovie) => !existingIds.has(m.id));
           return [...prev, ...uniqueNew];
         });
         setPage(prev => prev + 1);
@@ -103,7 +103,7 @@ export default function TopIMDb() {
   useEffect(() => {
     const fetchGenres = async () => {
       try {
-        const data = await getGenres();
+        const data = await movieAPI.getGenres();
         setGenres(data.genres);
       } catch (err) {
         console.error('Error fetching genres:', err);

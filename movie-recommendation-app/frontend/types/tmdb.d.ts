@@ -1,5 +1,6 @@
 export interface TMDBMovie {
   id: number;
+  tmdb_id: number;
   title: string;
   poster_path: string | null;
   overview: string;
@@ -14,6 +15,9 @@ export interface TMDBMovie {
   adult?: boolean;
   video?: boolean;
   credits?: TMDBCredits;
+  is_favorite?: boolean;
+  is_watchlisted?: boolean;
+  user_rating?: number;
 }
 
 export interface TMDBTVShow {

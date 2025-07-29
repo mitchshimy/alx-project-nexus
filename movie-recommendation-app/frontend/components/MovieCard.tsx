@@ -125,7 +125,7 @@ interface MovieCardProps {
     id: number;
     tmdb_id: number;
     title: string;
-    poster_path: string;
+    poster_path: string | null;
     vote_average: number;
     release_date: string;
     is_favorite?: boolean;
@@ -210,7 +210,7 @@ export default function MovieCard({ movie, onFavoriteToggle, onWatchlistToggle }
   return (
     <Link href={`/movies/${movie.tmdb_id}`} passHref>
       <Card>
-        <Poster posterPath={movie.poster_path}>
+        <Poster posterPath={movie.poster_path || ''}>
           <Overlay>
             <ActionButton
               isActive={isFavorite}

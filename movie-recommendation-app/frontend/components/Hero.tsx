@@ -1,7 +1,7 @@
 // components/Hero.tsx
 import React, { useEffect, useState } from 'react';
 import styled from 'styled-components';
-import { getTrendingMovies } from '@/utils/tmdbClient';
+import { movieAPI } from '@/utils/api';
 import { TMDBMovie } from '@/types/tmdb';
 import Link from 'next/link';
 
@@ -67,9 +67,13 @@ const Hero = () => {
 
   useEffect(() => {
     const fetchTopMovie = async () => {
-      const res = await getTrendingMovies();
-      if (res.results.length > 0) {
-        setTopMovie(res.results[0]);
+      try {
+        const res = await movieAPI.getMovies({ type: 'trending', page: 1 });
+        if (res.results.length > 0) {
+          setTopMovie(res.results[0]);
+        }
+      } catch (err) {
+        console.error('Error fetching top movie:', err);
       }
     };
     fetchTopMovie();
@@ -85,7 +89,7 @@ const Hero = () => {
       <HeroContent>
         <h1>{topMovie?.title || 'Discover Movies'}</h1>
         <p>{topMovie?.overview?.slice(0, 180) || 'Find trending, recommended, and highly-rated movies tailored to you.'}</p>
-        <Link href={`/movies/${topMovie?.id}`} passHref>
+        <Link href={`/movies/${topMovie?.tmdb_id}`} passHref>
         <button>Start Watching</button>
         </Link>
       </HeroContent>

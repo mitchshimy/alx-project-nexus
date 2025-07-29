@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import styled from 'styled-components';
 import Hero from '@/components/Hero';
 import MovieCard from '@/components/MovieCard';
-import { getTrendingMovies, getGenres } from '@/utils/tmdbClient';
+import { movieAPI } from '@/utils/api';
 import { TMDBMovie, Genre } from '@/types/tmdb';
 
 const Section = styled.section`
@@ -88,7 +88,7 @@ export default function Home() {
   useEffect(() => {
     const loadFeaturedContent = async () => {
       try {
-        const data = await getTrendingMovies(1);
+        const data = await movieAPI.getMovies({ type: 'trending', page: 1 });
         if (data?.results?.length) {
           setFeaturedMovies(data.results.slice(0, 6)); // Show only 6 featured movies
         }

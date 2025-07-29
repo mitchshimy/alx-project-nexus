@@ -2,7 +2,7 @@ import { useState, useEffect, useCallback } from 'react';
 import styled from 'styled-components';
 import { useRouter } from 'next/router';
 import MovieCard from '@/components/MovieCard';
-import { getTrendingMovies, getGenres, searchMulti } from '@/utils/tmdbClient';
+import { movieAPI } from '@/utils/api';
 import { TMDBMovie, Genre, TMDBSearchResult } from '@/types/tmdb';
 
 const Section = styled.section`
@@ -87,7 +87,7 @@ export default function Trending() {
       
       if (isSearchMode && searchTerm.trim()) {
         // Use search API when in search mode
-        const searchData = await searchMulti(searchTerm.trim(), page);
+        const searchData = await movieAPI.searchMovies(searchTerm.trim(), page);
         
         // Filter out people and normalize the data structure
         const filteredResults = searchData.results
@@ -103,8 +103,8 @@ export default function Trending() {
           results: filteredResults,
         };
       } else {
-        // Use trending API when not searching
-        data = await getTrendingMovies(page);
+        // Use trending movies API
+        data = await movieAPI.getMovies({ type: 'trending', page });
       }
 
       if (data?.results?.length) {
@@ -150,7 +150,7 @@ export default function Trending() {
   useEffect(() => {
     const fetchGenres = async () => {
       try {
-        const data = await getGenres();
+        const data = await movieAPI.getGenres();
         setGenres(data.genres);
       } catch (err) {
         console.error('Error fetching genres:', err);

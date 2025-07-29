@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import styled from 'styled-components';
 import MovieCard from '@/components/MovieCard';
-import { getTVShows, getGenres } from '@/utils/tmdbClient';
+import { movieAPI } from '@/utils/api';
 import { TMDBMovie, Genre } from '@/types/tmdb';
 
 const Section = styled.section`
@@ -51,38 +51,31 @@ const Loading = styled.div`
 `;
 
 export default function KDrama() {
-  const [kdramas, setKdramas] = useState<TMDBMovie[]>([]);
+  const [shows, setShows] = useState<TMDBMovie[]>([]);
   const [page, setPage] = useState(1);
   const [loading, setLoading] = useState(false);
   const [hasMore, setHasMore] = useState(true);
   const [filter, setFilter] = useState('all');
   const [genres, setGenres] = useState<Genre[]>([]);
 
-  const loadMoreKDramas = useCallback(async () => {
+  const loadMoreShows = useCallback(async () => {
     if (loading || !hasMore) return;
 
     setLoading(true);
     try {
-      // For K-Dramas, we'll use the TV shows API and filter for Korean content
-      const data = await getTVShows(page);
+      const data = await movieAPI.getMovies({ type: 'tv', page });
       if (data?.results?.length) {
-        // Filter for Korean dramas (we'll look for Korean titles or specific genres)
-        const kdramaResults = data.results.filter(show => {
-          const title = show.title || show.name || '';
-          const overview = show.overview || '';
-          
-          // Look for Korean indicators in title or overview
-          const isKorean = title.toLowerCase().includes('korean') || 
-                          overview.toLowerCase().includes('korean') ||
-                          title.toLowerCase().includes('k-drama') ||
-                          overview.toLowerCase().includes('k-drama');
-          
-          return isKorean;
+        // Filter for Korean dramas
+        const kdramaShows = data.results.filter((show: TMDBMovie) => {
+          const title = show.title?.toLowerCase() || '';
+          const overview = show.overview?.toLowerCase() || '';
+          return title.includes('korean') || title.includes('k-drama') || 
+                 overview.includes('korean') || overview.includes('k-drama');
         });
         
-        setKdramas(prev => {
-          const existingIds = new Set(prev.map(m => m.id));
-          const uniqueNew = kdramaResults.filter(m => !existingIds.has(m.id));
+        setShows(prev => {
+          const existingIds = new Set(prev.map((m: TMDBMovie) => m.id));
+          const uniqueNew = kdramaShows.filter((m: TMDBMovie) => !existingIds.has(m.id));
           return [...prev, ...uniqueNew];
         });
         setPage(prev => prev + 1);
@@ -91,14 +84,14 @@ export default function KDrama() {
         setHasMore(false);
       }
     } catch (err) {
-      console.error('Error loading K-Dramas:', err);
+      console.error('Error loading K-dramas:', err);
     } finally {
       setLoading(false);
     }
   }, [loading, hasMore, page]);
 
   useEffect(() => {
-    loadMoreKDramas();
+    loadMoreShows();
   }, []); // Only on first load
 
   useEffect(() => {
@@ -107,18 +100,18 @@ export default function KDrama() {
         window.innerHeight + window.scrollY >= document.body.scrollHeight - 90;
 
       if (scrolledToBottom && !loading && hasMore) {
-        loadMoreKDramas();
+        loadMoreShows();
       }
     };
 
     window.addEventListener('scroll', onScroll);
     return () => window.removeEventListener('scroll', onScroll);
-  }, [loadMoreKDramas, loading, hasMore]);
+  }, [loadMoreShows, loading, hasMore]);
 
   useEffect(() => {
     const fetchGenres = async () => {
       try {
-        const data = await getGenres();
+        const data = await movieAPI.getGenres();
         setGenres(data.genres);
       } catch (err) {
         console.error('Error fetching genres:', err);
@@ -127,7 +120,7 @@ export default function KDrama() {
     fetchGenres();
   }, []);
 
-  const filteredKDramas = kdramas.filter(item => {
+  const filteredKDramas = shows.filter(item => {
     const matchesGenre = filter === 'all' || item.genre_ids?.includes(Number(filter));
     return matchesGenre;
   });

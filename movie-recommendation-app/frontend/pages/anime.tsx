@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import styled from 'styled-components';
 import MovieCard from '@/components/MovieCard';
-import { getMovies, getGenres } from '@/utils/tmdbClient';
+import { movieAPI } from '@/utils/api';
 import { TMDBMovie, Genre } from '@/types/tmdb';
 
 const Section = styled.section`
@@ -51,29 +51,28 @@ const Loading = styled.div`
 `;
 
 export default function Anime() {
-  const [anime, setAnime] = useState<TMDBMovie[]>([]);
+  const [movies, setMovies] = useState<TMDBMovie[]>([]);
   const [page, setPage] = useState(1);
   const [loading, setLoading] = useState(false);
   const [hasMore, setHasMore] = useState(true);
   const [filter, setFilter] = useState('all');
   const [genres, setGenres] = useState<Genre[]>([]);
 
-  const loadMoreAnime = useCallback(async () => {
+  const loadMoreMovies = useCallback(async () => {
     if (loading || !hasMore) return;
 
     setLoading(true);
     try {
-      // For anime, we'll use the movies API with animation genre filter
-      const data = await getMovies(page);
+      const data = await movieAPI.getMovies({ type: 'movies', page });
       if (data?.results?.length) {
-        // Filter for animation genre (id: 16)
-        const animeResults = data.results.filter(movie => 
+        // Filter for animation genre (ID: 16)
+        const animeMovies = data.results.filter((movie: TMDBMovie) => 
           movie.genre_ids?.includes(16)
         );
         
-        setAnime(prev => {
-          const existingIds = new Set(prev.map(m => m.id));
-          const uniqueNew = animeResults.filter(m => !existingIds.has(m.id));
+        setMovies(prev => {
+          const existingIds = new Set(prev.map((m: TMDBMovie) => m.id));
+          const uniqueNew = animeMovies.filter((m: TMDBMovie) => !existingIds.has(m.id));
           return [...prev, ...uniqueNew];
         });
         setPage(prev => prev + 1);
@@ -82,14 +81,14 @@ export default function Anime() {
         setHasMore(false);
       }
     } catch (err) {
-      console.error('Error loading anime:', err);
+      console.error('Error loading anime movies:', err);
     } finally {
       setLoading(false);
     }
   }, [loading, hasMore, page]);
 
   useEffect(() => {
-    loadMoreAnime();
+    loadMoreMovies();
   }, []); // Only on first load
 
   useEffect(() => {
@@ -98,18 +97,18 @@ export default function Anime() {
         window.innerHeight + window.scrollY >= document.body.scrollHeight - 90;
 
       if (scrolledToBottom && !loading && hasMore) {
-        loadMoreAnime();
+        loadMoreMovies();
       }
     };
 
     window.addEventListener('scroll', onScroll);
     return () => window.removeEventListener('scroll', onScroll);
-  }, [loadMoreAnime, loading, hasMore]);
+  }, [loadMoreMovies, loading, hasMore]);
 
   useEffect(() => {
     const fetchGenres = async () => {
       try {
-        const data = await getGenres();
+        const data = await movieAPI.getGenres();
         setGenres(data.genres);
       } catch (err) {
         console.error('Error fetching genres:', err);
@@ -118,7 +117,7 @@ export default function Anime() {
     fetchGenres();
   }, []);
 
-  const filteredAnime = anime.filter(item => {
+  const filteredMovies = movies.filter(item => {
     const matchesGenre = filter === 'all' || item.genre_ids?.includes(Number(filter));
     return matchesGenre;
   });
@@ -140,7 +139,7 @@ export default function Anime() {
         </FilterContainer>
 
         <MovieGrid>
-          {filteredAnime.map(item => (
+          {filteredMovies.map(item => (
             <MovieCard key={item.id} movie={item} />
           ))}
         </MovieGrid>

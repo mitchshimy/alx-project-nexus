@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import styled from 'styled-components';
 import MovieCard from '@/components/MovieCard';
-import { getMovieDetails } from '@/utils/tmdbClient';
+import { movieAPI } from '@/utils/api';
 import { TMDBMovie } from '@/types/tmdb';
 
 const Container = styled.div`
@@ -42,22 +42,11 @@ export default function Watchlist() {
 
   useEffect(() => {
     const loadWatchlist = async () => {
-      // Simulate watchlist data - in a real app, this would come from user's account
-      const watchlistIds = [550, 299536, 299534, 299537]; // Example movie IDs
-      
       try {
-        const watchlistMovies = await Promise.all(
-          watchlistIds.map(id => 
-            getMovieDetails(id)
-              .catch(e => {
-                console.error(`Failed to load movie ${id}:`, e);
-                return null;
-              })
-          )
-        );
-        setWatchlist(watchlistMovies.filter((movie): movie is TMDBMovie => movie !== null));
-      } catch (error) {
-        console.error('Error loading watchlist:', error);
+        const data = await movieAPI.getWatchlist();
+        setWatchlist(data.results || []);
+      } catch (err) {
+        console.error('Error loading watchlist:', err);
       } finally {
         setLoading(false);
       }

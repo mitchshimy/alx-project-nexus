@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import styled from 'styled-components';
 import MovieCard from '@/components/MovieCard';
-import { getMovies, getGenres } from '@/utils/tmdbClient';
+import { movieAPI } from '@/utils/api';
 import { TMDBMovie, Genre } from '@/types/tmdb';
 
 const Section = styled.section`
@@ -63,7 +63,7 @@ export default function Movies() {
 
     setLoading(true);
     try {
-      const data = await getMovies(page);
+      const data = await movieAPI.getMovies({ type: 'movies', page });
       if (data?.results?.length) {
         setMovies(prev => {
           const existingIds = new Set(prev.map(m => m.id));
@@ -103,7 +103,7 @@ export default function Movies() {
   useEffect(() => {
     const fetchGenres = async () => {
       try {
-        const data = await getGenres();
+        const data = await movieAPI.getGenres();
         setGenres(data.genres);
       } catch (err) {
         console.error('Error fetching genres:', err);
