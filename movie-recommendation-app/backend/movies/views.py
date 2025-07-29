@@ -10,43 +10,79 @@ from .serializers import (
 )
 from .models import Movie, Favorite, Watchlist, MovieRating
 from .services import TMDBService
+from django.utils import timezone
 
 
 class MovieListView(generics.ListAPIView):
     """View for listing movies with TMDB integration"""
     serializer_class = MovieSerializer
     permission_classes = [permissions.AllowAny]
-    filter_backends = [DjangoFilterBackend, filters.SearchFilter]
-    filterset_fields = ['media_type', 'genre_ids']
-    search_fields = ['title', 'overview']
+    # Removed filter_backends and filterset_fields to avoid JSONField issues
     
     def get_queryset(self):
         tmdb_service = TMDBService()
         
         # Get movie type from query params
-        movie_type = self.request.query_params.get('type', 'movie')
+        movie_type = self.request.query_params.get('type', 'movies')
         page = int(self.request.query_params.get('page', 1))
         
+        print(f"Requesting movies with type: {movie_type}, page: {page}")  # Debug
+        
         try:
+            # Handle different movie types
             if movie_type == 'trending':
+                print("Getting trending movies")  # Debug
                 data = tmdb_service.get_trending_movies(page=page)
             elif movie_type == 'top_rated':
+                print("Getting top rated movies")  # Debug
                 data = tmdb_service.get_top_rated_movies(page=page)
             elif movie_type == 'tv':
+                print("Getting TV shows")  # Debug
                 data = tmdb_service.get_tv_shows(page=page)
-            else:
+            elif movie_type == 'movies':
+                print("Getting movies")  # Debug
                 data = tmdb_service.get_movies(page=page)
+            else:
+                print(f"Unknown type: {movie_type}, defaulting to movies")  # Debug
+                data = tmdb_service.get_movies(page=page)
+            
+            print(f"TMDB Data received: {len(data.get('results', []))} items")  # Debug
+            print(f"First few items: {data.get('results', [])[:3]}")  # Debug
+            
+            # Store the TMDB data for pagination info
+            self.tmdb_data = data  # Store for use in list() method
             
             # Sync movies to database
             movies = []
             for item in data.get('results', []):
-                if item.get('media_type') in ['movie', 'tv']:
-                    movie = tmdb_service.sync_movie_to_db(item)
-                    movies.append(movie)
+                # Handle TV shows from /discover/tv endpoint (they don't have media_type field)
+                is_tv_show = 'first_air_date' in item
+                is_movie = item.get('media_type') == 'movie' or ('release_date' in item and not is_tv_show)
+                
+                if is_movie or is_tv_show:
+                    try:
+                        print(f"TMDB View: Attempting to sync item: {item.get('title', item.get('name', 'Unknown'))} (ID: {item.get('id')})")  # Debug
+                        movie = tmdb_service.sync_movie_to_db(item)
+                        if movie:  # Check if sync returned a movie
+                            movies.append(movie)
+                            print(f"TMDB View: Successfully synced movie: {movie.title} (type: {movie.media_type})")  # Debug
+                        else:
+                            print(f"TMDB View: Sync returned None for item: {item.get('title', item.get('name', 'Unknown'))}")  # Debug
+                    except Exception as e:
+                        print(f"TMDB View: Error syncing movie {item.get('title', item.get('name', 'Unknown'))}: {e}")  # Debug
+                        import traceback
+                        print(f"TMDB View: Full traceback: {traceback.format_exc()}")  # Debug
             
-            return Movie.objects.filter(id__in=[m.id for m in movies])
+            if movies:
+                queryset = Movie.objects.filter(id__in=[m.id for m in movies])
+                print(f"Final queryset count: {queryset.count()}")  # Debug
+                return queryset
+            else:
+                print("No movies synced, returning all movies from database")  # Debug
+                return Movie.objects.all()
             
         except Exception as e:
+            print(f"Error in get_queryset: {e}")  # Debug
             # Fallback to database if TMDB fails
             return Movie.objects.all()
     
@@ -54,6 +90,31 @@ class MovieListView(generics.ListAPIView):
         context = super().get_serializer_context()
         context['request'] = self.request
         return context
+    
+    def list(self, request, *args, **kwargs):
+        """Override list method to return TMDB format instead of Django pagination"""
+        queryset = self.get_queryset()
+        serializer = self.get_serializer(queryset, many=True)
+        
+        # Use stored TMDB data for pagination info (avoid double API call)
+        page = int(request.query_params.get('page', 1))
+        
+        if hasattr(self, 'tmdb_data'):
+            # Return TMDB format with actual pagination data
+            return Response({
+                'page': page,
+                'results': serializer.data,
+                'total_pages': self.tmdb_data.get('total_pages', 1),
+                'total_results': self.tmdb_data.get('total_results', len(serializer.data))
+            })
+        else:
+            # Fallback if no TMDB data available
+            return Response({
+                'page': page,
+                'results': serializer.data,
+                'total_pages': 1,
+                'total_results': len(serializer.data)
+            })
 
 
 class MovieDetailView(generics.RetrieveAPIView):
@@ -113,6 +174,36 @@ class SearchView(generics.ListAPIView):
         context = super().get_serializer_context()
         context['request'] = self.request
         return context
+    
+    def list(self, request, *args, **kwargs):
+        """Override list method to return TMDB format instead of Django pagination"""
+        queryset = self.get_queryset()
+        serializer = self.get_serializer(queryset, many=True)
+        
+        # Get the original TMDB search data to extract pagination info
+        tmdb_service = TMDBService()
+        query = request.query_params.get('q', '')
+        page = int(request.query_params.get('page', 1))
+        
+        try:
+            tmdb_data = tmdb_service.search_multi(query, page=page)
+            
+            # Return TMDB format with actual pagination data
+            return Response({
+                'page': page,
+                'results': serializer.data,
+                'total_pages': tmdb_data.get('total_pages', 1),
+                'total_results': tmdb_data.get('total_results', len(serializer.data))
+            })
+        except Exception as e:
+            print(f"Error getting TMDB search pagination data: {e}")  # Debug
+            # Fallback to basic pagination
+            return Response({
+                'page': page,
+                'results': serializer.data,
+                'total_pages': 1,
+                'total_results': len(serializer.data)
+            })
 
 
 class FavoriteListView(generics.ListCreateAPIView):
@@ -183,3 +274,14 @@ def genres_list(request):
         return Response(data, status=status.HTTP_200_OK)
     except Exception as e:
         return Response({'error': str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+
+@api_view(['GET'])
+@permission_classes([permissions.AllowAny])
+def test_api(request):
+    """Test endpoint to verify API is working"""
+    return Response({
+        'message': 'API is working!',
+        'status': 'success',
+        'timestamp': timezone.now().isoformat()
+    })

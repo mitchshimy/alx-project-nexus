@@ -17,6 +17,10 @@ import os
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
 
+# Load environment variables from env.local file
+from decouple import Config, RepositoryEnv
+config = Config(RepositoryEnv(BASE_DIR / 'env.local'))
+
 
 # Quick-start development settings - unsuitable for production
 # See https://docs.djangoproject.com/en/4.2/howto/deployment/checklist/
@@ -88,12 +92,8 @@ WSGI_APPLICATION = 'movie_api.wsgi.application'
 
 DATABASES = {
     'default': {
-        'ENGINE': 'django.db.backends.postgresql',
-        'NAME': config('DB_NAME', default='movie_db'),
-        'USER': config('DB_USER', default='postgres'),
-        'PASSWORD': config('DB_PASSWORD', default='password'),
-        'HOST': config('DB_HOST', default='localhost'),
-        'PORT': config('DB_PORT', default='5432'),
+        'ENGINE': 'django.db.backends.sqlite3',
+        'NAME': BASE_DIR / 'db.sqlite3',
     }
 }
 
@@ -193,17 +193,22 @@ REDIS_HOST = config('REDIS_HOST', default='localhost')
 REDIS_PORT = config('REDIS_PORT', default=6379, cast=int)
 REDIS_DB = config('REDIS_DB', default=0, cast=int)
 
-# Cache Configuration
+# Cache Configuration - Using local memory cache instead of Redis
 CACHES = {
     'default': {
-        'BACKEND': 'django.core.cache.backends.redis.RedisCache',
-        'LOCATION': f'redis://{REDIS_HOST}:{REDIS_PORT}/{REDIS_DB}',
+        'BACKEND': 'django.core.cache.backends.locmem.LocMemCache',
+        'LOCATION': 'unique-snowflake',
     }
 }
 
 # TMDB API Configuration
 TMDB_API_KEY = config('TMDB_API_KEY', default='your-tmdb-api-key')
+TMDB_READ_TOKEN = config('TMDB_READ_TOKEN', default='')
 TMDB_BASE_URL = 'https://api.themoviedb.org/3'
+
+# Debug: Check if TMDB credentials are loaded
+print(f"Django Settings: TMDB_API_KEY loaded: {'Yes' if TMDB_API_KEY and TMDB_API_KEY != 'your-tmdb-api-key' else 'No'}")
+print(f"Django Settings: TMDB_READ_TOKEN loaded: {'Yes' if TMDB_READ_TOKEN else 'No'}")
 
 # Swagger Settings
 SWAGGER_SETTINGS = {

@@ -4,6 +4,9 @@ from . import views
 app_name = 'movies'
 
 urlpatterns = [
+    # Test endpoint
+    path('test/', views.test_api, name='test_api'),
+    
     # Movies
     path('', views.MovieListView.as_view(), name='movie_list'),
     path('search/', views.SearchView.as_view(), name='search'),
