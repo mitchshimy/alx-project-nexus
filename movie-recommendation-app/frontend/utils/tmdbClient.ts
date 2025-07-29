@@ -204,3 +204,17 @@ export async function searchTVShows(
     },
   });
 }
+
+export async function getTopRatedMovies(
+  page = 1,
+  language = DEFAULT_LANGUAGE,
+  region = DEFAULT_REGION
+): Promise<TMDBResponse<TMDBMovie>> {
+  return fetchTMDB('/movie/top_rated', {
+    params: {
+      page,
+      language,
+      region,
+    },
+  });
+}

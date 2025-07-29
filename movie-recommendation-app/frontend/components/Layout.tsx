@@ -220,7 +220,6 @@ export default function Layout({ children }: LayoutProps) {
                 <ul>
                   <li><a href="/trending">Trending</a></li>
                   <li><a href="/discover">Discover</a></li>
-                  <li><a href="/genres">Genres</a></li>
                   <li><a href="/upcoming">Upcoming</a></li>
                 </ul>
               </FooterSection>
@@ -229,7 +228,6 @@ export default function Layout({ children }: LayoutProps) {
                 <ul>
                   <li><a href="/profile">Profile</a></li>
                   <li><a href="/favorites">Favorites</a></li>
-                  <li><a href="/watchlist">Watchlist</a></li>
                   <li><a href="/settings">Settings</a></li>
                 </ul>
               </FooterSection>
@@ -237,8 +235,6 @@ export default function Layout({ children }: LayoutProps) {
                 <h3>Legal</h3>
                 <ul>
                   <li><a href="/terms">Terms</a></li>
-                  <li><a href="/privacy">Privacy</a></li>
-                  <li><a href="/cookies">Cookies</a></li>
                   <li><a href="/contact">Contact</a></li>
                 </ul>
               </FooterSection>
