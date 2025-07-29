@@ -1,71 +1,71 @@
-type FavoriteMovieIds = number[];
+import { movieAPI } from './api';
 
-const FAVORITES_KEY = 'favoriteMovies';
-
-// Get all favorite movie IDs from localStorage
-export function getFavorites(): FavoriteMovieIds {
-  if (typeof window === 'undefined') return [];
-  
+// Favorites management using backend
+export const getFavorites = async () => {
   try {
-    const favorites = localStorage.getItem(FAVORITES_KEY);
-    return favorites ? JSON.parse(favorites) : [];
+    const response = await movieAPI.getFavorites();
+    return response.results || [];
   } catch (error) {
-    console.error('Error reading favorites:', error);
+    console.error('Error fetching favorites:', error);
     return [];
   }
-}
+};
 
-// Toggle a movie's favorite status
-export function toggleFavorite(movieId: number): void {
-  if (typeof window === 'undefined') return;
-
+export const addToFavorites = async (movieId: number) => {
   try {
-    const favorites = getFavorites();
-    const newFavorites = favorites.includes(movieId)
-      ? favorites.filter(id => id !== movieId)
-      : [...favorites, movieId];
-
-    localStorage.setItem(FAVORITES_KEY, JSON.stringify(newFavorites));
-    window.dispatchEvent(new Event('favorites-changed'));
+    const response = await movieAPI.addToFavorites(movieId);
+    return response;
   } catch (error) {
-    console.error('Error toggling favorite:', error);
+    console.error('Error adding to favorites:', error);
+    throw error;
   }
-}
+};
 
-// Check if a movie is favorited
-export function isFavorite(movieId: number): boolean {
-  if (typeof window === 'undefined') return false;
-  return getFavorites().includes(movieId);
-}
-
-// Add a movie to favorites
-export function addFavorite(movieId: number): void {
-  if (typeof window === 'undefined') return;
-
+export const removeFromFavorites = async (favoriteId: number) => {
   try {
-    const favorites = getFavorites();
-    if (!favorites.includes(movieId)) {
-      const newFavorites = [...favorites, movieId];
-      localStorage.setItem(FAVORITES_KEY, JSON.stringify(newFavorites));
-      window.dispatchEvent(new Event('favorites-changed'));
-    }
+    await movieAPI.removeFromFavorites(favoriteId);
+    return true;
   } catch (error) {
-    console.error('Error adding favorite:', error);
+    console.error('Error removing from favorites:', error);
+    throw error;
   }
-}
+};
 
-// Remove a movie from favorites
-export function removeFavorite(movieId: number): void {
-  if (typeof window === 'undefined') return;
+export const isFavorite = (movie: any, favorites: any[]) => {
+  return favorites.some(fav => fav.movie.tmdb_id === movie.tmdb_id);
+};
 
+// Watchlist management using backend
+export const getWatchlist = async () => {
   try {
-    const favorites = getFavorites();
-    if (favorites.includes(movieId)) {
-      const newFavorites = favorites.filter(id => id !== movieId);
-      localStorage.setItem(FAVORITES_KEY, JSON.stringify(newFavorites));
-      window.dispatchEvent(new Event('favorites-changed'));
-    }
+    const response = await movieAPI.getWatchlist();
+    return response.results || [];
   } catch (error) {
-    console.error('Error removing favorite:', error);
+    console.error('Error fetching watchlist:', error);
+    return [];
   }
-}
+};
+
+export const addToWatchlist = async (movieId: number) => {
+  try {
+    const response = await movieAPI.addToWatchlist(movieId);
+    return response;
+  } catch (error) {
+    console.error('Error adding to watchlist:', error);
+    throw error;
+  }
+};
+
+export const removeFromWatchlist = async (watchlistId: number) => {
+  try {
+    await movieAPI.removeFromWatchlist(watchlistId);
+    return true;
+  } catch (error) {
+    console.error('Error removing from watchlist:', error);
+    throw error;
+  }
+};
+
+export const isInWatchlist = (movie: any, watchlist: any[]) => {
+  return watchlist.some(item => item.movie.tmdb_id === movie.tmdb_id);
+};

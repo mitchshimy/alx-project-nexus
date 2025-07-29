@@ -8,7 +8,7 @@ def api_root(request):
     return Response({
         'message': 'Movie Recommendation API',
         'version': 'v1',
-        'endpoints': {
+        'endpoints': {   
             'users': {
                 'register': '/api/v1/users/register/',
                 'login': '/api/v1/users/login/',
