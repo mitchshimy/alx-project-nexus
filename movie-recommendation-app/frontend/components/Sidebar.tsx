@@ -1,259 +1,344 @@
 // components/Sidebar.tsx
-import styled from 'styled-components';
+import React from 'react';
 import Link from 'next/link';
-import { MdHome, MdMovie, MdLiveTv, MdStar, MdWhatshot, MdFavorite, MdLogin, MdPersonAdd, MdMenu, MdClose } from 'react-icons/md';
+import styled from 'styled-components';
+import { 
+  MdHome, 
+  MdMovie, 
+  MdLiveTv, 
+  MdWhatshot, 
+  MdStar, 
+  MdFavorite, 
+  MdBookmark, 
+  MdLogin, 
+  MdPersonAdd, 
+  MdPerson, 
+  MdSettings, 
+  MdClose 
+} from 'react-icons/md';
 
 interface SidebarProps {
   isOpen: boolean;
   onClose: () => void;
 }
 
-const SidebarContainer = styled.aside<{ isOpen: boolean }>`
-  width: 100%;
-  height: 100vh;
-  background: #111;
-  color: #fff;
-  display: flex;
-  flex-direction: column;
-  padding-top: 80px;
-  
-  @media (max-width: 768px) {
-    padding-top: 70px;
-  }
-  
-  @media (max-width: 480px) {
-    padding-top: 60px;
-  }
-`;
-
-const NavItem = styled(Link)`
-  display: flex;
-  align-items: center;
-  gap: 1rem;
-  padding: 1rem 1.5rem;
-  color: #ccc;
-  text-decoration: none;
-  font-weight: 500;
-  transition: background 0.2s ease;
-
-  svg {
-    min-width: 24px;
-    min-height: 24px;
-  }
-
-  &:hover {
-    background: #222;
-    color: #fff;
-  }
-  
-  @media (max-width: 768px) {
-    padding: 0.8rem 1.2rem;
-    gap: 0.8rem;
-    
-    svg {
-      min-width: 20px;
-      min-height: 20px;
-    }
-  }
-  
-  @media (max-width: 480px) {
-    padding: 0.6rem 1rem;
-    gap: 0.6rem;
-    font-size: 0.9rem;
-    
-    svg {
-      min-width: 18px;
-      min-height: 18px;
-    }
-  }
-`;
-
-const Label = styled.span<{ isOpen: boolean }>`
-  display: ${({ isOpen }) => (isOpen ? 'inline' : 'none')};
-  
-  @media (max-width: 768px) {
-    display: inline;
-  }
-`;
-
 const MobileOverlay = styled.div<{ isOpen: boolean }>`
-  display: none;
   position: fixed;
-  top: 0;
+  top: 80px;
   left: 0;
   right: 0;
   bottom: 0;
-  background: rgba(0, 0, 0, 0.5);
-  z-index: 998;
+  background: rgba(0, 0, 0, 0.7);
+  backdrop-filter: blur(10px);
+  z-index: 1000;
+  opacity: ${props => props.isOpen ? 1 : 0};
+  visibility: ${props => props.isOpen ? 'visible' : 'hidden'};
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
   
   @media (max-width: 768px) {
-    display: ${({ isOpen }) => (isOpen ? 'block' : 'none')};
+    top: 70px;
+  }
+  
+  @media (max-width: 480px) {
+    top: 65px;
+  }
+  
+  @media (min-width: 769px) {
+    display: none;
+  }
+`;
+
+const SidebarContainer = styled.div<{ isOpen: boolean }>`
+  position: fixed;
+  top: 80px;
+  left: 0;
+  height: calc(100vh - 80px);
+  width: ${props => props.isOpen ? '280px' : '80px'};
+  background: rgba(10, 10, 10, 0.95);
+  backdrop-filter: blur(20px);
+  border-right: 1px solid rgba(255, 255, 255, 0.1);
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4);
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  z-index: 1001;
+  overflow: hidden;
+  
+  @media (max-width: 768px) {
+    top: 70px;
+    height: calc(100vh - 70px);
+    width: ${props => props.isOpen ? '280px' : '0px'};
+  }
+  
+  @media (max-width: 480px) {
+    top: 65px;
+    height: calc(100vh - 65px);
+  }
+`;
+
+const NavItem = styled(Link)<{ isActive?: boolean; isOpen?: boolean }>`
+  display: flex;
+  align-items: center;
+  padding: 1rem 1.25rem;
+  color: rgba(255, 255, 255, 0.8);
+  text-decoration: none;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  border-left: 3px solid transparent;
+  position: relative;
+  margin: 0.25rem 0.75rem;
+  border-radius: 12px;
+  
+  svg {
+    color: rgba(255, 255, 255, 0.6);
+    font-size: 1.3rem;
+    margin-right: 1rem;
+    min-width: 1.3rem;
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  }
+
+  &:hover {
+    background: rgba(0, 212, 255, 0.1);
+    color: #00D4FF;
+    border-left-color: #00D4FF;
+    transform: translateX(4px);
+    
+    svg {
+      color: #00D4FF;
+      transform: scale(1.1);
+    }
+  }
+  
+  ${props => props.isActive && `
+    background: rgba(0, 212, 255, 0.15);
+    color: #00D4FF;
+    border-left-color: #00D4FF;
+    
+    svg {
+      color: #00D4FF;
+    }
+  `}
+  
+  ${({ isOpen }) => !isOpen && `
+    svg {
+      font-size: 1.5rem;
+      margin-right: 0;
+      min-width: 1.5rem;
+    }
+    
+    &:hover svg {
+      transform: scale(1.2);
+    }
+  `}
+`;
+
+const Label = styled.span<{ isOpen: boolean }>`
+  opacity: ${props => props.isOpen ? 1 : 0};
+  transition: opacity 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  white-space: nowrap;
+  font-weight: 500;
+  
+  @media (max-width: 768px) {
+    opacity: 1;
+  }
+`;
+
+const HoverTooltip = styled.span<{ isOpen: boolean }>`
+  position: absolute;
+  left: 100%;
+  top: 50%;
+  transform: translateY(-50%);
+  background: rgba(10, 10, 10, 0.95);
+  backdrop-filter: blur(20px);
+  color: #FFFFFF;
+  padding: 0.75rem 1rem;
+  border-radius: 12px;
+  font-size: 0.9rem;
+  font-weight: 500;
+  white-space: nowrap;
+  z-index: 1000;
+  opacity: 0;
+  visibility: hidden;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4);
+  pointer-events: none;
+  margin-left: 1rem;
+  
+  &::before {
+    content: '';
+    position: absolute;
+    right: 100%;
+    top: 50%;
+    transform: translateY(-50%);
+    border: 8px solid transparent;
+    border-right-color: rgba(10, 10, 10, 0.95);
+  }
+`;
+
+const NavItemWrapper = styled.div<{ isOpen: boolean }>`
+  position: relative;
+  
+  &:hover ${HoverTooltip} {
+    opacity: ${({ isOpen }) => !isOpen ? 1 : 0};
+    visibility: ${({ isOpen }) => !isOpen ? 'visible' : 'hidden'};
+    transform: translateY(-50%) translateX(10px);
   }
 `;
 
 const CloseButton = styled.button`
-  display: none;
   position: absolute;
   top: 1rem;
   right: 1rem;
-  background: none;
-  border: none;
-  color: #fff;
-  font-size: 1.5rem;
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 12px;
+  color: rgba(255, 255, 255, 0.8);
   cursor: pointer;
-  padding: 0.5rem;
-  border-radius: 50%;
-  transition: background-color 0.2s ease;
+  font-size: 1.3rem;
+  padding: 0.75rem;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  backdrop-filter: blur(10px);
 
   &:hover {
-    background: rgba(255, 255, 255, 0.1);
+    background: rgba(239, 68, 68, 0.1);
+    border-color: rgba(239, 68, 68, 0.3);
+    color: #EF4444;
+    transform: scale(1.05);
   }
+  
+  @media (min-width: 769px) {
+    display: none;
+  }
+`;
+
+const Divider = styled.div`
+  height: 1px;
+  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.1), transparent);
+  margin: 1rem 1rem;
+  opacity: 0.5;
+`;
+
+const SectionTitle = styled.h3<{ isOpen: boolean }>`
+  color: rgba(255, 255, 255, 0.5);
+  font-size: 0.75rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  margin: 1.5rem 1rem 0.75rem 1rem;
+  display: ${({ isOpen }) => (isOpen ? 'block' : 'none')};
   
   @media (max-width: 768px) {
     display: block;
   }
+`;
+
+const SidebarContent = styled.div`
+  padding: 1rem 0;
+  height: 100%;
+  overflow-y: auto;
   
-  @media (max-width: 480px) {
-    top: 0.8rem;
-    right: 0.8rem;
-    font-size: 1.3rem;
+  &::-webkit-scrollbar {
+    width: 4px;
   }
-`;
-
-// Mobile-specific sidebar
-const MobileSidebar = styled.div<{ isOpen: boolean }>`
-  display: none;
-  position: fixed;
-  top: 0;
-  left: 0;
-  width: 100%;
-  height: 100vh;
-  background: #111;
-  z-index: 999;
-  transform: ${({ isOpen }) => (isOpen ? 'translateX(0)' : 'translateX(-100%)')};
-  transition: transform 0.3s ease;
   
-  @media (max-width: 480px) {
-    display: block;
+  &::-webkit-scrollbar-track {
+    background: transparent;
   }
-`;
-
-const MobileSidebarHeader = styled.div`
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  padding: 1rem;
-  border-bottom: 1px solid #333;
-  background: #0a0a0a;
-`;
-
-const MobileSidebarTitle = styled.h2`
-  color: #fff;
-  margin: 0;
-  font-size: 1.2rem;
-`;
-
-const MobileCloseButton = styled.button`
-  background: none;
-  border: none;
-  color: #fff;
-  font-size: 1.5rem;
-  cursor: pointer;
-  padding: 0.5rem;
-  border-radius: 50%;
-  transition: background-color 0.2s ease;
-
-  &:hover {
+  
+  &::-webkit-scrollbar-thumb {
     background: rgba(255, 255, 255, 0.1);
+    border-radius: 2px;
   }
-`;
-
-const MobileNavItem = styled(Link)`
-  display: flex;
-  align-items: center;
-  gap: 1rem;
-  padding: 1rem;
-  color: #ccc;
-  text-decoration: none;
-  font-weight: 500;
-  transition: background 0.2s ease;
-  border-bottom: 1px solid #222;
-
-  svg {
-    min-width: 20px;
-    min-height: 20px;
+  
+  &::-webkit-scrollbar-thumb:hover {
+    background: rgba(255, 255, 255, 0.2);
   }
-
-  &:hover {
-    background: #222;
-    color: #fff;
-  }
-`;
-
-const MobileNavContainer = styled.div`
-  padding-top: 1rem;
 `;
 
 export default function Sidebar({ isOpen, onClose }: SidebarProps) {
+  const navItems = [
+    { href: "/", icon: <MdHome />, label: "Home" },
+    { href: "/movies", icon: <MdMovie />, label: "Movies" },
+    { href: "/tv", icon: <MdLiveTv />, label: "TV Shows" },
+    { href: "/trending", icon: <MdWhatshot />, label: "Trending" },
+    { href: "/top-imdb", icon: <MdStar />, label: "Top Rated" },
+  ];
+
+  const personalItems = [
+    { href: "/favorites", icon: <MdFavorite />, label: "Favorites" },
+    { href: "/watchlist", icon: <MdBookmark />, label: "Watchlist" },
+  ];
+
+  const accountItems = [
+    { href: "/signin", icon: <MdLogin />, label: "Sign In" },
+    { href: "/signup", icon: <MdPersonAdd />, label: "Sign Up" },
+  ];
+
+  const profileItems = isOpen ? [
+    { href: "/profile", icon: <MdPerson />, label: "Profile" },
+    { href: "/settings", icon: <MdSettings />, label: "Settings" },
+  ] : [];
+
   return (
     <>
-      {/* Desktop Sidebar - Hidden on mobile when minimized */}
       <MobileOverlay isOpen={isOpen} onClick={onClose} />
       <SidebarContainer isOpen={isOpen}>
-        <CloseButton onClick={onClose}>×</CloseButton>
-        <NavItem href="/"><MdHome /><Label isOpen={isOpen}>Home</Label></NavItem>
-        <NavItem href="/movies"><MdMovie /><Label isOpen={isOpen}>Movies</Label></NavItem>
-        <NavItem href="/tv"><MdLiveTv /><Label isOpen={isOpen}>TV Shows</Label></NavItem>
-        <NavItem href="/anime"><MdStar /><Label isOpen={isOpen}>Anime</Label></NavItem>
-        <NavItem href="/kdrama"><MdStar /><Label isOpen={isOpen}>K-Drama</Label></NavItem>
-        <NavItem href="/trending"><MdWhatshot /><Label isOpen={isOpen}>Trending</Label></NavItem>
-        <NavItem href="/top-imdb"><MdStar /><Label isOpen={isOpen}>Top IMDb</Label></NavItem>
-        <NavItem href="/favorites"><MdFavorite /><Label isOpen={isOpen}>Favorites</Label></NavItem>
+        <CloseButton onClick={onClose}>
+          <MdClose />
+        </CloseButton>
+        
+        <SidebarContent>
+          {/* Main Navigation */}
+          {navItems.map((item) => (
+            <NavItemWrapper key={item.href} isOpen={isOpen}>
+              <NavItem href={item.href} isOpen={isOpen}>
+                {item.icon}
+                <Label isOpen={isOpen}>{item.label}</Label>
+              </NavItem>
+              <HoverTooltip isOpen={isOpen}>{item.label}</HoverTooltip>
+            </NavItemWrapper>
+          ))}
+          
+          <Divider />
+          
+          <SectionTitle isOpen={isOpen}>Personal</SectionTitle>
+          
+          {/* Personal Navigation */}
+          {personalItems.map((item) => (
+            <NavItemWrapper key={item.href} isOpen={isOpen}>
+              <NavItem href={item.href} isOpen={isOpen}>
+                {item.icon}
+                <Label isOpen={isOpen}>{item.label}</Label>
+              </NavItem>
+              <HoverTooltip isOpen={isOpen}>{item.label}</HoverTooltip>
+            </NavItemWrapper>
+          ))}
+          
+          <Divider />
+          
+          <SectionTitle isOpen={isOpen}>Account</SectionTitle>
+          
+          {/* Account Navigation */}
+          {accountItems.map((item) => (
+            <NavItemWrapper key={item.href} isOpen={isOpen}>
+              <NavItem href={item.href} isOpen={isOpen}>
+                {item.icon}
+                <Label isOpen={isOpen}>{item.label}</Label>
+              </NavItem>
+              <HoverTooltip isOpen={isOpen}>{item.label}</HoverTooltip>
+            </NavItemWrapper>
+          ))}
+          
+          {/* Profile Navigation (only shown when sidebar is open) */}
+          {profileItems.map((item) => (
+            <NavItemWrapper key={item.href} isOpen={isOpen}>
+              <NavItem href={item.href} isOpen={isOpen}>
+                {item.icon}
+                <Label isOpen={isOpen}>{item.label}</Label>
+              </NavItem>
+              <HoverTooltip isOpen={isOpen}>{item.label}</HoverTooltip>
+            </NavItemWrapper>
+          ))}
+        </SidebarContent>
       </SidebarContainer>
-
-      {/* Mobile Sidebar - Only shows when toggled */}
-      <MobileSidebar isOpen={isOpen}>
-        <MobileSidebarHeader>
-          <MobileSidebarTitle>Menu</MobileSidebarTitle>
-          <MobileCloseButton onClick={onClose}>
-            <MdClose />
-          </MobileCloseButton>
-        </MobileSidebarHeader>
-        <MobileNavContainer>
-          <MobileNavItem href="/" onClick={onClose}>
-            <MdHome />
-            Home
-          </MobileNavItem>
-          <MobileNavItem href="/movies" onClick={onClose}>
-            <MdMovie />
-            Movies
-          </MobileNavItem>
-          <MobileNavItem href="/tv" onClick={onClose}>
-            <MdLiveTv />
-            TV Shows
-          </MobileNavItem>
-          <MobileNavItem href="/anime" onClick={onClose}>
-            <MdStar />
-            Anime
-          </MobileNavItem>
-          <MobileNavItem href="/kdrama" onClick={onClose}>
-            <MdStar />
-            K-Drama
-          </MobileNavItem>
-          <MobileNavItem href="/trending" onClick={onClose}>
-            <MdWhatshot />
-            Trending
-          </MobileNavItem>
-          <MobileNavItem href="/top-imdb" onClick={onClose}>
-            <MdStar />
-            Top IMDb
-          </MobileNavItem>
-          <MobileNavItem href="/favorites" onClick={onClose}>
-            <MdFavorite />
-            Favorites
-          </MobileNavItem>
-        </MobileNavContainer>
-      </MobileSidebar>
     </>
   );
 }

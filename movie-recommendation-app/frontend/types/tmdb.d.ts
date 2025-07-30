@@ -18,6 +18,8 @@ export interface TMDBMovie {
   is_favorite?: boolean;
   is_watchlisted?: boolean;
   user_rating?: number;
+  favorite_id?: number;
+  watchlist_id?: number;
 }
 
 export interface TMDBTVShow {

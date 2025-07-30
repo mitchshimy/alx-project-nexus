@@ -128,13 +128,39 @@ class MovieDetailView(generics.RetrieveAPIView):
         tmdb_service = TMDBService()
         
         try:
-            # Try to get from TMDB first
-            data = tmdb_service.get_movie_details(tmdb_id)
-            movie = tmdb_service.sync_movie_to_db(data)
-            return movie
+            print(f"MovieDetailView: Attempting to get movie with TMDB ID: {tmdb_id}")  # Debug
+            
+            # First try to get from database
+            try:
+                movie = Movie.objects.get(tmdb_id=tmdb_id)
+                print(f"MovieDetailView: Found movie in database: {movie.title}")  # Debug
+                return movie
+            except Movie.DoesNotExist:
+                print(f"MovieDetailView: Movie not found in database, fetching from TMDB")  # Debug
+                
+                # Try to get from TMDB and sync to database
+                try:
+                    data = tmdb_service.get_movie_details(tmdb_id)
+                    print(f"MovieDetailView: Got data from TMDB for movie: {data.get('title', 'Unknown')}")  # Debug
+                    movie = tmdb_service.sync_movie_to_db(data)
+                    if movie:
+                        print(f"MovieDetailView: Successfully synced movie to database: {movie.title}")  # Debug
+                        return movie
+                    else:
+                        print(f"MovieDetailView: Failed to sync movie to database")  # Debug
+                        raise Movie.DoesNotExist()
+                except Exception as e:
+                    print(f"MovieDetailView: Error fetching from TMDB: {str(e)}")  # Debug
+                    raise Movie.DoesNotExist()
+                    
+        except Movie.DoesNotExist:
+            print(f"MovieDetailView: Movie with TMDB ID {tmdb_id} not found")  # Debug
+            from django.http import Http404
+            raise Http404(f"Movie with TMDB ID {tmdb_id} not found")
         except Exception as e:
-            # Fallback to database
-            return Movie.objects.get(tmdb_id=tmdb_id)
+            print(f"MovieDetailView: Unexpected error: {str(e)}")  # Debug
+            from django.http import Http404
+            raise Http404(f"Error retrieving movie: {str(e)}")
     
     def get_serializer_context(self):
         context = super().get_serializer_context()
@@ -227,6 +253,16 @@ class FavoriteDetailView(generics.DestroyAPIView):
         return Favorite.objects.filter(user=self.request.user)
 
 
+class FavoriteRemoveByMovieView(generics.DestroyAPIView):
+    """View for removing favorites by movie ID"""
+    serializer_class = FavoriteSerializer
+    permission_classes = [permissions.IsAuthenticated]
+    
+    def get_object(self):
+        movie_id = self.kwargs.get('movie_id')
+        return Favorite.objects.get(user=self.request.user, movie__tmdb_id=movie_id)
+
+
 class WatchlistListView(generics.ListCreateAPIView):
     """View for user watchlist"""
     serializer_class = WatchlistSerializer
@@ -246,6 +282,16 @@ class WatchlistDetailView(generics.DestroyAPIView):
     
     def get_queryset(self):
         return Watchlist.objects.filter(user=self.request.user)
+
+
+class WatchlistRemoveByMovieView(generics.DestroyAPIView):
+    """View for removing from watchlist by movie ID"""
+    serializer_class = WatchlistSerializer
+    permission_classes = [permissions.IsAuthenticated]
+    
+    def get_object(self):
+        movie_id = self.kwargs.get('movie_id')
+        return Watchlist.objects.get(user=self.request.user, movie__tmdb_id=movie_id)
 
 
 class MovieRatingView(generics.CreateAPIView, generics.UpdateAPIView):

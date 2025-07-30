@@ -29,8 +29,29 @@ export default class MyDocument extends Document {
 
   render() {
     return (
-      <Html>
-        <Head />
+      <Html lang="en">
+        <Head>
+          <script
+            dangerouslySetInnerHTML={{
+              __html: `
+                // Handle MetaMask connection attempts gracefully
+                if (typeof window !== 'undefined' && window.ethereum) {
+                  // Prevent MetaMask from auto-connecting
+                  window.ethereum.autoRefreshOnNetworkChange = false;
+                  
+                  // Handle connection requests
+                  window.ethereum.on('connect', () => {
+                    console.log('MetaMask connected (but not used in this app)');
+                  });
+                  
+                  window.ethereum.on('disconnect', () => {
+                    console.log('MetaMask disconnected');
+                  });
+                }
+              `,
+            }}
+          />
+        </Head>
         <body>
           <Main />
           <NextScript />

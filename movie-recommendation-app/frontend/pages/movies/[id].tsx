@@ -3,16 +3,19 @@ import { useEffect, useState } from 'react';
 import styled from 'styled-components';
 import { SkeletonPoster, SkeletonTitle, SkeletonText } from '@/components/Skeleton';
 import { TMDBMovie, TMDBCast } from '@/types/tmdb';
-import { isFavorite, addFavorite, removeFavorite } from '@/utils/favorites';
+import { movieAPI } from '@/utils/api';
 
 const Container = styled.div`
   max-width: 800px;
   margin: 40px auto;
-  background: ${({ theme }) => theme.colors.card};
+  background: rgba(26, 26, 26, 0.95);
+  backdrop-filter: blur(20px);
+  border: 1px solid rgba(255, 255, 255, 0.1);
   border-radius: 16px;
-  box-shadow: 0 2px 12px rgba(0,0,0,0.08);
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4);
   padding: 32px;
   position: relative;
+  color: #FFFFFF;
 
   @media (max-width: 600px) {
     padding: 24px;
@@ -53,7 +56,16 @@ const MovieInfo = styled.div`
 const Title = styled.h1`
   font-size: 2rem;
   margin-bottom: 16px;
-  color: ${({ theme }) => theme.colors.text};
+  color: #FFFFFF;
+  text-shadow: 0 2px 8px rgba(0, 0, 0, 0.8);
+  
+  @media (max-width: 768px) {
+    font-size: 1.5rem;
+  }
+  
+  @media (max-width: 480px) {
+    font-size: 1.3rem;
+  }
 `;
 
 const Metadata = styled.div`
@@ -61,6 +73,14 @@ const Metadata = styled.div`
   gap: 16px;
   margin-bottom: 16px;
   flex-wrap: wrap;
+  
+  @media (max-width: 768px) {
+    gap: 12px;
+  }
+  
+  @media (max-width: 480px) {
+    gap: 8px;
+  }
 `;
 
 const MetadataItem = styled.div`
@@ -68,24 +88,45 @@ const MetadataItem = styled.div`
   align-items: center;
   gap: 4px;
   font-size: 0.9rem;
-  color: #666;
+  color: rgba(255, 255, 255, 0.8);
 
   & > strong {
-    color: ${({ theme }) => theme.colors.text};
+    color: #FFFFFF;
+  }
+  
+  @media (max-width: 480px) {
+    font-size: 0.8rem;
   }
 `;
 
 const Overview = styled.p`
   font-size: 1.1rem;
   line-height: 1.6;
-  color: #444;
+  color: rgba(255, 255, 255, 0.9);
   margin-bottom: 24px;
+  
+  @media (max-width: 768px) {
+    font-size: 1rem;
+  }
+  
+  @media (max-width: 480px) {
+    font-size: 0.9rem;
+  }
 `;
 
 const ActionButtons = styled.div`
   display: flex;
   gap: 16px;
   margin-top: 32px;
+  
+  @media (max-width: 768px) {
+    gap: 12px;
+  }
+  
+  @media (max-width: 480px) {
+    gap: 8px;
+    flex-direction: column;
+  }
 `;
 
 const Button = styled.button`
@@ -98,25 +139,42 @@ const Button = styled.button`
   display: inline-flex;
   align-items: center;
   gap: 8px;
+  min-height: 44px; // Better touch target
+  
+  @media (max-width: 768px) {
+    padding: 8px 20px;
+    font-size: 0.9rem;
+  }
+  
+  @media (max-width: 480px) {
+    padding: 6px 16px;
+    font-size: 0.8rem;
+  }
 `;
 
 const BackButton = styled(Button)`
-  background: ${({ theme }) => theme.colors.primary};
-  color: #fff;
+  background: linear-gradient(135deg, #00D4FF 0%, #0099CC 100%);
+  color: #000000;
+  box-shadow: 0 4px 16px rgba(0, 212, 255, 0.3);
 
   &:hover {
-    background: ${({ theme }) => theme.colors.secondary};
+    background: linear-gradient(135deg, #0099CC 0%, #00D4FF 100%);
+    transform: translateY(-2px);
+    box-shadow: 0 8px 32px rgba(0, 212, 255, 0.4);
   }
 `;
 
 const FavoriteButton = styled(Button)<{ $isFavorite: boolean }>`
-  background: ${({ $isFavorite, theme }) => 
-    $isFavorite ? '#e0245e' : theme.colors.background};
-  color: ${({ $isFavorite }) => $isFavorite ? '#fff' : '#333'};
-  border: 1px solid ${({ $isFavorite }) => $isFavorite ? 'transparent' : '#ccc'};
+  background: ${({ $isFavorite }) => 
+    $isFavorite ? 'linear-gradient(135deg, #FF6B35 0%, #FF4500 100%)' : 'rgba(255, 255, 255, 0.1)'};
+  color: ${({ $isFavorite }) => $isFavorite ? '#FFFFFF' : '#FFFFFF'};
+  border: 1px solid ${({ $isFavorite }) => $isFavorite ? 'transparent' : 'rgba(255, 255, 255, 0.2)'};
+  backdrop-filter: blur(20px);
 
   &:hover {
-    background: ${({ $isFavorite }) => $isFavorite ? '#c41c50' : '#f0f0f0'};
+    background: ${({ $isFavorite }) => $isFavorite ? 'linear-gradient(135deg, #FF4500 0%, #FF6B35 100%)' : 'rgba(0, 212, 255, 0.15)'};
+    border-color: ${({ $isFavorite }) => $isFavorite ? 'transparent' : 'rgba(0, 212, 255, 0.4)'};
+    transform: translateY(-2px);
   }
 `;
 
@@ -127,7 +185,16 @@ const SimilarMoviesSection = styled.div`
 const SimilarMoviesTitle = styled.h2`
   font-size: 1.5rem;
   margin-bottom: 16px;
-  color: ${({ theme }) => theme.colors.text};
+  color: #FFFFFF;
+  text-shadow: 0 2px 8px rgba(0, 0, 0, 0.8);
+  
+  @media (max-width: 768px) {
+    font-size: 1.3rem;
+  }
+  
+  @media (max-width: 480px) {
+    font-size: 1.1rem;
+  }
 `;
 
 const SimilarMoviesGrid = styled.div`
@@ -135,6 +202,16 @@ const SimilarMoviesGrid = styled.div`
   grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
   gap: 16px;
   margin-top: 16px;
+  
+  @media (max-width: 768px) {
+    grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
+    gap: 12px;
+  }
+  
+  @media (max-width: 480px) {
+    grid-template-columns: repeat(auto-fill, minmax(100px, 1fr));
+    gap: 8px;
+  }
 `;
 
 const SimilarMovie = styled.div`
@@ -163,12 +240,24 @@ const CastGrid = styled.div`
   gap: 16px;
   overflow-x: auto;
   padding-bottom: 8px;
+  
+  @media (max-width: 768px) {
+    gap: 12px;
+  }
+  
+  @media (max-width: 480px) {
+    gap: 8px;
+  }
 `;
 
 const CastCard = styled.div`
   flex: 0 0 auto;
   width: 100px;
   text-align: center;
+  
+  @media (max-width: 480px) {
+    width: 80px;
+  }
 `;
 
 const CastImage = styled.img`
@@ -181,8 +270,12 @@ const CastImage = styled.img`
 
 const CastName = styled.p`
   font-size: 0.85rem;
-  color: ${({ theme }) => theme.colors.text};
+  color: rgba(255, 255, 255, 0.9);
   margin: 0;
+  
+  @media (max-width: 480px) {
+    font-size: 0.75rem;
+  }
 `;
 
 export default function MovieDetailPage() {
@@ -197,7 +290,8 @@ export default function MovieDetailPage() {
 
   useEffect(() => {
     if (!id) return;
-      // Reset state when ID changes
+    
+    // Reset state when ID changes
     setMovie(null);
     setSimilarMovies([]);
     setCast([]);
@@ -207,26 +301,34 @@ export default function MovieDetailPage() {
     const fetchData = async () => {
       try {
         setLoading(true);
-        const [movieRes, similarRes] = await Promise.all([
-          fetch(`/api/movie/${id}`),
-          fetch(`/api/movie/${id}/similar`)
-        ]);
-
-        if (!movieRes.ok) throw new Error('Failed to fetch movie details');
-        const movieData = await movieRes.json();
+        console.log(`Fetching movie details for ID: ${id}`); // Debug
+        
+        // Fetch movie details from our backend API
+        const movieData = await movieAPI.getMovieDetails(Number(id));
+        console.log('Movie data received:', movieData); // Debug
         setMovie(movieData);
-        setIsFavoriteMovie(isFavorite(movieData.id));
+        
+        // Check if movie is in favorites
+        if (movieData.is_favorite) {
+          setIsFavoriteMovie(true);
+        }
 
+        // Set cast if available
         if (movieData.credits?.cast) {
           setCast(movieData.credits.cast.slice(0, 10)); // Top 10 cast
         }
 
-        if (similarRes.ok) {
-          const similarData = await similarRes.json();
-          setSimilarMovies(similarData.results.slice(0, 6));
-        }
-      } catch (err) {
-        setError(err instanceof Error ? err.message : 'Unknown error');
+        // For now, we'll skip similar movies since we don't have that endpoint yet
+        // TODO: Add similar movies endpoint to backend
+        
+      } catch (err: any) {
+        console.error('Error fetching movie details:', err);
+        console.error('Error details:', {
+          message: err.message,
+          stack: err.stack,
+          id: id
+        }); // Debug
+        setError(err.message || 'Failed to fetch movie details');
       } finally {
         setLoading(false);
       }
@@ -242,14 +344,32 @@ export default function MovieDetailPage() {
     });
   };
 
-  const formatRating = (rating: number) => rating ? `${rating.toFixed(1)}/10` : 'Not rated';
+  const formatRating = (rating: number | null) => {
+    if (rating === null || rating === undefined) return 'Not rated';
+    return `${rating.toFixed(1)}/10`;
+  };
 
-  const handleFavorite = () => {
+  const handleFavorite = async () => {
     if (!movie) return;
-    const newFavorite = !isFavoriteMovie;
-    setIsFavoriteMovie(newFavorite);
-    newFavorite ? addFavorite(movie.id) : removeFavorite(movie.id);
-    window.dispatchEvent(new Event('favorites-changed'));
+    
+    try {
+      if (isFavoriteMovie) {
+        // Remove from favorites
+        if (movie.favorite_id) {
+          await movieAPI.removeFromFavorites(movie.favorite_id);
+        } else {
+          await movieAPI.removeFromFavoritesByMovie(movie.tmdb_id);
+        }
+        setIsFavoriteMovie(false);
+      } else {
+        // Add to favorites
+        await movieAPI.addToFavorites(movie.tmdb_id);
+        setIsFavoriteMovie(true);
+      }
+    } catch (error) {
+      console.error('Error toggling favorite:', error);
+      alert('Failed to update favorites');
+    }
   };
 
   if (loading) {
@@ -268,11 +388,11 @@ export default function MovieDetailPage() {
     );
   }
 
-  if (!movie) {
+  if (error || !movie) {
     return (
       <Container>
         <Title>Movie Not Found</Title>
-        <p>We couldn't find that movie.</p>
+        <p>{error || 'We couldn\'t find that movie.'}</p>
         <BackButton onClick={() => router.back()}>Go Back</BackButton>
       </Container>
     );
@@ -327,32 +447,22 @@ export default function MovieDetailPage() {
         <SimilarMoviesSection>
           <SimilarMoviesTitle>Similar Movies</SimilarMoviesTitle>
           <SimilarMoviesGrid>
-            {loading
-              ? Array.from({ length: 6 }).map((_, index) => (
-                  <SimilarMovie key={index}>
-                    <SimilarPoster
-                      src="/no-poster.png"
-                      alt="Loading"
-                      style={{ opacity: 0.3 }}
-                    />
-                  </SimilarMovie>
-                ))
-              : similarMovies.map((similar) => (
-                  <SimilarMovie
-                    key={similar.id}
-                    onClick={() => router.push(`/movies/${similar.id}`)}
-                  >
-                    <SimilarPoster
-                      src={
-                        similar.poster_path
-                          ? `https://image.tmdb.org/t/p/w300${similar.poster_path}`
-                          : '/no-poster.png'
-                      }
-                      alt={similar.title}
-                    />
-                  </SimilarMovie>
-                ))}
-  </SimilarMoviesGrid>
+            {similarMovies.map((similar) => (
+              <SimilarMovie
+                key={similar.id}
+                onClick={() => router.push(`/movies/${similar.id}`)}
+              >
+                <SimilarPoster
+                  src={
+                    similar.poster_path
+                      ? `https://image.tmdb.org/t/p/w300${similar.poster_path}`
+                      : '/no-poster.png'
+                  }
+                  alt={similar.title}
+                />
+              </SimilarMovie>
+            ))}
+          </SimilarMoviesGrid>
         </SimilarMoviesSection>
       )}
     </Container>

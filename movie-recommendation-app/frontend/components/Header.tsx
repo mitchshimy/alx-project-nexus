@@ -9,10 +9,8 @@ const HeaderContainer = styled.div`
   top: 0;
   left: 0;
   right: 0;
-  height: 70px;
-  background: rgba(255, 255, 255, 0.95);
-  backdrop-filter: blur(10px);
-  border-bottom: 1px solid #e1e5e9;
+  height: 80px;
+  background: transparent;
   z-index: 1000;
   display: flex;
   align-items: center;
@@ -21,20 +19,48 @@ const HeaderContainer = styled.div`
   
   @media (max-width: 768px) {
     padding: 0 1rem;
-    height: 60px;
+    height: 70px;
   }
   
   @media (max-width: 480px) {
     padding: 0 0.5rem;
-    height: 55px;
+    height: 65px;
   }
+`;
+
+// Shadow overlay that creates the emerging effect
+const HeaderShadowOverlay = styled.div`
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 80px; // Match header height exactly
+  background: linear-gradient(180deg, rgba(10, 10, 10, 0.95) 0%, rgba(10, 10, 10, 0.8) 50%, rgba(10, 10, 10, 0.3) 100%);
+  z-index: 999;
+  pointer-events: none;
+  
+  @media (max-width: 768px) {
+    height: 70px; // Match header height exactly
+  }
+  
+  @media (max-width: 480px) {
+    height: 65px; // Match header height exactly
+  }
+`;
+
+const HeaderContent = styled.div`
+  position: relative;
+  z-index: 1001;
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
 `;
 
 const LeftSection = styled.div`
   display: flex;
   align-items: center;
-  gap: 1.5rem;
-  padding-left: 0;
+  gap: 2rem;
   
   @media (max-width: 768px) {
     gap: 1rem;
@@ -45,134 +71,15 @@ const LeftSection = styled.div`
   }
 `;
 
-const Hamburger = styled.button`
-  background: none;
-  border: none;
-  font-size: 1.5rem;
-  cursor: pointer;
-  padding: 0;
-  color: #333;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  width: 40px;
-  height: 40px;
-  border-radius: 50%;
-  transition: background-color 0.2s ease;
-
-  &:hover {
-    background-color: rgba(0, 0, 0, 0.05);
-  }
-  
-  @media (max-width: 480px) {
-    width: 35px;
-    height: 35px;
-    font-size: 1.3rem;
-  }
-`;
-
-const AppTitle = styled.h1`
-  font-size: 1.5rem;
-  font-weight: 700;
-  color: #333;
-  margin: 0;
-  
-  @media (max-width: 768px) {
-    font-size: 1.3rem;
-  }
-  
-  @media (max-width: 480px) {
-    font-size: 1.1rem;
-  }
-`;
-
-const AppTitleLink = styled(Link)`
-  text-decoration: none;
-  color: inherit;
-  
-  &:hover {
-    opacity: 0.8;
-  }
-`;
-
-const AppTitleSpan = styled.span`
-  color: #667eea;
-`;
-
 const CenterSection = styled.div`
   flex: 1;
   display: flex;
   justify-content: center;
-  max-width: 500px;
+  max-width: 600px;
   margin: 0 2rem;
   
   @media (max-width: 768px) {
-    margin: 0 1rem;
-    max-width: 300px;
-  }
-  
-  @media (max-width: 480px) {
     display: none;
-  }
-`;
-
-const SearchForm = styled.form`
-  display: flex;
-  width: 100%;
-  position: relative;
-`;
-
-const SearchInput = styled.input`
-  width: 100%;
-  padding: 12px 16px;
-  border: 2px solid #e1e5e9;
-  border-radius: 25px;
-  font-size: 16px;
-  outline: none;
-  transition: border-color 0.3s ease;
-
-  &:focus {
-    border-color: #667eea;
-  }
-  
-  @media (max-width: 768px) {
-    padding: 10px 14px;
-    font-size: 14px;
-  }
-  
-  @media (max-width: 480px) {
-    padding: 8px 12px;
-    font-size: 13px;
-  }
-`;
-
-const SearchButton = styled.button`
-  position: absolute;
-  right: 8px;
-  top: 50%;
-  transform: translateY(-50%);
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-  color: white;
-  border: none;
-  padding: 8px 16px;
-  border-radius: 20px;
-  font-size: 14px;
-  font-weight: 600;
-  cursor: pointer;
-  transition: transform 0.2s ease;
-
-  &:hover {
-    transform: translateY(-50%) scale(1.05);
-  }
-  
-  @media (max-width: 768px) {
-    padding: 6px 12px;
-    font-size: 12px;
-  }
-  
-  @media (max-width: 480px) {
-    padding: 5px 10px;
-    font-size: 11px;
   }
 `;
 
@@ -184,225 +91,297 @@ const RightSection = styled.div`
   @media (max-width: 768px) {
     gap: 0.5rem;
   }
-  
-  @media (max-width: 480px) {
-    gap: 0.3rem;
-  }
 `;
 
-const NavLink = styled(Link)`
-  color: #333;
-  text-decoration: none;
-  font-weight: 500;
-  padding: 8px 16px;
-  border-radius: 20px;
-  transition: all 0.3s ease;
-
-  &:hover {
-    background: rgba(102, 126, 234, 0.1);
-    color: #667eea;
-  }
-  
-  @media (max-width: 768px) {
-    padding: 6px 12px;
-    font-size: 14px;
-  }
-  
-  @media (max-width: 480px) {
-    display: none;
-  }
-`;
-
-const AuthButton = styled.button`
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-  color: white;
-  border: none;
-  padding: 8px 16px;
-  border-radius: 20px;
-  font-size: 14px;
-  font-weight: 600;
+const Hamburger = styled.button`
+  background: rgba(255, 255, 255, 0.1);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  border-radius: 12px;
+  font-size: 1.2rem;
   cursor: pointer;
-  transition: transform 0.2s ease;
-
-  &:hover {
-    transform: scale(1.05);
-  }
-  
-  @media (max-width: 768px) {
-    padding: 6px 12px;
-    font-size: 13px;
-  }
-  
-  @media (max-width: 480px) {
-    display: none;
-  }
-`;
-
-const UserMenu = styled.div`
-  position: relative;
+  padding: 0.75rem;
+  color: #FFFFFF;
   display: flex;
   align-items: center;
-  gap: 0.5rem;
+  justify-content: center;
+  width: 44px;
+  height: 44px;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  backdrop-filter: blur(20px);
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.3);
+
+  &:hover {
+    background: rgba(0, 212, 255, 0.15);
+    border-color: rgba(0, 212, 255, 0.4);
+    color: #00D4FF;
+    transform: translateY(-1px);
+    box-shadow: 0 8px 32px rgba(0, 212, 255, 0.3);
+  }
   
   @media (max-width: 480px) {
-    gap: 0.3rem;
+    width: 40px;
+    height: 40px;
+    font-size: 1rem;
   }
 `;
 
-const UserInfo = styled.div`
+const AppTitle = styled.h1`
+  font-size: 1.8rem;
+  font-weight: 800;
+  margin: 0;
+  background: linear-gradient(135deg, #FFFFFF 0%, #00D4FF 50%, #FFFFFF 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  letter-spacing: -0.02em;
+  text-transform: uppercase;
+  text-shadow: 0 2px 8px rgba(0, 0, 0, 0.5);
+  
+  @media (max-width: 768px) {
+    font-size: 1.5rem;
+  }
+  
+  @media (max-width: 480px) {
+    font-size: 1.3rem;
+  }
+`;
+
+const AppTitleSpan = styled.span`
+  background: linear-gradient(135deg, #FF6B35 0%, #FF4500 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+`;
+
+const AppTitleLink = styled(Link)`
+  text-decoration: none;
+  color: inherit;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  
+  &:hover {
+    transform: scale(1.02);
+    filter: brightness(1.1);
+  }
+`;
+
+const SearchForm = styled.form`
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  width: 100%;
+  max-width: 450px;
+`;
+
+const SearchInput = styled.input`
+  flex: 1;
+  padding: 0.875rem 1.25rem;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  border-radius: 12px;
+  background: rgba(255, 255, 255, 0.1);
+  color: #FFFFFF;
+  font-size: 1rem;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  backdrop-filter: blur(20px);
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.3);
+  
+  &::placeholder {
+    color: rgba(255, 255, 255, 0.6);
+  }
+  
+  &:focus {
+    outline: none;
+    border-color: rgba(0, 212, 255, 0.6);
+    background: rgba(255, 255, 255, 0.15);
+    box-shadow: 0 0 0 3px rgba(0, 212, 255, 0.2);
+  }
+`;
+
+const SearchButton = styled.button`
+  padding: 0.875rem 1.5rem;
+  background: linear-gradient(135deg, #00D4FF 0%, #0099CC 100%);
+  border: none;
+  border-radius: 12px;
+  color: #000000;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  box-shadow: 0 4px 16px rgba(0, 212, 255, 0.3);
+
+  &:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 8px 32px rgba(0, 212, 255, 0.4);
+  }
+`;
+
+const AuthButton = styled(Link)`
+  padding: 0.75rem 1.5rem;
+  background: rgba(255, 255, 255, 0.1);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  border-radius: 12px;
+  color: #FFFFFF;
+  text-decoration: none;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  backdrop-filter: blur(20px);
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.3);
+
+  &:hover {
+    background: rgba(0, 212, 255, 0.15);
+    border-color: rgba(0, 212, 255, 0.4);
+    color: #00D4FF;
+    transform: translateY(-2px);
+    box-shadow: 0 8px 32px rgba(0, 212, 255, 0.3);
+  }
+  
+  @media (max-width: 768px) {
+    display: none;
+  }
+`;
+
+const PrimaryAuthButton = styled(Link)`
+  padding: 0.75rem 1.5rem;
+  background: linear-gradient(135deg, #FF6B35 0%, #FF4500 100%);
+  border: none;
+  border-radius: 12px;
+  color: #FFFFFF;
+  text-decoration: none;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  box-shadow: 0 4px 16px rgba(255, 107, 53, 0.3);
+
+  &:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 8px 32px rgba(255, 107, 53, 0.4);
+  }
+  
+  @media (max-width: 768px) {
+    display: none;
+  }
+`;
+
+const UserSection = styled.div`
   display: flex;
   flex-direction: column;
   align-items: flex-end;
+  color: #FFFFFF;
+  font-weight: 600;
   
-  @media (max-width: 480px) {
+  span:first-child {
+    font-size: 0.9rem;
+    color: #FFFFFF;
+  }
+  
+  span:last-child {
+    font-size: 0.8rem;
+    color: rgba(255, 255, 255, 0.6);
+  }
+  
+  @media (max-width: 768px) {
     display: none;
   }
 `;
 
-const UserName = styled.span`
-  font-weight: 600;
-  color: #333;
-  font-size: 14px;
-`;
-
-const UserEmail = styled.span`
-  color: #666;
-  font-size: 12px;
-`;
-
 const LogoutButton = styled.button`
-  background: #e74c3c;
-  color: white;
-  border: none;
-  padding: 6px 12px;
-  border-radius: 15px;
-  font-size: 12px;
+  padding: 0.625rem 1.25rem;
+  background: rgba(255, 255, 255, 0.1);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  border-radius: 12px;
+  color: #FFFFFF;
   font-weight: 600;
   cursor: pointer;
-  transition: background-color 0.2s ease;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  backdrop-filter: blur(20px);
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.3);
 
   &:hover {
-    background: #c0392b;
+    background: rgba(239, 68, 68, 0.15);
+    border-color: rgba(239, 68, 68, 0.4);
+    color: #EF4444;
   }
   
-  @media (max-width: 480px) {
-    padding: 5px 8px;
-    font-size: 11px;
-  }
-`;
-
-// Mobile-specific components
-const MobileMenuButton = styled.button`
-  background: none;
-  border: none;
-  font-size: 1.2rem;
-  cursor: pointer;
-  padding: 8px;
-  color: #333;
-  border-radius: 50%;
-  transition: background-color 0.2s ease;
+  @media (max-width: 768px) {
   display: none;
-  
-  @media (max-width: 480px) {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-  }
-
-  &:hover {
-    background-color: rgba(0, 0, 0, 0.05);
   }
 `;
 
 const SearchIcon = styled.button`
-  background: none;
-  border: none;
+  background: rgba(255, 255, 255, 0.1);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  border-radius: 12px;
   font-size: 1.2rem;
   cursor: pointer;
-  padding: 8px;
-  color: #333;
-  border-radius: 50%;
-  transition: background-color 0.2s ease;
+  padding: 0.75rem;
+  color: #FFFFFF;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
   display: none;
-  
-  @media (max-width: 480px) {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-  }
+  backdrop-filter: blur(20px);
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.3);
 
   &:hover {
-    background-color: rgba(0, 0, 0, 0.05);
+    background: rgba(0, 212, 255, 0.15);
+    border-color: rgba(0, 212, 255, 0.4);
+    color: #00D4FF;
+    transform: translateY(-1px);
+    box-shadow: 0 8px 32px rgba(0, 212, 255, 0.3);
+  }
+  
+  @media (max-width: 768px) {
+    display: block;
   }
 `;
 
 const AccountIcon = styled(Link)`
-  background: none;
-  border: none;
-  font-size: 1.3rem;
+  background: rgba(255, 255, 255, 0.1);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  border-radius: 12px;
+  font-size: 1.2rem;
   cursor: pointer;
-  padding: 8px;
-  color: #333;
-  border-radius: 50%;
-  transition: background-color 0.2s ease;
+  padding: 0.75rem;
+  color: #FFFFFF;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  text-decoration: none;
   display: none;
-  text-decoration: none;
+  backdrop-filter: blur(20px);
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.3);
+
+  &:hover {
+    background: rgba(0, 212, 255, 0.15);
+    border-color: rgba(0, 212, 255, 0.4);
+    color: #00D4FF;
+    transform: translateY(-1px);
+    box-shadow: 0 8px 32px rgba(0, 212, 255, 0.3);
+  }
   
-  @media (max-width: 480px) {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-  }
-
-  &:hover {
-    background-color: rgba(0, 0, 0, 0.05);
+  @media (max-width: 768px) {
+    display: block;
   }
 `;
 
-const MobileAuthButton = styled.button`
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-  color: white;
-  border: none;
-  padding: 6px 10px;
-  border-radius: 15px;
-  font-size: 11px;
-  font-weight: 600;
+const MobileMenuButton = styled.button`
+  background: rgba(255, 255, 255, 0.1);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  border-radius: 12px;
+  font-size: 1.2rem;
   cursor: pointer;
-  transition: transform 0.2s ease;
+  padding: 0.75rem;
+  color: #FFFFFF;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  display: none;
+  backdrop-filter: blur(20px);
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.3);
 
   &:hover {
-    transform: scale(1.05);
+    background: rgba(0, 212, 255, 0.15);
+    border-color: rgba(0, 212, 255, 0.4);
+    color: #00D4FF;
+    transform: translateY(-1px);
+    box-shadow: 0 8px 32px rgba(0, 212, 255, 0.3);
   }
-`;
-
-const MobileNavLink = styled(Link)`
-  color: #333;
-  text-decoration: none;
-  font-weight: 500;
-  padding: 6px 10px;
-  border-radius: 15px;
-  font-size: 11px;
-  transition: all 0.3s ease;
-
-  &:hover {
-    background: rgba(102, 126, 234, 0.1);
-    color: #667eea;
-  }
-`;
-
-const MobileLogoutButton = styled.button`
-  background: #e74c3c;
-  color: white;
-  border: none;
-  padding: 6px 10px;
-  border-radius: 15px;
-  font-size: 11px;
-  font-weight: 600;
-  cursor: pointer;
-  transition: background-color 0.2s ease;
-
-  &:hover {
-    background: #c0392b;
+  
+  @media (max-width: 768px) {
+    display: block;
   }
 `;
 
@@ -418,6 +397,7 @@ export default function Header({ isSidebarOpen, toggleSidebar }: HeaderProps) {
   const [user, setUser] = useState<any>(null);
   const [showMobileMenu, setShowMobileMenu] = useState(false);
 
+  // Check authentication status
   const checkAuthStatus = () => {
     const token = getAuthToken();
     if (token) {
@@ -432,17 +412,42 @@ export default function Header({ isSidebarOpen, toggleSidebar }: HeaderProps) {
   useEffect(() => {
     // Check authentication status on component mount
     checkAuthStatus();
-  }, []);
-
-  // Listen for storage changes (when login/logout happens in other tabs)
-  useEffect(() => {
+    
+    // Listen for storage changes (when token is set/removed)
     const handleStorageChange = () => {
       checkAuthStatus();
     };
-
+    
+    // Listen for custom auth state change event
+    const handleAuthStateChange = () => {
+      checkAuthStatus();
+    };
+    
     window.addEventListener('storage', handleStorageChange);
-    return () => window.removeEventListener('storage', handleStorageChange);
-  }, []);
+    window.addEventListener('authStateChanged', handleAuthStateChange);
+    
+    // Also check on route changes
+    const handleRouteChange = () => {
+      // Force a small delay to ensure token is set
+      setTimeout(() => {
+        checkAuthStatus();
+      }, 100);
+    };
+    
+    router.events.on('routeChangeComplete', handleRouteChange);
+    
+    // Check again after a short delay to catch any delayed token setting
+    const timeoutId = setTimeout(() => {
+      checkAuthStatus();
+    }, 500);
+    
+    return () => {
+      window.removeEventListener('storage', handleStorageChange);
+      window.removeEventListener('authStateChanged', handleAuthStateChange);
+      router.events.off('routeChangeComplete', handleRouteChange);
+      clearTimeout(timeoutId);
+    };
+  }, [router]);
 
   const fetchUserProfile = async () => {
     try {
@@ -460,7 +465,8 @@ export default function Header({ isSidebarOpen, toggleSidebar }: HeaderProps) {
   const handleSearch = (e: React.FormEvent) => {
     e.preventDefault();
     if (searchTerm.trim()) {
-      router.push(`/trending?search=${encodeURIComponent(searchTerm.trim())}`);
+      router.push(`/search?q=${encodeURIComponent(searchTerm.trim())}`);
+      setSearchTerm(''); // Clear the search input after submitting
     }
   };
 
@@ -473,65 +479,64 @@ export default function Header({ isSidebarOpen, toggleSidebar }: HeaderProps) {
 
   const handleSearchIconClick = () => {
     // For mobile, you could show a search modal or navigate to search page
-    router.push('/trending?search=');
+    router.push('/search');
   };
 
   return (
     <HeaderContainer>
-      <LeftSection>
-        <Hamburger onClick={toggleSidebar}>
-          ☰
-        </Hamburger>
-        <AppTitleLink href="/">
-          <AppTitle>
-            Shimy<AppTitleSpan>Movies</AppTitleSpan>
-          </AppTitle>
-        </AppTitleLink>
-      </LeftSection>
+      <HeaderShadowOverlay />
+      <HeaderContent>
+        <LeftSection>
+          <Hamburger onClick={toggleSidebar}>
+            ☰
+          </Hamburger>
+          <AppTitleLink href="/">
+            <AppTitle>
+              Shimy<AppTitleSpan>Movies</AppTitleSpan>
+            </AppTitle>
+          </AppTitleLink>
+        </LeftSection>
 
-      <CenterSection>
-        <SearchForm onSubmit={handleSearch}>
-          <SearchInput
-            type="text"
-            placeholder="Search movies, TV shows..."
-            value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
-          />
-          <SearchButton type="submit">Search</SearchButton>
-        </SearchForm>
-      </CenterSection>
+        <CenterSection>
+          <SearchForm onSubmit={handleSearch}>
+            <SearchInput
+              type="text"
+              placeholder="Search movies, TV shows..."
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+            />
+            <SearchButton type="submit">Search</SearchButton>
+          </SearchForm>
+        </CenterSection>
 
-      <RightSection>
-        {isAuthenticated ? (
-          <>
-            <UserMenu>
-              <UserInfo>
-                <UserName>{user?.first_name || user?.username || 'User'}</UserName>
-                <UserEmail>{user?.email}</UserEmail>
-              </UserInfo>
-              <LogoutButton onClick={handleLogout}>
-                Logout
-              </LogoutButton>
-            </UserMenu>
-            <MobileMenuButton onClick={() => setShowMobileMenu(!showMobileMenu)}>
-              ⋯
-            </MobileMenuButton>
-          </>
-        ) : (
-          <>
-            <NavLink href="/signin">Sign In</NavLink>
-            <AuthButton onClick={() => router.push('/signup')}>
-              Sign Up
-            </AuthButton>
-            <AccountIcon href="/signin" title="Account">
-              👤
-            </AccountIcon>
-          </>
-        )}
-        <SearchIcon onClick={handleSearchIconClick} title="Search">
-          🔍
-        </SearchIcon>
-      </RightSection>
+        <RightSection>
+          <SearchIcon onClick={handleSearchIconClick} title="Search">
+            🔍
+          </SearchIcon>
+          {isAuthenticated ? (
+            <>
+              <UserSection>
+                <span>{user?.first_name || user?.username || 'User'}</span>
+                <span>{user?.email}</span>
+              </UserSection>
+                <LogoutButton onClick={handleLogout}>
+                  Logout
+                </LogoutButton>
+              <MobileMenuButton onClick={() => setShowMobileMenu(!showMobileMenu)}>
+                ⋯
+              </MobileMenuButton>
+            </>
+          ) : (
+            <>
+              <AuthButton href="/signin">Sign In</AuthButton>
+              <PrimaryAuthButton href="/signup">Sign Up</PrimaryAuthButton>
+              <AccountIcon href="/signin" title="Account">
+                👤
+              </AccountIcon>
+            </>
+          )}
+        </RightSection>
+      </HeaderContent>
     </HeaderContainer>
   );
 }

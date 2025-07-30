@@ -1,84 +1,198 @@
-import { useEffect, useRef, useState } from 'react';
+import React from 'react';
 import styled, { keyframes } from 'styled-components';
 
-const DURATION = 1000;
-const FADE_DURATION = 500;
-
-const fadeOutAnimation = keyframes`
-  from { opacity: 1; }
-  to { opacity: 0; }
+const fadeIn = keyframes`
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
 `;
 
-// ✅ Use a transient prop: $fadeOut
-const SplashContainer = styled.div<{ $fadeOut: boolean }>`
+const lightSweep = keyframes`
+  0% {
+    background-position: -200% 0;
+  }
+  100% {
+    background-position: 200% 0;
+  }
+`;
+
+const pulse = keyframes`
+  0%, 100% {
+    opacity: 0.6;
+  }
+  50% {
+    opacity: 1;
+  }
+`;
+
+const SplashContainer = styled.div`
   position: fixed;
   top: 0;
   left: 0;
-  width: 100%;
-  height: 100%;
-  background: linear-gradient(135deg, #0f2027, #203a43, #2c5364);
+  width: 100vw;
+  height: 100vh;
+  background: 
+    radial-gradient(circle at 20% 80%, rgba(0, 212, 255, 0.15) 0%, transparent 50%),
+    radial-gradient(circle at 80% 20%, rgba(124, 58, 237, 0.15) 0%, transparent 50%),
+    radial-gradient(circle at 40% 40%, rgba(255, 107, 53, 0.1) 0%, transparent 50%),
+    linear-gradient(135deg, #0a0a0a 0%, #1a1a1a 50%, #0a0a0a 100%);
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  z-index: 1000;
-  animation: ${({ $fadeOut }) => $fadeOut && fadeOutAnimation} ${FADE_DURATION}ms ease-out forwards;
-`;
-
-const Logo = styled.div`
-  font-size: 3rem;
-  font-weight: bold;
-  color: white;
-  margin-bottom: 1rem;
-  text-transform: uppercase;
-  letter-spacing: 0.5rem;
-`;
-
-const LoadingBar = styled.div`
-  width: 200px;
-  height: 4px;
-  background: rgba(255, 255, 255, 0.2);
-  border-radius: 2px;
+  z-index: 9999;
   overflow: hidden;
-`;
-
-const Progress = styled.div`
-  height: 100%;
-  width: 0;
-  background: #00d4ff;
-  animation: load ${DURATION}ms ease-in-out forwards;
-
-  @keyframes load {
-    0% { width: 0; }
-    100% { width: 100%; }
+  
+  &::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background-image: 
+      linear-gradient(90deg, transparent 0%, rgba(0, 212, 255, 0.1) 50%, transparent 100%),
+      radial-gradient(circle at 30% 30%, rgba(0, 212, 255, 0.05) 0%, transparent 50%),
+      radial-gradient(circle at 70% 70%, rgba(124, 58, 237, 0.05) 0%, transparent 50%);
+    background-size: 200% 100%, 100% 100%, 100% 100%;
+    animation: ${lightSweep} 3s ease-in-out infinite;
+    pointer-events: none;
   }
 `;
 
-export default function SplashScreen({ onDone }: { onDone: () => void }) {
-  const [fade, setFade] = useState(false);
-  const timerStarted = useRef(false);
+const LogoContainer = styled.div`
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1;
+`;
 
-  useEffect(() => {
-    if (timerStarted.current) return;
-    timerStarted.current = true;
+const ShimyImage = styled.img`
+  width: 90%;
+  height: 90%;
+  object-fit: contain;
+  filter: drop-shadow(0 0 30px rgba(0, 212, 255, 0.5));
+`;
 
-    const splashTimer = setTimeout(() => {
-      setFade(true);
-    }, DURATION);
+const ContentOverlay = styled.div`
+  position: absolute;
+  bottom: 10%;
+  left: 50%;
+  transform: translateX(-50%);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  z-index: 2;
+  width: 100%;
+  max-width: 400px;
 
-    return () => clearTimeout(splashTimer);
-  }, []);
+  @media (max-width: 768px) {
+    bottom: 15%;
+    max-width: 300px;
+  }
 
-  const handleAnimationEnd = () => {
-    if (fade) onDone();
-  };
+  @media (max-width: 480px) {
+    bottom: 20%;
+    max-width: 250px;
+  }
+`;
 
+const LoadingText = styled.div`
+  color: #FFFFFF;
+  font-size: 1.2rem;
+  font-weight: 500;
+  text-align: center;
+  animation: ${pulse} 2s ease-in-out infinite;
+  margin-bottom: 1rem;
+  text-shadow: 0 2px 8px rgba(0, 0, 0, 0.8);
+  background: rgba(0, 0, 0, 0.3);
+  padding: 0.5rem 1rem;
+  border-radius: 8px;
+  backdrop-filter: blur(10px);
+
+  @media (max-width: 768px) {
+    font-size: 1rem;
+  }
+
+  @media (max-width: 480px) {
+    font-size: 0.9rem;
+  }
+`;
+
+const ProgressBar = styled.div`
+  width: 200px;
+  height: 4px;
+  background: rgba(255, 255, 255, 0.1);
+  border-radius: 2px;
+  overflow: hidden;
+  position: relative;
+  backdrop-filter: blur(10px);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+
+  @media (max-width: 768px) {
+    width: 150px;
+  }
+
+  @media (max-width: 480px) {
+    width: 120px;
+  }
+`;
+
+const ProgressFill = styled.div<{ $progress: number }>`
+  height: 100%;
+  background: linear-gradient(90deg, #00D4FF 0%, #7C3AED 50%, #EC4899 100%);
+  border-radius: 2px;
+  width: ${props => props.$progress}%;
+  transition: width 0.3s ease;
+  position: relative;
+
+  &::after {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: linear-gradient(
+      90deg,
+      transparent 0%,
+      rgba(255, 255, 255, 0.6) 50%,
+      transparent 100%
+    );
+    animation: ${lightSweep} 1.5s ease-in-out infinite;
+  }
+`;
+
+interface SplashScreenProps {
+  progress: number;
+  status: string;
+}
+
+const SplashScreen: React.FC<SplashScreenProps> = ({ progress, status }) => {
   return (
-    <SplashContainer $fadeOut={fade} onAnimationEnd={handleAnimationEnd}>
-      <Logo>SHIMY</Logo>
-      <LoadingBar>
-        <Progress />
-      </LoadingBar>
+    <SplashContainer>
+      <LogoContainer>
+        <ShimyImage src="/images/shimy.png" alt="Shimy Movies" />
+      </LogoContainer>
+      
+      <ContentOverlay>
+        <LoadingText>{status}</LoadingText>
+        <ProgressBar>
+          <ProgressFill $progress={progress} />
+        </ProgressBar>
+      </ContentOverlay>
     </SplashContainer>
   );
-}
+};
+
+export default SplashScreen;

@@ -3,41 +3,29 @@ import styled from 'styled-components';
 import Head from 'next/head';
 import Header from './Header';
 import Sidebar from './Sidebar';
+import React from 'react';
 
 const LayoutWrapper = styled.div`
   display: flex;
   min-height: 100vh;
-  background: linear-gradient(135deg, #0f0f1a 0%, #1a1a2e 100%);
-  color: #f0f0f0;
-  font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+  background: linear-gradient(180deg, #0A0A0A 0%, #111111 100%);
+  color: #FFFFFF;
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', sans-serif;
+  position: relative;
+  overflow-x: hidden;
 `;
 
-const SidebarWrapper = styled.div<{ isOpen: boolean }>`
-  position: fixed;
-  top: 0;
-  left: 0;
-  height: 100vh;
-  z-index: 999;
-  transition: all 0.3s ease;
-  width: ${({ isOpen }) => (isOpen ? '220px' : '70px')};
-  
-  @media (max-width: 768px) {
-    width: ${({ isOpen }) => (isOpen ? '100%' : '0')};
-    transform: ${({ isOpen }) => (isOpen ? 'translateX(0)' : 'translateX(-100%)')};
-    opacity: ${({ isOpen }) => (isOpen ? '1' : '0')};
-    pointer-events: ${({ isOpen }) => (isOpen ? 'auto' : 'none')};
-  }
-  
-  @media (max-width: 480px) {
-    width: ${({ isOpen }) => (isOpen ? '100%' : '0')};
-  }
-`;
-
-const ContentWrapper = styled.div`
+const ContentWrapper = styled.div<{ isSidebarOpen: boolean }>`
   flex: 1;
   min-height: 100vh;
   display: flex;
   flex-direction: column;
+  margin-left: ${({ isSidebarOpen }) => (isSidebarOpen ? '280px' : '80px')};
+  transition: margin-left 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  
+  @media (max-width: 768px) {
+    margin-left: 0;
+  }
 `;
 
 const MainContent = styled.main`
@@ -55,7 +43,7 @@ const MainContent = styled.main`
     left: 0;
     right: 0;
     height: 1px;
-    background: linear-gradient(90deg, transparent, rgba(229, 9, 20, 0.5), transparent);
+    background: linear-gradient(90deg, transparent, rgba(0, 212, 255, 0.3), transparent);
   }
   
   @media (max-width: 1024px) {
@@ -71,13 +59,22 @@ const MainContent = styled.main`
   }
 `;
 
+// Special wrapper for hero sections
+const HeroWrapper = styled.div`
+  width: 100vw;
+  margin-left: calc(-50vw + 50%);
+  margin-right: calc(-50vw + 50%);
+  position: relative;
+  z-index: 1;
+`;
+
 const Footer = styled.footer`
-  background: rgba(10, 10, 20, 0.95);
-  color: #fff;
+  background: rgba(10, 10, 10, 0.95);
+  backdrop-filter: blur(20px);
+  color: #FFFFFF;
   padding: 4rem 2rem;
   text-align: center;
-  backdrop-filter: blur(10px);
-  border-top: 1px solid rgba(255, 255, 255, 0.05);
+  border-top: 1px solid rgba(255, 255, 255, 0.1);
   
   @media (max-width: 768px) {
     padding: 3rem 1rem;
@@ -92,12 +89,12 @@ const FooterContent = styled.div`
   max-width: 1400px;
   margin: 0 auto;
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
   gap: 3rem;
   text-align: left;
   
   @media (max-width: 768px) {
-    grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
     gap: 2rem;
   }
   
@@ -110,9 +107,10 @@ const FooterContent = styled.div`
 
 const FooterSection = styled.div`
   h3 {
-    color: #e50914;
+    color: #00D4FF;
     margin-bottom: 1.5rem;
     font-size: 1.1rem;
+    font-weight: 600;
     letter-spacing: 1px;
     position: relative;
     display: inline-block;
@@ -124,7 +122,7 @@ const FooterSection = styled.div`
       left: 0;
       width: 40px;
       height: 2px;
-      background: #e50914;
+      background: linear-gradient(90deg, #00D4FF 0%, #0099CC 100%);
       border-radius: 2px;
     }
     
@@ -138,6 +136,7 @@ const FooterSection = styled.div`
     color: rgba(255, 255, 255, 0.7);
     line-height: 1.6;
     margin-bottom: 1.5rem;
+    font-weight: 400;
     
     @media (max-width: 480px) {
       font-size: 0.9rem;
@@ -152,7 +151,7 @@ const FooterSection = styled.div`
 
     li {
       margin-bottom: 0.8rem;
-      transition: transform 0.2s ease;
+      transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
 
       &:hover {
         transform: translateX(5px);
@@ -165,21 +164,22 @@ const FooterSection = styled.div`
       a {
         color: rgba(255, 255, 255, 0.6);
         text-decoration: none;
-        transition: all 0.2s ease;
+        transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
         display: flex;
         align-items: center;
         font-size: 0.9rem;
+        font-weight: 500;
 
         &::before {
           content: '→';
-          color: #e50914;
+          color: #00D4FF;
           margin-right: 8px;
           opacity: 0;
-          transition: all 0.2s ease;
+          transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
         }
 
         &:hover {
-          color: #fff;
+          color: #00D4FF;
 
           &::before {
             opacity: 1;
@@ -203,6 +203,7 @@ const Copyright = styled.div`
   color: rgba(255, 255, 255, 0.4);
   font-size: 0.9rem;
   letter-spacing: 0.5px;
+  font-weight: 400;
   
   @media (max-width: 480px) {
     margin-top: 2rem;
@@ -227,7 +228,7 @@ const FloatingParticles = styled.div`
     left: -50%;
     width: 200%;
     height: 200%;
-    background: radial-gradient(circle, rgba(229, 9, 20, 0.03) 0%, transparent 70%);
+    background: radial-gradient(circle, rgba(0, 212, 255, 0.02) 0%, transparent 70%);
     animation: rotate 120s linear infinite;
 
     @keyframes rotate {
@@ -239,6 +240,39 @@ const FloatingParticles = styled.div`
       }
     }
   }
+  
+  &::after {
+    content: '';
+    position: absolute;
+    top: -50%;
+    left: -50%;
+    width: 200%;
+    height: 200%;
+    background: radial-gradient(circle, rgba(124, 58, 237, 0.02) 0%, transparent 70%);
+    animation: rotate 180s linear infinite reverse;
+
+    @keyframes rotate {
+      from {
+        transform: rotate(0deg);
+      }
+      to {
+        transform: rotate(360deg);
+      }
+    }
+  }
+`;
+
+const GradientOverlay = styled.div`
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+  z-index: 1;
+  background: radial-gradient(circle at 20% 80%, rgba(0, 212, 255, 0.03) 0%, transparent 50%),
+              radial-gradient(circle at 80% 20%, rgba(124, 58, 237, 0.03) 0%, transparent 50%),
+              radial-gradient(circle at 40% 40%, rgba(255, 107, 53, 0.02) 0%, transparent 50%);
 `;
 
 interface LayoutProps {
@@ -252,6 +286,32 @@ export default function Layout({ children }: LayoutProps) {
     setSidebarOpen(prev => !prev);
   };
 
+  // Clone children and wrap Hero components with HeroWrapper
+  const childrenWithProps = React.Children.map(children, child => {
+    if (React.isValidElement(child)) {
+      // Check if this child contains a Hero component
+      const hasHero = React.Children.toArray(child.props.children).some(grandChild => 
+        React.isValidElement(grandChild) && grandChild.type?.name === 'Hero'
+      );
+      
+      if (hasHero) {
+        // Wrap the entire child with HeroWrapper
+        return React.cloneElement(child, { 
+          isSidebarOpen,
+          children: React.Children.map(child.props.children, grandChild => {
+            if (React.isValidElement(grandChild) && grandChild.type?.name === 'Hero') {
+              return <HeroWrapper key="hero-wrapper">{grandChild}</HeroWrapper>;
+            }
+            return grandChild;
+          })
+        });
+      }
+      
+      return React.cloneElement(child, { isSidebarOpen } as any);
+    }
+    return child;
+  });
+
   return (
     <>
       <Head>
@@ -259,27 +319,26 @@ export default function Layout({ children }: LayoutProps) {
         <meta name="description" content="Discover the best movies in a sleek, modern interface." />
         <meta name="viewport" content="width=device-width, initial-scale=1.0" />
         <link
-          href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap"
+          href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap"
           rel="stylesheet"
         />
       </Head>
 
       <LayoutWrapper>
         <FloatingParticles />
-        <SidebarWrapper isOpen={isSidebarOpen}>
+        <GradientOverlay />
           <Sidebar isOpen={isSidebarOpen} onClose={() => setSidebarOpen(false)} />
-        </SidebarWrapper>
 
-        <ContentWrapper>
+        <ContentWrapper isSidebarOpen={isSidebarOpen}>
           <Header isSidebarOpen={isSidebarOpen} toggleSidebar={toggleSidebar} />
-          <MainContent>{children}</MainContent>
+          <MainContent>{childrenWithProps}</MainContent>
           <Footer>
             <FooterContent>
               <FooterSection>
                 <h3>SHIMY</h3>
                 <p>
                   Your gateway to the world of cinema. Discover, explore, and enjoy the finest films in stunning
-                  quality.
+                  quality with our modern, intuitive interface.
                 </p>
               </FooterSection>
               <FooterSection>
@@ -288,6 +347,7 @@ export default function Layout({ children }: LayoutProps) {
                   <li><a href="/trending">Trending</a></li>
                   <li><a href="/discover">Discover</a></li>
                   <li><a href="/upcoming">Upcoming</a></li>
+                  <li><a href="/top-imdb">Top Rated</a></li>
                 </ul>
               </FooterSection>
               <FooterSection>
@@ -295,14 +355,16 @@ export default function Layout({ children }: LayoutProps) {
                 <ul>
                   <li><a href="/profile">Profile</a></li>
                   <li><a href="/favorites">Favorites</a></li>
+                  <li><a href="/watchlist">Watchlist</a></li>
                   <li><a href="/settings">Settings</a></li>
                 </ul>
               </FooterSection>
               <FooterSection>
-                <h3>Legal</h3>
+                <h3>Support</h3>
                 <ul>
-                  <li><a href="/terms">Terms</a></li>
                   <li><a href="/contact">Contact</a></li>
+                  <li><a href="/help">Help Center</a></li>
+                  <li><a href="/feedback">Feedback</a></li>
                 </ul>
               </FooterSection>
             </FooterContent>

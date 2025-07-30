@@ -275,16 +275,8 @@ export default function Trending() {
       }
     };
 
-    let throttledScroll: () => void;
-    
-    const throttledScroll = () => {
-      if (window.innerHeight + window.scrollY >= document.documentElement.scrollHeight - 200) {
-        loadMoreMovies();
-      }
-    };
-
-    window.addEventListener('scroll', throttledScroll, { passive: true });
-    return () => window.removeEventListener('scroll', throttledScroll);
+    window.addEventListener('scroll', onScroll, { passive: true });
+    return () => window.removeEventListener('scroll', onScroll);
   }, [loadMoreMovies]);
 
   // Load initial movies
@@ -295,9 +287,18 @@ export default function Trending() {
   const fetchGenres = async () => {
     try {
       const genresData = await movieAPI.getGenres();
-      setGenres(genresData);
+      // Ensure genres is always an array
+      if (Array.isArray(genresData)) {
+        setGenres(genresData);
+      } else if (genresData && Array.isArray(genresData.genres)) {
+        setGenres(genresData.genres);
+      } else {
+        console.warn('Unexpected genres data structure:', genresData);
+        setGenres([]);
+      }
     } catch (error) {
       console.error('Error fetching genres:', error);
+      setGenres([]);
     }
   };
 
@@ -333,7 +334,7 @@ export default function Trending() {
           <FilterContainer>
             <GenreSelect value={filter} onChange={(e) => setFilter(e.target.value)}>
               <option value="all">All Genres</option>
-              {genres.map(genre => (
+              {Array.isArray(genres) && genres.map(genre => (
                 <option key={genre.id} value={genre.id}>
                   {genre.name}
                 </option>

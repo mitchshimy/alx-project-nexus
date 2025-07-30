@@ -1,6 +1,13 @@
 // API base URL for Django backend
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000/api/v1';
 
+// Increased timeout for preloading (30 seconds)
+const API_TIMEOUT = 30000;
+
+// Simple in-memory cache for API responses
+const cache = new Map<string, { data: any; timestamp: number }>();
+const CACHE_DURATION = 5 * 60 * 1000; // 5 minutes
+
 // Authentication token management
 export const getAuthToken = (): string | null => {
   if (typeof window !== 'undefined') {
@@ -12,6 +19,8 @@ export const getAuthToken = (): string | null => {
 export const setAuthToken = (token: string): void => {
   if (typeof window !== 'undefined') {
     localStorage.setItem('access_token', token);
+    // Dispatch custom event to notify components of auth state change
+    window.dispatchEvent(new CustomEvent('authStateChanged', { detail: { isAuthenticated: true } }));
   }
 };
 
@@ -21,8 +30,45 @@ export const removeAuthToken = (): void => {
   }
 };
 
-// API request helper with authentication
+// Create a timeout promise
+const createTimeoutPromise = (timeout: number) => {
+  return new Promise((_, reject) => {
+    setTimeout(() => reject(new Error('Request timeout')), timeout);
+  });
+};
+
+// Cache helper functions
+const getCacheKey = (endpoint: string, options: RequestInit = {}) => {
+  const method = options.method || 'GET';
+  const body = options.body ? JSON.stringify(options.body) : '';
+  return `${method}:${endpoint}:${body}`;
+};
+
+const getCachedResponse = (cacheKey: string) => {
+  const cached = cache.get(cacheKey);
+  if (cached && Date.now() - cached.timestamp < CACHE_DURATION) {
+    return cached.data;
+  }
+  return null;
+};
+
+const setCachedResponse = (cacheKey: string, data: any) => {
+  cache.set(cacheKey, { data, timestamp: Date.now() });
+};
+
+// API request helper with authentication, timeout, and caching
 const apiRequest = async (endpoint: string, options: RequestInit = {}) => {
+  const method = options.method || 'GET';
+  const cacheKey = getCacheKey(endpoint, options);
+  
+  // Return cached response for GET requests
+  if (method === 'GET') {
+    const cached = getCachedResponse(cacheKey);
+    if (cached) {
+      return cached;
+    }
+  }
+
   const token = getAuthToken();
   const headers: Record<string, string> = {
     'Content-Type': 'application/json',
@@ -34,10 +80,17 @@ const apiRequest = async (endpoint: string, options: RequestInit = {}) => {
   }
 
   try {
-    const response = await fetch(`${API_BASE_URL}${endpoint}`, {
+    // Create the fetch request
+    const fetchPromise = fetch(`${API_BASE_URL}${endpoint}`, {
       ...options,
       headers,
     });
+
+    // Race between fetch and timeout
+    const response = await Promise.race([
+      fetchPromise,
+      createTimeoutPromise(API_TIMEOUT)
+    ]) as Response;
 
     if (!response.ok) {
       if (response.status === 401) {
@@ -64,10 +117,28 @@ const apiRequest = async (endpoint: string, options: RequestInit = {}) => {
       throw new Error(errorMessage);
     }
 
-    return response.json();
+    // Handle empty responses (common with DELETE requests)
+    const contentType = response.headers.get('content-type');
+    let data;
+    if (contentType && contentType.includes('application/json')) {
+      data = await response.json();
+    } else {
+      // For non-JSON responses or empty responses, return success status
+      data = { success: true };
+    }
+
+    // Cache successful GET responses
+    if (method === 'GET') {
+      setCachedResponse(cacheKey, data);
+    }
+
+    return data;
   } catch (error) {
     if (error instanceof TypeError && error.message.includes('fetch')) {
       throw new Error('Network error. Please check your connection and try again.');
+    }
+    if (error instanceof Error && error.message === 'Request timeout') {
+      throw new Error('The server is taking too long to respond. Please try again in a moment.');
     }
     throw error;
   }
@@ -190,6 +261,12 @@ export const movieAPI = {
     });
   },
 
+  removeFromFavoritesByMovie: async (movieId: number) => {
+    return apiRequest(`/movies/favorites/movie/${movieId}/`, {
+      method: 'DELETE',
+    });
+  },
+
   // Watchlist
   getWatchlist: async () => {
     return apiRequest('/movies/watchlist/');
@@ -204,6 +281,12 @@ export const movieAPI = {
 
   removeFromWatchlist: async (watchlistId: number) => {
     return apiRequest(`/movies/watchlist/${watchlistId}/`, {
+      method: 'DELETE',
+    });
+  },
+
+  removeFromWatchlistByMovie: async (movieId: number) => {
+    return apiRequest(`/movies/watchlist/movie/${movieId}/`, {
       method: 'DELETE',
     });
   },
@@ -251,4 +334,17 @@ export const getTopRatedMovies = async (page: number = 1) => {
 
 export const searchMulti = async (query: string, page: number = 1) => {
   return movieAPI.searchMovies(query, page);
+};
+
+// Preloading functions for splash screen
+export const fetchTrendingMovies = async () => {
+  return movieAPI.getMovies({ type: 'trending', page: 1 });
+};
+
+export const fetchTopRatedMovies = async () => {
+  return movieAPI.getMovies({ type: 'top_rated', page: 1 });
+};
+
+export const fetchPopularMovies = async () => {
+  return movieAPI.getMovies({ type: 'movies', page: 1 });
 };

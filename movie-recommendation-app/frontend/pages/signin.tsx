@@ -11,6 +11,14 @@ const Container = styled.div`
   min-height: 100vh;
   padding: 2rem;
   background: linear-gradient(135deg, #0f0f1a 0%, #1a1a2e 100%);
+  
+  @media (max-width: 768px) {
+    padding: 1rem;
+  }
+  
+  @media (max-width: 480px) {
+    padding: 0.5rem;
+  }
 `;
 
 const FormCard = styled.div`
@@ -21,6 +29,16 @@ const FormCard = styled.div`
   width: 100%;
   max-width: 400px;
   border: 1px solid rgba(255, 255, 255, 0.1);
+  
+  @media (max-width: 768px) {
+    padding: 2rem;
+    max-width: 350px;
+  }
+  
+  @media (max-width: 480px) {
+    padding: 1.5rem;
+    max-width: 100%;
+  }
 `;
 
 const Title = styled.h1`
@@ -29,12 +47,26 @@ const Title = styled.h1`
   font-size: 2rem;
   margin-bottom: 2rem;
   font-weight: 700;
+  
+  @media (max-width: 768px) {
+    font-size: 1.8rem;
+    margin-bottom: 1.5rem;
+  }
+  
+  @media (max-width: 480px) {
+    font-size: 1.5rem;
+    margin-bottom: 1rem;
+  }
 `;
 
 const Form = styled.form`
   display: flex;
   flex-direction: column;
   gap: 1.5rem;
+  
+  @media (max-width: 480px) {
+    gap: 1rem;
+  }
 `;
 
 const InputGroup = styled.div`
@@ -47,6 +79,10 @@ const Label = styled.label`
   color: #ccc;
   font-size: 0.9rem;
   font-weight: 500;
+  
+  @media (max-width: 480px) {
+    font-size: 0.8rem;
+  }
 `;
 
 const Input = styled.input`
@@ -57,6 +93,7 @@ const Input = styled.input`
   color: #f0f0f0;
   font-size: 1rem;
   transition: border-color 0.2s ease;
+  min-height: 44px; // Better touch target
 
   &::placeholder {
     color: #999;
@@ -65,6 +102,11 @@ const Input = styled.input`
   &:focus {
     outline: none;
     border-color: #e50914;
+  }
+  
+  @media (max-width: 480px) {
+    padding: 0.6rem;
+    font-size: 0.9rem;
   }
 `;
 
@@ -78,6 +120,7 @@ const Button = styled.button`
   font-weight: 600;
   cursor: pointer;
   transition: background 0.2s ease;
+  min-height: 44px; // Better touch target
 
   &:hover {
     background: #b2070e;
@@ -86,6 +129,11 @@ const Button = styled.button`
   &:disabled {
     background: #666;
     cursor: not-allowed;
+  }
+  
+  @media (max-width: 480px) {
+    padding: 0.6rem;
+    font-size: 0.9rem;
   }
 `;
 
@@ -187,12 +235,10 @@ export default function SignIn() {
       });
       
       setSuccess('Sign in successful! Redirecting...');
-      
-      // Redirect to home page after successful login
+    
+      // Redirect to home page after successful login without page reload
       setTimeout(() => {
         router.push('/');
-        // Force a page refresh to update the header
-        window.location.reload();
       }, 1000);
       
     } catch (err: any) {

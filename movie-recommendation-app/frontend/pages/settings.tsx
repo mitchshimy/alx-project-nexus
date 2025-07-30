@@ -1,5 +1,8 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
+import { useRouter } from 'next/router';
 import styled from 'styled-components';
+import { getAuthToken } from '@/utils/api';
+import Layout from '@/components/Layout';
 
 const Container = styled.div`
   padding: 2rem;
@@ -127,7 +130,40 @@ const Button = styled.button`
   }
 `;
 
+const AuthPrompt = styled.div`
+  text-align: center;
+  padding: 4rem 2rem;
+  color: #666;
+  
+  h2 {
+    color: #333;
+    margin-bottom: 1rem;
+  }
+  
+  p {
+    margin-bottom: 2rem;
+    font-size: 1.1rem;
+  }
+  
+  button {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+    border: none;
+    padding: 12px 24px;
+    border-radius: 8px;
+    font-size: 1rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: transform 0.2s ease;
+    
+    &:hover {
+      transform: scale(1.05);
+    }
+  }
+`;
+
 export default function Settings() {
+  const router = useRouter();
   const [settings, setSettings] = useState({
     notifications: true,
     emailUpdates: false,
@@ -136,6 +172,13 @@ export default function Settings() {
     theme: 'dark',
     quality: '1080p',
   });
+  const [isAuthenticated, setIsAuthenticated] = useState(false);
+
+  useEffect(() => {
+    // Check authentication status
+    const token = getAuthToken();
+    setIsAuthenticated(!!token);
+  }, []);
 
   const handleToggle = (key: keyof typeof settings) => {
     setSettings(prev => ({
@@ -151,9 +194,26 @@ export default function Settings() {
     }));
   };
 
+  const handleSignIn = () => {
+    router.push('/signin');
+  };
+
+  if (!isAuthenticated) {
+    return (
+      <Layout>
+        <h1>⚙️ Settings</h1>
+        <AuthPrompt>
+          <h2>Sign in to access settings</h2>
+          <p>You need to be signed in to manage your account settings and preferences.</p>
+          <button onClick={handleSignIn}>Sign In</button>
+        </AuthPrompt>
+      </Layout>
+    );
+  }
+
   return (
-    <Container>
-      <Title>⚙️ Settings</Title>
+    <Layout>
+      <h1>⚙️ Settings</h1>
 
       <SettingsCard>
         <SectionTitle>Notifications</SectionTitle>
@@ -260,6 +320,6 @@ export default function Settings() {
           <Button style={{ background: '#dc3545' }}>Logout</Button>
         </div>
       </SettingsCard>
-    </Container>
+    </Layout>
   );
 } 

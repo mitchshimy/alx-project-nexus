@@ -1,61 +1,70 @@
-import React, { useState } from 'react';
-import Link from 'next/link';
+import { useState, memo } from 'react';
+import { useRouter } from 'next/router';
 import styled from 'styled-components';
-import { movieAPI } from '../utils/api';
-import { getAuthToken } from '../utils/api';
+import { MdFavorite, MdFavoriteBorder, MdBookmark, MdBookmarkBorder } from 'react-icons/md';
+import { movieAPI } from '@/utils/api';
+import { TMDBMovie } from '@/types/tmdb';
 
 const Card = styled.div`
-  background: white;
-  border-radius: 15px;
+  background: rgba(26, 26, 26, 0.8);
+  backdrop-filter: blur(20px);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 20px;
   overflow: hidden;
-  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
-  transition: transform 0.3s ease, box-shadow 0.3s ease;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4);
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
   cursor: pointer;
   position: relative;
+  min-height: 200px; // Ensure minimum height for touch targets
 
   &:hover {
-    transform: translateY(-5px);
-    box-shadow: 0 8px 25px rgba(0, 0, 0, 0.15);
+    transform: translateY(-8px) scale(1.02);
+    box-shadow: 0 20px 60px rgba(0, 0, 0, 0.6);
+    border-color: rgba(0, 212, 255, 0.3);
+    
+    &::before {
+      opacity: 1;
+    }
   }
   
   @media (max-width: 768px) {
-    border-radius: 12px;
-    
-    &:hover {
-      transform: translateY(-3px);
-      box-shadow: 0 6px 20px rgba(0, 0, 0, 0.12);
-    }
+    min-height: 180px;
   }
   
   @media (max-width: 480px) {
-    border-radius: 10px;
-    
-    &:hover {
-      transform: translateY(-2px);
-      box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
-    }
+    min-height: 160px;
+  }
+  
+  &::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: linear-gradient(135deg, rgba(0, 212, 255, 0.1) 0%, rgba(124, 58, 237, 0.1) 100%);
+    opacity: 0;
+    transition: opacity 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    pointer-events: none;
+    z-index: 1;
   }
 `;
 
-const Poster = styled.div<{ posterPath: string }>`
-  width: 100%;
-  height: 300px;
-  background-image: ${props => 
-    props.posterPath 
-      ? `url(https://image.tmdb.org/t/p/w500${props.posterPath})`
-      : 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)'
-  };
-  background-size: cover;
-  background-position: center;
-  background-repeat: no-repeat;
+const PosterContainer = styled.div`
   position: relative;
-  
-  @media (max-width: 768px) {
-    height: 250px;
-  }
-  
-  @media (max-width: 480px) {
-    height: 200px;
+  width: 100%;
+  aspect-ratio: 2/3;
+  overflow: hidden;
+`;
+
+const Poster = styled.img`
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+
+  ${Card}:hover & {
+    transform: scale(1.08);
   }
 `;
 
@@ -65,137 +74,104 @@ const Overlay = styled.div`
   left: 0;
   right: 0;
   bottom: 0;
-  background: rgba(0, 0, 0, 0.7);
-  display: flex;
-  align-items: center;
-  justify-content: center;
+  background: linear-gradient(
+    to bottom,
+    transparent 0%,
+    rgba(10, 10, 10, 0.3) 50%,
+    rgba(10, 10, 10, 0.95) 100%
+  );
   opacity: 0;
-  transition: opacity 0.3s ease;
+  transition: opacity 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  display: flex;
   flex-direction: column;
-  gap: 10px;
+  justify-content: flex-end;
+  padding: 1.5rem;
+  
+  @media (max-width: 768px) {
+    padding: 1rem;
+  }
+  
+  @media (max-width: 480px) {
+    padding: 0.8rem;
+  }
 
   ${Card}:hover & {
     opacity: 1;
   }
-  
-  @media (max-width: 768px) {
-    gap: 8px;
-  }
-  
-  @media (max-width: 480px) {
-    gap: 6px;
-  }
-`;
-
-const ActionButton = styled.button<{ isActive?: boolean }>`
-  background: ${props => props.isActive ? '#e74c3c' : '#3498db'};
-  color: white;
-  border: none;
-  padding: 10px 20px;
-  border-radius: 25px;
-  font-size: 14px;
-  font-weight: 600;
-  cursor: pointer;
-  transition: all 0.3s ease;
-  margin: 0 5px;
-
-  &:hover {
-    transform: scale(1.05);
-    background: ${props => props.isActive ? '#c0392b' : '#2980b9'};
-  }
-  
-  @media (max-width: 768px) {
-    padding: 8px 16px;
-    font-size: 13px;
-    margin: 0 3px;
-  }
-  
-  @media (max-width: 480px) {
-    padding: 6px 12px;
-    font-size: 12px;
-    margin: 0 2px;
-  }
-`;
-
-const Content = styled.div`
-  padding: 15px;
-  
-  @media (max-width: 768px) {
-    padding: 12px;
-  }
-  
-  @media (max-width: 480px) {
-    padding: 10px;
-  }
 `;
 
 const Title = styled.h3`
-  margin: 0 0 8px 0;
-  font-size: 16px;
+  color: #FFFFFF;
+  font-size: 1.1rem;
   font-weight: 600;
-  color: #333;
-  line-height: 1.3;
+  margin: 0 0 0.5rem 0;
+  text-shadow: 0 2px 8px rgba(0, 0, 0, 0.8);
+  
+  @media (max-width: 768px) {
+    font-size: 1rem;
+  }
+  
+  @media (max-width: 480px) {
+    font-size: 0.9rem;
+  }
+`;
+
+const Rating = styled.div`
+  color: #FFFFFF;
+  font-size: 0.9rem;
+  font-weight: 500;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  
+  @media (max-width: 768px) {
+    font-size: 0.8rem;
+  }
+  
+  @media (max-width: 480px) {
+    font-size: 0.7rem;
+  }
+`;
+
+const Star = styled.span`
+  color: #FF6B35;
+  font-size: 1rem;
+`;
+
+const Content = styled.div`
+  padding: 1.25rem;
+  position: relative;
+  z-index: 2;
+`;
+
+const MovieTitle = styled.h3`
+  color: #FFFFFF;
+  font-size: 1rem;
+  font-weight: 600;
+  margin: 0 0 0.75rem 0;
+  line-height: 1.4;
   display: -webkit-box;
   -webkit-line-clamp: 2;
   -webkit-box-orient: vertical;
   overflow: hidden;
-  
-  @media (max-width: 768px) {
-    font-size: 15px;
-    margin-bottom: 6px;
-  }
-  
-  @media (max-width: 480px) {
-    font-size: 14px;
-    margin-bottom: 5px;
-  }
 `;
 
-const Meta = styled.div`
+const MovieInfo = styled.div`
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin-top: 10px;
-  
-  @media (max-width: 768px) {
-    margin-top: 8px;
-  }
-  
-  @media (max-width: 480px) {
-    margin-top: 6px;
-  }
-`;
-
-const Rating = styled.span`
-  background: #f39c12;
-  color: white;
-  padding: 4px 8px;
-  border-radius: 12px;
-  font-size: 12px;
-  font-weight: 600;
-  
-  @media (max-width: 768px) {
-    padding: 3px 6px;
-    font-size: 11px;
-  }
-  
-  @media (max-width: 480px) {
-    padding: 2px 5px;
-    font-size: 10px;
-  }
+  margin-bottom: 1rem;
 `;
 
 const Year = styled.span`
-  color: #666;
-  font-size: 12px;
-  
-  @media (max-width: 768px) {
-    font-size: 11px;
-  }
-  
-  @media (max-width: 480px) {
-    font-size: 10px;
-  }
+  color: rgba(255, 255, 255, 0.6);
+  font-size: 0.85rem;
+  font-weight: 500;
+`;
+
+const Actions = styled.div`
+  display: flex;
+  gap: 0.75rem;
 `;
 
 const LoadingOverlay = styled.div`
@@ -204,143 +180,234 @@ const LoadingOverlay = styled.div`
   left: 0;
   right: 0;
   bottom: 0;
-  background: rgba(0, 0, 0, 0.8);
+  background: rgba(10, 10, 10, 0.9);
+  backdrop-filter: blur(10px);
   display: flex;
   align-items: center;
   justify-content: center;
-  color: white;
-  font-size: 14px;
-  
-  @media (max-width: 768px) {
-    font-size: 13px;
+  z-index: 10;
+  border-radius: 20px;
+`;
+
+const LoadingSpinner = styled.div`
+  width: 32px;
+  height: 32px;
+  border: 3px solid rgba(0, 212, 255, 0.3);
+  border-top: 3px solid #00D4FF;
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+
+  @keyframes spin {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
   }
-  
-  @media (max-width: 480px) {
-    font-size: 12px;
+`;
+
+const Badge = styled.div<{ $type: 'movie' | 'tv' }>`
+  position: absolute;
+  top: 1rem;
+  right: 1rem;
+  background: ${({ $type }) => 
+    $type === 'tv' 
+      ? 'linear-gradient(135deg, #FF6B35 0%, #FF4500 100%)' 
+      : 'linear-gradient(135deg, #7C3AED 0%, #5B21B6 100%)'};
+  color: #FFFFFF;
+  padding: 0.25rem 0.75rem;
+  border-radius: 20px;
+  font-size: 0.75rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  z-index: 3;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+`;
+
+const ActionButtons = styled.div`
+  display: flex;
+  gap: 0.5rem;
+  margin-top: 1rem;
+`;
+
+const ActionButton = styled.button`
+  background: rgba(255, 255, 255, 0.1);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  border-radius: 8px;
+  padding: 0.5rem;
+  color: #FFFFFF;
+  cursor: pointer;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  backdrop-filter: blur(10px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 40px;
+  min-height: 40px;
+
+  &:hover {
+    background: rgba(0, 212, 255, 0.2);
+    border-color: rgba(0, 212, 255, 0.4);
+    color: #00D4FF;
+    transform: translateY(-2px);
+  }
+
+  &:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+    transform: none;
+  }
+
+  svg {
+    font-size: 1.2rem;
   }
 `;
 
 interface MovieCardProps {
-  movie: {
-    id: number;
-    tmdb_id: number;
-    title: string;
-    poster_path: string | null;
-    vote_average: number;
-    release_date: string;
-    is_favorite?: boolean;
-    is_watchlisted?: boolean;
-  };
+  movie: TMDBMovie;
   onFavoriteToggle?: () => void;
   onWatchlistToggle?: () => void;
 }
 
-export default function MovieCard({ movie, onFavoriteToggle, onWatchlistToggle }: MovieCardProps) {
+const MovieCard = memo(({ movie, onFavoriteToggle, onWatchlistToggle }: MovieCardProps) => {
+  const router = useRouter();
+  const [isFavorite, setIsFavorite] = useState(false);
+  const [isInWatchlist, setIsInWatchlist] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
-  const [isFavorite, setIsFavorite] = useState(movie.is_favorite || false);
-  const [isWatchlisted, setIsWatchlisted] = useState(movie.is_watchlisted || false);
 
   const isAuthenticated = () => {
-    return getAuthToken() !== null;
+    return typeof window !== 'undefined' && localStorage.getItem('access_token');
+  };
+
+  const formatRating = (rating: number | null) => {
+    if (rating === null || rating === undefined) return 'N/A';
+    return rating.toFixed(1);
+  };
+
+  const handleCardClick = () => {
+    router.push(`/movies/${movie.id}`);
   };
 
   const handleFavoriteToggle = async (e: React.MouseEvent) => {
-    e.preventDefault();
     e.stopPropagation();
-
     if (!isAuthenticated()) {
-      alert('Please sign in to add favorites');
+      router.push('/signin');
       return;
     }
 
     setIsLoading(true);
     try {
       if (isFavorite) {
-        // Remove from favorites
-        await movieAPI.removeFromFavorites(movie.id);
+        // Try to remove by favorite_id first, then by movie ID
+        try {
+          if (movie.favorite_id) {
+            await movieAPI.removeFromFavorites(movie.favorite_id);
+          } else {
+            await movieAPI.removeFromFavoritesByMovie(movie.id);
+          }
+        } catch (error) {
+          console.error('Error removing from favorites:', error);
+          // Fallback to movie ID removal
+          await movieAPI.removeFromFavoritesByMovie(movie.id);
+        }
         setIsFavorite(false);
       } else {
-        // Add to favorites
-        await movieAPI.addToFavorites(movie.tmdb_id);
+        await movieAPI.addToFavorites(movie.id);
         setIsFavorite(true);
       }
-      onFavoriteToggle?.();
+      
+      // Call the parent callback if provided
+      if (onFavoriteToggle) {
+        onFavoriteToggle();
+      }
     } catch (error) {
       console.error('Error toggling favorite:', error);
-      alert('Failed to update favorites');
     } finally {
       setIsLoading(false);
     }
   };
 
   const handleWatchlistToggle = async (e: React.MouseEvent) => {
-    e.preventDefault();
     e.stopPropagation();
-
     if (!isAuthenticated()) {
-      alert('Please sign in to add to watchlist');
+      router.push('/signin');
       return;
     }
 
     setIsLoading(true);
     try {
-      if (isWatchlisted) {
-        // Remove from watchlist
-        await movieAPI.removeFromWatchlist(movie.id);
-        setIsWatchlisted(false);
+      if (isInWatchlist) {
+        // Try to remove by watchlist_id first, then by movie ID
+        try {
+          if (movie.watchlist_id) {
+            await movieAPI.removeFromWatchlist(movie.watchlist_id);
+          } else {
+            await movieAPI.removeFromWatchlistByMovie(movie.id);
+          }
+        } catch (error) {
+          console.error('Error removing from watchlist:', error);
+          // Fallback to movie ID removal
+          await movieAPI.removeFromWatchlistByMovie(movie.id);
+        }
+        setIsInWatchlist(false);
       } else {
-        // Add to watchlist
-        await movieAPI.addToWatchlist(movie.tmdb_id);
-        setIsWatchlisted(true);
+        await movieAPI.addToWatchlist(movie.id);
+        setIsInWatchlist(true);
       }
-      onWatchlistToggle?.();
+      
+      // Call the parent callback if provided
+      if (onWatchlistToggle) {
+        onWatchlistToggle();
+      }
     } catch (error) {
       console.error('Error toggling watchlist:', error);
-      alert('Failed to update watchlist');
     } finally {
       setIsLoading(false);
     }
   };
 
-  const formatYear = (dateString: string) => {
-    if (!dateString) return '';
-    return new Date(dateString).getFullYear();
-  };
+  const posterUrl = movie.poster_path
+    ? `https://image.tmdb.org/t/p/w500${movie.poster_path}`
+    : 'https://via.placeholder.com/300x450/1a1a1a/666666?text=No+Image';
+
+  // Handle both movie and TV show titles
+  const movieTitle = (movie as any).name || movie.title || 'Unknown Title';
 
   return (
-    <Link href={`/movies/${movie.tmdb_id}`} passHref>
-      <Card>
-        <Poster posterPath={movie.poster_path || ''}>
-          <Overlay>
+    <Card onClick={handleCardClick}>
+      <PosterContainer>
+        <Poster 
+          src={posterUrl} 
+          alt={movieTitle}
+          loading="lazy"
+        />
+        <Overlay>
+          <Title>{movieTitle}</Title>
+          <Rating>
+            ⭐ {formatRating(movie.vote_average)} ({movie.vote_count || 0} votes)
+          </Rating>
+          
+          <ActionButtons>
             <ActionButton
-              isActive={isFavorite}
               onClick={handleFavoriteToggle}
               disabled={isLoading}
+              title={isFavorite ? 'Remove from favorites' : 'Add to favorites'}
             >
-              {isFavorite ? '❤️ Remove' : '🤍 Add to Favorites'}
+              {isFavorite ? <MdFavorite /> : <MdFavoriteBorder />}
             </ActionButton>
+            
             <ActionButton
-              isActive={isWatchlisted}
               onClick={handleWatchlistToggle}
               disabled={isLoading}
+              title={isInWatchlist ? 'Remove from watchlist' : 'Add to watchlist'}
             >
-              {isWatchlisted ? '📝 Remove from Watchlist' : '📝 Add to Watchlist'}
+              {isInWatchlist ? <MdBookmark /> : <MdBookmarkBorder />}
             </ActionButton>
-          </Overlay>
-          {isLoading && (
-            <LoadingOverlay>
-              Updating...
-            </LoadingOverlay>
-          )}
-        </Poster>
-        <Content>
-          <Title>{movie.title}</Title>
-          <Meta>
-            <Rating>⭐ {movie.vote_average.toFixed(1)}</Rating>
-            <Year>{formatYear(movie.release_date)}</Year>
-          </Meta>
-        </Content>
-      </Card>
-    </Link>
+          </ActionButtons>
+        </Overlay>
+      </PosterContainer>
+    </Card>
   );
-}
+});
+
+MovieCard.displayName = 'MovieCard';
+
+export default MovieCard;
