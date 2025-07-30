@@ -3,9 +3,11 @@ import { ThemeProvider } from 'styled-components';
 import type { AppProps } from 'next/app';
 import Layout from '@/components/Layout';
 import SplashScreen from '@/components/SplashScreen';
+import ErrorModal from '@/components/ErrorModal';
 import { theme } from '@/styles/theme';
 import GlobalStyle from '@/styles/GlobalStyle';
 import { fetchTrendingMovies, fetchTopRatedMovies, fetchPopularMovies } from '@/utils/api';
+import { setGlobalErrorHandler } from '@/utils/api';
 
 // Global state for preloaded content
 export const preloadedContent = {
@@ -62,8 +64,33 @@ export default function App({ Component, pageProps }: AppProps) {
   const [progress, setProgress] = useState(0);
   const [status, setStatus] = useState('Initializing...');
   const [preloadProgress, setPreloadProgress] = useState(0);
-  const [isClient, setIsClient] = useState(false);
-  const [isInitialized, setIsInitialized] = useState(false);
+  const [isClient, setIsClient] = useState(false); // Added for hydration fix
+  const [isInitialized, setIsInitialized] = useState(false); // Added for hydration fix
+  
+  // Error modal state
+  const [errorModal, setErrorModal] = useState<{
+    isOpen: boolean;
+    title: string;
+    message: string;
+    type: 'error' | 'warning' | 'info';
+  }>({
+    isOpen: false,
+    title: '',
+    message: '',
+    type: 'error'
+  });
+
+  // Set up global error handler
+  useEffect(() => {
+    setGlobalErrorHandler((title, message, type = 'error') => {
+      setErrorModal({
+        isOpen: true,
+        title,
+        message,
+        type
+      });
+    });
+  }, []);
 
   // Handle client-side initialization
   useEffect(() => {
@@ -99,18 +126,18 @@ export default function App({ Component, pageProps }: AppProps) {
     if (!showSplash || !isClient || !isInitialized) return; // Only run if splash should show
 
     const startTime = Date.now();
-    const duration = 3000; // 3 seconds total for preloading
+    const duration = 1500; // Reduced from 3000ms to 1500ms for faster loading
 
     const preloadContent = async () => {
       try {
-        // Start preloading content
+        // Start preloading content with faster progress updates
         setStatus('Loading trending movies...');
-        setPreloadProgress(30);
+        setPreloadProgress(40);
 
         const trendingPromise = fetchTrendingMovies();
 
         setStatus('Loading top rated movies...');
-        setPreloadProgress(60);
+        setPreloadProgress(70);
 
         const topRatedPromise = fetchTopRatedMovies();
 
@@ -122,12 +149,15 @@ export default function App({ Component, pageProps }: AppProps) {
         setStatus('Preparing your experience...');
         setPreloadProgress(95);
 
-        // Wait for all API calls to complete
-        const [trending, topRated, popular] = await Promise.all([
-          trendingPromise,
-          topRatedPromise,
-          popularPromise
-        ]);
+        // Wait for all API calls to complete with timeout
+        const timeoutPromise = new Promise<never>((_, reject) => 
+          setTimeout(() => reject(new Error('API timeout')), 10000) // 10 second timeout
+        );
+
+        const [trending, topRated, popular] = await Promise.race([
+          Promise.all([trendingPromise, topRatedPromise, popularPromise]),
+          timeoutPromise
+        ]) as [any, any, any];
 
         // Store preloaded content globally and in session storage
         preloadedContent.trending = trending;
@@ -148,10 +178,10 @@ export default function App({ Component, pageProps }: AppProps) {
         setStatus('Welcome to Shimy!');
         setPreloadProgress(100);
 
-        // Wait a moment to show completion, then transition
+        // Reduced wait time for completion
         setTimeout(() => {
           setShowSplash(false);
-        }, 500);
+        }, 200); // Reduced from 500ms to 200ms
 
       } catch (error) {
         console.error('Error preloading content:', error);
@@ -159,7 +189,7 @@ export default function App({ Component, pageProps }: AppProps) {
         setPreloadProgress(100);
         setTimeout(() => {
           setShowSplash(false);
-        }, 500);
+        }, 200);
       }
     };
 
@@ -167,7 +197,7 @@ export default function App({ Component, pageProps }: AppProps) {
       const elapsed = Date.now() - startTime;
       const newProgress = Math.min((elapsed / duration) * 100, 100);
       setProgress(newProgress);
-    }, 50);
+    }, 25); // Reduced interval from 50ms to 25ms for smoother animation
 
     preloadContent();
 
@@ -184,6 +214,13 @@ export default function App({ Component, pageProps }: AppProps) {
           <Component {...pageProps} />
         </Layout>
       )}
+      <ErrorModal
+        isOpen={errorModal.isOpen}
+        onClose={() => setErrorModal(prev => ({ ...prev, isOpen: false }))}
+        title={errorModal.title}
+        message={errorModal.message}
+        type={errorModal.type}
+      />
     </ThemeProvider>
   );
 }

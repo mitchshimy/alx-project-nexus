@@ -1,15 +1,6 @@
 import type { NextConfig } from 'next';
 
 const nextConfig: NextConfig = {
-  reactStrictMode: true,
-  swcMinify: true,
-  
-  // Styled-components compiler
-  compiler: {
-    styledComponents: true,
-  },
-  
-  // Image optimization
   images: {
     domains: ['image.tmdb.org', 'via.placeholder.com'],
     formats: ['image/webp', 'image/avif'],
@@ -17,13 +8,22 @@ const nextConfig: NextConfig = {
     imageSizes: [16, 32, 48, 64, 96, 128, 256, 384],
     minimumCacheTTL: 60 * 60 * 24 * 30, // 30 days
   },
-  
-  // Compression
+  swcMinify: true,
   compress: true,
-  
-  // Headers for better caching
-  async headers() {
+  compiler: {
+    styledComponents: true,
+  },
+  headers: async () => {
     return [
+      {
+        source: '/images/:path*',
+        headers: [
+          {
+            key: 'Cache-Control',
+            value: 'public, max-age=31536000, immutable',
+          },
+        ],
+      },
       {
         source: '/(.*)',
         headers: [
@@ -38,15 +38,6 @@ const nextConfig: NextConfig = {
           {
             key: 'X-XSS-Protection',
             value: '1; mode=block',
-          },
-        ],
-      },
-      {
-        source: '/api/(.*)',
-        headers: [
-          {
-            key: 'Cache-Control',
-            value: 'public, max-age=300, s-maxage=300',
           },
         ],
       },

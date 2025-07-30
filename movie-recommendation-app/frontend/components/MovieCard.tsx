@@ -1,4 +1,4 @@
-import { useState, memo } from 'react';
+import { useState, memo, useEffect } from 'react';
 import { useRouter } from 'next/router';
 import styled from 'styled-components';
 import { MdFavorite, MdFavoriteBorder, MdBookmark, MdBookmarkBorder } from 'react-icons/md';
@@ -55,6 +55,7 @@ const PosterContainer = styled.div`
   width: 100%;
   aspect-ratio: 2/3;
   overflow: hidden;
+  background: linear-gradient(135deg, #1a1a1a 0%, #2a2a2a 100%);
 `;
 
 const Poster = styled.img`
@@ -65,6 +66,24 @@ const Poster = styled.img`
 
   ${Card}:hover & {
     transform: scale(1.08);
+  }
+`;
+
+const Skeleton = styled.div`
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(90deg, #1a1a1a 25%, #2a2a2a 50%, #1a1a1a 75%);
+  background-size: 200% 100%;
+  animation: shimmer 3s infinite; // Slowed down from 1.5s to 3s
+  opacity: 0.15; // Reduced from 0.3 to 0.15 for more subtlety
+  pointer-events: none;
+  
+  @keyframes shimmer {
+    0% { background-position: -200% 0; }
+    100% { background-position: 200% 0; }
   }
 `;
 
@@ -267,7 +286,7 @@ interface MovieCardProps {
   onWatchlistToggle?: () => void;
 }
 
-const MovieCard = memo(({ movie, onFavoriteToggle, onWatchlistToggle }: MovieCardProps) => {
+const MovieCard = memo<MovieCardProps>(({ movie, onFavoriteToggle, onWatchlistToggle }) => {
   const router = useRouter();
   const [isFavorite, setIsFavorite] = useState(false);
   const [isInWatchlist, setIsInWatchlist] = useState(false);
@@ -278,8 +297,7 @@ const MovieCard = memo(({ movie, onFavoriteToggle, onWatchlistToggle }: MovieCar
   };
 
   const formatRating = (rating: number | null) => {
-    if (rating === null || rating === undefined) return 'N/A';
-    return rating.toFixed(1);
+    return rating ? rating.toFixed(1) : 'N/A';
   };
 
   const handleCardClick = () => {
@@ -365,7 +383,7 @@ const MovieCard = memo(({ movie, onFavoriteToggle, onWatchlistToggle }: MovieCar
   };
 
   const posterUrl = movie.poster_path
-    ? `https://image.tmdb.org/t/p/w500${movie.poster_path}`
+    ? `https://image.tmdb.org/t/p/w342${movie.poster_path}` // Changed from w500 to w342 for faster loading
     : 'https://via.placeholder.com/300x450/1a1a1a/666666?text=No+Image';
 
   // Handle both movie and TV show titles
@@ -374,6 +392,7 @@ const MovieCard = memo(({ movie, onFavoriteToggle, onWatchlistToggle }: MovieCar
   return (
     <Card onClick={handleCardClick}>
       <PosterContainer>
+        <Skeleton />
         <Poster 
           src={posterUrl} 
           alt={movieTitle}

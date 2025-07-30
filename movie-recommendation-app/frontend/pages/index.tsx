@@ -74,12 +74,29 @@ const ViewAllButton = styled.button`
 
 const MovieGrid = styled.div`
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
-  gap: 2rem;
+  grid-template-columns: repeat(7, 1fr); // Changed to 7 columns
+  gap: 1.5rem; // Reduced gap to fit more cards
+  
+  @media (max-width: 1400px) {
+    grid-template-columns: repeat(6, 1fr); // 6 columns on medium screens
+  }
+  
+  @media (max-width: 1200px) {
+    grid-template-columns: repeat(5, 1fr); // 5 columns on smaller screens
+  }
+  
+  @media (max-width: 1000px) {
+    grid-template-columns: repeat(4, 1fr); // 4 columns on tablets
+  }
   
   @media (max-width: 768px) {
-    grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
-    gap: 1.5rem;
+    grid-template-columns: repeat(3, 1fr); // 3 columns on mobile
+    gap: 1rem;
+  }
+  
+  @media (max-width: 480px) {
+    grid-template-columns: repeat(2, 1fr); // 2 columns on small mobile
+    gap: 0.8rem;
   }
 `;
 
@@ -274,7 +291,7 @@ export default function Home({ isSidebarOpen = false }: { isSidebarOpen?: boolea
           console.error(`Failed to load data after ${retries} attempts:`, error);
           return [];
         }
-        await new Promise(resolve => setTimeout(resolve, 1000));
+        await new Promise(resolve => setTimeout(resolve, 500)); // Reduced from 1000ms to 500ms
       }
     }
   };
@@ -298,9 +315,9 @@ export default function Home({ isSidebarOpen = false }: { isSidebarOpen?: boolea
         result.status === 'fulfilled' ? result.value : []
       );
 
-      setFeaturedMovies(featured.slice(0, 10));
-      setTrendingMovies(trending.slice(0, 10));
-      setTopRatedMovies(topRated.slice(0, 10));
+      setFeaturedMovies(featured.slice(0, 21));
+      setTrendingMovies(trending.slice(0, 21));
+      setTopRatedMovies(topRated.slice(0, 21));
 
       if (results.every(result => result.status === 'rejected')) {
         setError('Unable to load content. Please check your connection and try again.');
@@ -315,7 +332,7 @@ export default function Home({ isSidebarOpen = false }: { isSidebarOpen?: boolea
   };
 
   useEffect(() => {
-    // Small delay to ensure app initialization is complete
+    // Reduced delay to ensure app initialization is complete
     const timer = setTimeout(() => {
       // Check for preloaded content immediately
       console.log('Index page useEffect - preloadedContent:', {
@@ -339,15 +356,15 @@ export default function Home({ isSidebarOpen = false }: { isSidebarOpen?: boolea
           popularCount: Array.isArray(popularResults) ? popularResults.length : 'not array'
         });
         
-        setTrendingMovies(Array.isArray(trendingResults) ? trendingResults.slice(0, 10) : []);
-        setTopRatedMovies(Array.isArray(topRatedResults) ? topRatedResults.slice(0, 10) : []);
-        setFeaturedMovies(Array.isArray(popularResults) ? popularResults.slice(0, 10) : []);
+        setTrendingMovies(Array.isArray(trendingResults) ? trendingResults.slice(0, 21) : []);
+        setTopRatedMovies(Array.isArray(topRatedResults) ? topRatedResults.slice(0, 21) : []);
+        setFeaturedMovies(Array.isArray(popularResults) ? popularResults.slice(0, 21) : []);
         setLoading(false);
       } else {
         console.log('No preloaded content, loading normally...');
         loadFeaturedContent();
       }
-    }, 100); // 100ms delay to ensure app initialization
+    }, 50); // Reduced from 100ms to 50ms for faster loading
 
     return () => clearTimeout(timer);
   }, []);
@@ -371,11 +388,11 @@ export default function Home({ isSidebarOpen = false }: { isSidebarOpen?: boolea
             <div className="progress-container">
               <div 
                 className="progress-fill" 
-                style={{ width: `${loadingProgress}%` }}
+                style={{ width: `${Math.min(loadingProgress + 20, 100)}%` }}
               />
             </div>
             <div className="progress-text">
-              {loadingProgress}% loaded
+              {Math.min(loadingProgress + 20, 100)}% loaded
             </div>
           </Loading>
         </ContentWrapper>

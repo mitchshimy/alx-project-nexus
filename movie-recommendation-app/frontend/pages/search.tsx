@@ -9,6 +9,8 @@ const SearchContainer = styled.div`
   padding: 2rem;
   max-width: 1200px;
   margin: 0 auto;
+  min-height: 100vh;
+  background: linear-gradient(135deg, #0f0f15 0%, #1a1a24 100%);
   
   @media (max-width: 1024px) {
     padding: 1.5rem;
@@ -27,8 +29,12 @@ const SearchContainer = styled.div`
 const SearchTitle = styled.h1`
   font-size: 2.5rem;
   margin-bottom: 1rem;
-  color: #FFD700;
+  background: linear-gradient(135deg, #00D4FF 0%, #7C3AED 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
   text-align: center;
+  font-weight: 700;
   
   @media (max-width: 768px) {
     font-size: 2rem;
@@ -41,7 +47,7 @@ const SearchTitle = styled.h1`
 
 const SearchSubtitle = styled.p`
   font-size: 1.2rem;
-  color: #94A3B8;
+  color: #A1A1AA;
   text-align: center;
   margin-bottom: 2rem;
   
@@ -62,6 +68,7 @@ const ResultsTitle = styled.h2`
   font-size: 1.8rem;
   margin-bottom: 1rem;
   color: #FFFFFF;
+  font-weight: 600;
   
   @media (max-width: 768px) {
     font-size: 1.5rem;
@@ -97,19 +104,22 @@ const Loading = styled.div`
   text-align: center;
   padding: 2rem;
   font-size: 1.2rem;
-  color: #666;
-  
-  @media (max-width: 768px) {
-    padding: 1.5rem;
-    font-size: 1rem;
-  }
+  color: #A1A1AA;
+  background: rgba(255, 255, 255, 0.03);
+  border-radius: 16px;
+  backdrop-filter: blur(10px);
+  border: 1px solid rgba(255, 255, 255, 0.05);
 `;
 
 const NoResults = styled.div`
   text-align: center;
   padding: 3rem;
-  color: #94A3B8;
+  color: #A1A1AA;
   font-size: 1.2rem;
+  background: rgba(255, 255, 255, 0.03);
+  border-radius: 16px;
+  backdrop-filter: blur(10px);
+  border: 1px solid rgba(255, 255, 255, 0.05);
   
   @media (max-width: 768px) {
     padding: 2rem;
@@ -137,18 +147,21 @@ const FilterContainer = styled.div`
 
 const FilterButton = styled.button<{ active: boolean }>`
   padding: 0.5rem 1rem;
-  border: 2px solid ${props => props.active ? '#FFD700' : '#333'};
-  background: ${props => props.active ? '#FFD700' : 'transparent'};
-  color: ${props => props.active ? '#000' : '#FFD700'};
-  border-radius: 6px;
+  border: 2px solid ${props => props.active ? '#00D4FF' : 'rgba(255, 255, 255, 0.1)'};
+  background: ${props => props.active ? 'linear-gradient(135deg, #00D4FF 0%, #0099CC 100%)' : 'rgba(255, 255, 255, 0.05)'};
+  color: ${props => props.active ? '#000' : '#FFFFFF'};
+  border-radius: 8px;
   cursor: pointer;
   transition: all 0.3s ease;
   font-weight: 600;
-  min-height: 44px; // Better touch target
+  min-height: 44px;
+  backdrop-filter: blur(10px);
 
   &:hover {
-    background: ${props => props.active ? '#FFA500' : '#FFD700'};
-    color: #000;
+    background: ${props => props.active ? 'linear-gradient(135deg, #00D4FF 0%, #0099CC 100%)' : 'rgba(255, 255, 255, 0.1)'};
+    border-color: ${props => props.active ? '#00D4FF' : 'rgba(255, 255, 255, 0.2)'};
+    transform: translateY(-2px);
+    box-shadow: 0 4px 15px rgba(0, 212, 255, 0.3);
   }
   
   @media (max-width: 768px) {
@@ -164,7 +177,7 @@ const FilterButton = styled.button<{ active: boolean }>`
 
 const ResultCount = styled.div`
   text-align: center;
-  color: #94A3B8;
+  color: #A1A1AA;
   margin-bottom: 1rem;
   font-size: 1rem;
   

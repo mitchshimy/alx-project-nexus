@@ -7,7 +7,8 @@ from .serializers import (
     UserRegistrationSerializer, 
     UserLoginSerializer, 
     UserProfileSerializer,
-    UserSerializer
+    UserSerializer,
+    PasswordChangeSerializer
 )
 from .models import User, UserProfile
 
@@ -99,3 +100,21 @@ def refresh_token(request):
         }, status=status.HTTP_200_OK)
     except Exception as e:
         return Response({'error': 'Invalid refresh token'}, status=status.HTTP_400_BAD_REQUEST)
+
+
+@api_view(['POST'])
+@permission_classes([permissions.IsAuthenticated])
+def change_password(request):
+    """Change user password"""
+    serializer = PasswordChangeSerializer(data=request.data, context={'request': request})
+    
+    if serializer.is_valid():
+        user = request.user
+        user.set_password(serializer.validated_data['new_password'])
+        user.save()
+        
+        return Response({
+            'message': 'Password changed successfully'
+        }, status=status.HTTP_200_OK)
+    else:
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)

@@ -202,6 +202,13 @@ const ErrorMessage = styled.div`
   font-size: 0.9rem;
 `;
 
+const InlineError = styled.div`
+  color: #ff6b6b;
+  font-size: 0.85rem;
+  margin-top: 0.5rem;
+  text-align: left;
+`;
+
 const SuccessMessage = styled.div`
   color: #51cf66;
   background: rgba(81, 207, 102, 0.1);
@@ -220,12 +227,16 @@ export default function SignIn() {
   });
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
+  const [emailError, setEmailError] = useState('');
+  const [passwordError, setPasswordError] = useState('');
   const [success, setSuccess] = useState('');
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
     setError('');
+    setEmailError('');
+    setPasswordError('');
     setSuccess('');
     
     try {
@@ -233,6 +244,25 @@ export default function SignIn() {
         email: formData.email,
         password: formData.password,
       });
+      
+      // If response has error property, it means there was a validation error
+      if (response && response.error) {
+        const errorText = response.error;
+        if (errorText.includes('Invalid credentials') || errorText.includes('Invalid email or password')) {
+          setPasswordError('Invalid email or password. Please check your credentials and try again.');
+        } else if (errorText.includes('email')) {
+          setEmailError('Please enter a valid email address.');
+        } else if (errorText.includes('password')) {
+          setPasswordError('Password is required.');
+        } else if (errorText.includes('User account is disabled')) {
+          setError('Your account has been disabled. Please contact support.');
+        } else if (errorText.includes('Must include email and password')) {
+          setError('Please enter both email and password.');
+        } else {
+          setPasswordError('Invalid login information. Please check your email and password.');
+        }
+        return;
+      }
       
       setSuccess('Sign in successful! Redirecting...');
     
@@ -244,18 +274,15 @@ export default function SignIn() {
     } catch (err: any) {
       console.error('Sign in error:', err);
       
-      if (err.message.includes('Invalid credentials') || err.message.includes('No active account')) {
-        setError('Account not found. Please check your email and password, or sign up for a new account.');
-      } else if (err.message.includes('email')) {
-        setError('Please enter a valid email address.');
-      } else if (err.message.includes('password')) {
-        setError('Password is required.');
-      } else if (err.message.includes('Network error')) {
+      // Only handle non-validation errors (401, 500, network errors, etc.)
+      if (err.message?.includes('Network error')) {
         setError('Connection error. Please check your internet connection and try again.');
-      } else if (err.message.includes('500')) {
+      } else if (err.message?.includes('500')) {
         setError('Server error. Please try again later.');
+      } else if (err.message?.includes('timeout')) {
+        setError('Request timed out. Please try again.');
       } else {
-        setError('An error occurred. Please try again.');
+        setError('An error occurred during sign in. Please try again.');
       }
     } finally {
       setLoading(false);
@@ -267,7 +294,13 @@ export default function SignIn() {
       ...formData,
       [e.target.name]: e.target.value,
     });
-    // Clear error when user starts typing
+    // Clear specific field errors when user starts typing
+    if (e.target.name === 'email' && emailError) {
+      setEmailError('');
+    } else if (e.target.name === 'password' && passwordError) {
+      setPasswordError('');
+    }
+    // Clear general error when user starts typing
     if (error) setError('');
   };
 
@@ -292,6 +325,7 @@ export default function SignIn() {
               required
               disabled={loading}
             />
+            {emailError && <InlineError>{emailError}</InlineError>}
           </InputGroup>
 
           <InputGroup>
@@ -306,6 +340,7 @@ export default function SignIn() {
               required
               disabled={loading}
             />
+            {passwordError && <InlineError>{passwordError}</InlineError>}
           </InputGroup>
 
           <Button type="submit" disabled={loading}>

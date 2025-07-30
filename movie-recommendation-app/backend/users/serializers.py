@@ -34,16 +34,16 @@ class UserLoginSerializer(serializers.Serializer):
         email = attrs.get('email')
         password = attrs.get('password')
         
-        if email and password:
-            user = authenticate(email=email, password=password)
-            if not user:
-                raise serializers.ValidationError('Invalid credentials')
-            if not user.is_active:
-                raise serializers.ValidationError('User account is disabled')
-            attrs['user'] = user
-        else:
-            raise serializers.ValidationError('Must include email and password')
+        if not email or not password:
+            raise serializers.ValidationError('Email and password are required')
         
+        user = authenticate(email=email, password=password)
+        if not user:
+            raise serializers.ValidationError('Invalid email or password')
+        if not user.is_active:
+            raise serializers.ValidationError('Your account has been disabled. Please contact support.')
+        
+        attrs['user'] = user
         return attrs
 
 
@@ -78,4 +78,36 @@ class UserSerializer(serializers.ModelSerializer):
     class Meta:
         model = User
         fields = ['id', 'email', 'username', 'first_name', 'last_name', 'date_joined']
-        read_only_fields = ['id', 'date_joined'] 
+        read_only_fields = ['id', 'date_joined']
+
+
+class PasswordChangeSerializer(serializers.Serializer):
+    """Serializer for password change"""
+    current_password = serializers.CharField(required=True, error_messages={
+        'required': 'Current password is required',
+        'blank': 'Current password cannot be blank'
+    })
+    new_password = serializers.CharField(required=True, min_length=8, error_messages={
+        'required': 'New password is required',
+        'blank': 'New password cannot be blank',
+        'min_length': 'New password must be at least 8 characters long'
+    })
+    confirm_password = serializers.CharField(required=True, error_messages={
+        'required': 'Password confirmation is required',
+        'blank': 'Password confirmation cannot be blank'
+    })
+    
+    def validate(self, attrs):
+        if attrs['new_password'] != attrs['confirm_password']:
+            raise serializers.ValidationError("New passwords don't match")
+        return attrs
+    
+    def validate_current_password(self, value):
+        request = self.context.get('request')
+        if not request or not request.user:
+            raise serializers.ValidationError("User not found in request context")
+        
+        user = request.user
+        if not user.check_password(value):
+            raise serializers.ValidationError("Current password is incorrect")
+        return value 

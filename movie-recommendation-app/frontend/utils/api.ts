@@ -2,7 +2,7 @@
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000/api/v1';
 
 // Increased timeout for preloading (30 seconds)
-const API_TIMEOUT = 30000;
+const API_TIMEOUT = 15000; // Reduced from 30000ms to 15000ms for faster loading
 
 // Simple in-memory cache for API responses
 const cache = new Map<string, { data: any; timestamp: number }>();
@@ -32,8 +32,10 @@ export const removeAuthToken = (): void => {
 
 // Create a timeout promise
 const createTimeoutPromise = (timeout: number) => {
-  return new Promise((_, reject) => {
-    setTimeout(() => reject(new Error('Request timeout')), timeout);
+  return new Promise<never>((_, reject) => {
+    setTimeout(() => {
+      reject(new Error('Request timeout'));
+    }, timeout);
   });
 };
 
@@ -81,10 +83,12 @@ const apiRequest = async (endpoint: string, options: RequestInit = {}) => {
 
   try {
     // Create the fetch request
-    const fetchPromise = fetch(`${API_BASE_URL}${endpoint}`, {
+    const requestOptions = {
       ...options,
       headers,
-    });
+    };
+    
+    const fetchPromise = fetch(`${API_BASE_URL}${endpoint}`, requestOptions);
 
     // Race between fetch and timeout
     const response = await Promise.race([
@@ -101,20 +105,59 @@ const apiRequest = async (endpoint: string, options: RequestInit = {}) => {
       
       // Try to get error details from response
       let errorMessage = `API request failed: ${response.statusText}`;
+      let errorTitle = 'Request Failed';
+      
       try {
         const errorData = await response.json();
-        if (errorData.detail) {
+        
+        // Handle Django REST Framework validation errors
+        if (errorData.current_password) {
+          const fieldError = Array.isArray(errorData.current_password) ? errorData.current_password[0] : errorData.current_password;
+          errorMessage = fieldError;
+          errorTitle = 'Password Error';
+        } else if (errorData.new_password) {
+          const fieldError = Array.isArray(errorData.new_password) ? errorData.new_password[0] : errorData.new_password;
+          errorMessage = fieldError;
+          errorTitle = 'Password Error';
+        } else if (errorData.confirm_password) {
+          const fieldError = Array.isArray(errorData.confirm_password) ? errorData.confirm_password[0] : errorData.confirm_password;
+          errorMessage = fieldError;
+          errorTitle = 'Password Error';
+        } else if (errorData.non_field_errors) {
+          errorMessage = Array.isArray(errorData.non_field_errors) ? errorData.non_field_errors[0] : errorData.non_field_errors;
+          errorTitle = 'Validation Error';
+        } else if (errorData.detail) {
           errorMessage = errorData.detail;
+          errorTitle = 'Error';
         } else if (errorData.message) {
           errorMessage = errorData.message;
+          errorTitle = 'Error';
         } else if (errorData.error) {
           errorMessage = errorData.error;
+          errorTitle = 'Error';
+        } else if (typeof errorData === 'object') {
+          // Handle nested validation errors
+          const firstError = Object.values(errorData)[0];
+          if (Array.isArray(firstError)) {
+            errorMessage = firstError[0];
+          } else {
+            errorMessage = String(firstError);
+          }
+          errorTitle = 'Validation Error';
         }
       } catch (e) {
         // If we can't parse the error response, use the status text
+        console.error('Error parsing error response:', e);
       }
       
-      throw new Error(errorMessage);
+      // For validation errors (400), don't show global modal - let component handle it
+      if (response.status === 400) {
+        return { error: errorMessage, errorTitle };
+      }
+      
+      // For other errors (401, 500, etc.), show global modal and reject
+      showError(errorTitle, errorMessage, 'error');
+      return Promise.reject(new Error(errorMessage));
     }
 
     // Handle empty responses (common with DELETE requests)
@@ -134,13 +177,21 @@ const apiRequest = async (endpoint: string, options: RequestInit = {}) => {
 
     return data;
   } catch (error) {
+    // Handle timeout and network errors gracefully
     if (error instanceof TypeError && error.message.includes('fetch')) {
-      throw new Error('Network error. Please check your connection and try again.');
+      const timeoutMessage = 'Network error. Please check your connection and try again.';
+      showError('Connection Error', timeoutMessage, 'error');
+      return Promise.reject(new Error(timeoutMessage));
     }
     if (error instanceof Error && error.message === 'Request timeout') {
-      throw new Error('The server is taking too long to respond. Please try again in a moment.');
+      const timeoutMessage = 'The server is taking too long to respond. Please try again in a moment.';
+      showError('Timeout Error', timeoutMessage, 'warning');
+      return Promise.reject(new Error(timeoutMessage));
     }
-    throw error;
+    // For any other unexpected errors, show a generic message
+    const genericMessage = 'An unexpected error occurred. Please try again.';
+    showError('Error', genericMessage, 'error');
+    return Promise.reject(new Error(genericMessage));
   }
 };
 
@@ -154,23 +205,44 @@ export const authAPI = {
     first_name?: string;
     last_name?: string;
   }) => {
-    return apiRequest('/users/register/', {
-      method: 'POST',
-      body: JSON.stringify(userData),
-    });
+    try {
+      return await apiRequest('/users/register/', {
+        method: 'POST',
+        body: JSON.stringify(userData),
+      });
+    } catch (error) {
+      // Handle timeout gracefully for registration
+      if (error instanceof Error && error.message.includes('timeout')) {
+        return { error: 'Registration request timed out. Please try again.', errorTitle: 'Timeout Error' };
+      }
+      throw error;
+    }
   },
 
   login: async (credentials: { email: string; password: string }) => {
-    const response = await apiRequest('/users/login/', {
-      method: 'POST',
-      body: JSON.stringify(credentials),
-    });
-    
-    if (response.tokens?.access) {
-      setAuthToken(response.tokens.access);
+    try {
+      const response = await apiRequest('/users/login/', {
+        method: 'POST',
+        body: JSON.stringify(credentials),
+      });
+      
+      // If response has error property, it means there was a validation error
+      if (response && response.error) {
+        return { error: response.error, errorTitle: response.errorTitle };
+      }
+      
+      if (response.tokens?.access) {
+        setAuthToken(response.tokens.access);
+      }
+      
+      return response;
+    } catch (error) {
+      // Handle timeout gracefully for login
+      if (error instanceof Error && error.message.includes('timeout')) {
+        return { error: 'Login request timed out. Please try again.', errorTitle: 'Timeout Error' };
+      }
+      throw error;
     }
-    
-    return response;
   },
 
   logout: () => {
@@ -191,18 +263,61 @@ export const authAPI = {
   },
 
   getProfile: async () => {
-    return apiRequest('/users/profile/');
+    try {
+      return await apiRequest('/users/profile/');
+    } catch (error) {
+      // Handle timeout gracefully for profile
+      if (error instanceof Error && error.message.includes('timeout')) {
+        return null;
+      }
+      throw error;
+    }
   },
 
   updateProfile: async (profileData: any) => {
-    return apiRequest('/users/profile/', {
-      method: 'PUT',
-      body: JSON.stringify(profileData),
-    });
+    try {
+      return await apiRequest('/users/profile/', {
+        method: 'PUT',
+        body: JSON.stringify(profileData),
+      });
+    } catch (error) {
+      // Handle timeout gracefully for profile update
+      if (error instanceof Error && error.message.includes('timeout')) {
+        return { error: 'Profile update request timed out. Please try again.', errorTitle: 'Timeout Error' };
+      }
+      throw error;
+    }
   },
 
   getUserStats: async () => {
-    return apiRequest('/users/stats/');
+    try {
+      return await apiRequest('/users/stats/');
+    } catch (error) {
+      // Handle timeout gracefully for stats
+      if (error instanceof Error && error.message.includes('timeout')) {
+        return { favorites_count: 0, watchlist_count: 0, ratings_count: 0, member_since: 'N/A' };
+      }
+      throw error;
+    }
+  },
+
+  changePassword: async (passwordData: {
+    current_password: string;
+    new_password: string;
+    confirm_password: string;
+  }) => {
+    try {
+      return await apiRequest('/users/change-password/', {
+        method: 'POST',
+        body: JSON.stringify(passwordData),
+      });
+    } catch (error) {
+      // Handle timeout gracefully for password change
+      if (error instanceof Error && error.message.includes('timeout')) {
+        return { error: 'Password change request timed out. Please try again.', errorTitle: 'Timeout Error' };
+      }
+      throw error;
+    }
   },
 };
 
@@ -216,43 +331,92 @@ export const movieAPI = {
     media_type?: 'movie' | 'tv';
     genre_ids?: string;
   } = {}) => {
-    const searchParams = new URLSearchParams();
-    
-    if (params.type) searchParams.append('type', params.type);
-    if (params.page) searchParams.append('page', params.page.toString());
-    if (params.search) searchParams.append('search', params.search);
-    if (params.media_type) searchParams.append('media_type', params.media_type);
-    if (params.genre_ids) searchParams.append('genre_ids', params.genre_ids);
+    try {
+      const searchParams = new URLSearchParams();
+      
+      if (params.type) searchParams.append('type', params.type);
+      if (params.page) searchParams.append('page', params.page.toString());
+      if (params.search) searchParams.append('search', params.search);
+      if (params.media_type) searchParams.append('media_type', params.media_type);
+      if (params.genre_ids) searchParams.append('genre_ids', params.genre_ids);
 
-    const queryString = searchParams.toString();
-    return apiRequest(`/movies/${queryString ? `?${queryString}` : ''}`);
+      const queryString = searchParams.toString();
+      return await apiRequest(`/movies/${queryString ? `?${queryString}` : ''}`);
+    } catch (error) {
+      // Handle timeout gracefully for movies
+      if (error instanceof Error && error.message.includes('timeout')) {
+        return { results: [], total_pages: 0, total_results: 0 };
+      }
+      throw error;
+    }
   },
 
   // Search movies and TV shows
   searchMovies: async (query: string, page: number = 1) => {
-    return apiRequest(`/movies/search/?q=${encodeURIComponent(query)}&page=${page}`);
+    try {
+      return await apiRequest(`/movies/search/?q=${encodeURIComponent(query)}&page=${page}`);
+    } catch (error) {
+      // Handle timeout gracefully for search
+      if (error instanceof Error && error.message.includes('timeout')) {
+        return { results: [], total_pages: 0, total_results: 0 };
+      }
+      throw error;
+    }
   },
 
   // Get movie details
   getMovieDetails: async (tmdbId: number) => {
-    return apiRequest(`/movies/${tmdbId}/`);
+    try {
+      return await apiRequest(`/movies/${tmdbId}/`);
+    } catch (error) {
+      // Handle timeout gracefully for movie details
+      if (error instanceof Error && error.message.includes('timeout')) {
+        return null;
+      }
+      throw error;
+    }
   },
 
   // Get genres
   getGenres: async () => {
-    return apiRequest('/movies/genres/');
+    try {
+      return await apiRequest('/movies/genres/');
+    } catch (error) {
+      // Handle timeout gracefully for genres
+      if (error instanceof Error && error.message.includes('timeout')) {
+        return [];
+      }
+      throw error;
+    }
   },
 
-  // Favorites
+  // Get favorites
   getFavorites: async () => {
-    return apiRequest('/movies/favorites/');
+    try {
+      return await apiRequest('/movies/favorites/');
+    } catch (error) {
+      // Handle timeout gracefully for favorites
+      if (error instanceof Error && error.message.includes('timeout')) {
+        return [];
+      }
+      throw error;
+    }
   },
 
-  addToFavorites: async (movieId: number) => {
-    return apiRequest('/movies/favorites/', {
-      method: 'POST',
-      body: JSON.stringify({ movie_id: movieId }),
-    });
+  // Add to favorites
+  addToFavorites: async (movieData: any) => {
+    try {
+      return await apiRequest('/movies/favorites/', {
+        method: 'POST',
+        body: JSON.stringify(movieData),
+      });
+    } catch (error) {
+      // Handle timeout gracefully for adding favorites
+      if (error instanceof Error && error.message.includes('timeout')) {
+        return { error: 'Failed to add to favorites. Please try again.', errorTitle: 'Timeout Error' };
+      }
+      throw error;
+    }
   },
 
   removeFromFavorites: async (favoriteId: number) => {
@@ -347,4 +511,20 @@ export const fetchTopRatedMovies = async () => {
 
 export const fetchPopularMovies = async () => {
   return movieAPI.getMovies({ type: 'movies', page: 1 });
+};
+
+// Global error handler
+let globalErrorHandler: ((title: string, message: string, type?: 'error' | 'warning' | 'info') => void) | null = null;
+
+export const setGlobalErrorHandler = (handler: (title: string, message: string, type?: 'error' | 'warning' | 'info') => void) => {
+  globalErrorHandler = handler;
+};
+
+export const showError = (title: string, message: string, type: 'error' | 'warning' | 'info' = 'error') => {
+  if (globalErrorHandler) {
+    globalErrorHandler(title, message, type);
+  } else {
+    // Fallback to console error if no handler is set
+    console.error(`${title}: ${message}`);
+  }
 };
