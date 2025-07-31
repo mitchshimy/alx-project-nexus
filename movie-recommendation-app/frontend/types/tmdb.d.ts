@@ -20,6 +20,60 @@ export interface TMDBMovie {
   user_rating?: number;
   favorite_id?: number;
   watchlist_id?: number;
+  
+  // Additional properties for enhanced movie details
+  tagline?: string;
+  imdb_id?: string;
+  original_language?: string;
+  budget?: number;
+  revenue?: number;
+  status?: string;
+  production_companies?: Array<{
+    id: number;
+    name: string;
+    logo_path?: string | null;
+    origin_country?: string;
+  }>;
+  production_countries?: Array<{
+    iso_3166_1: string;
+    name: string;
+  }>;
+  spoken_languages?: Array<{
+    iso_639_1: string;
+    english_name: string;
+    name: string;
+  }>;
+  videos?: {
+    results: Array<{
+      id: string;
+      key: string;
+      name: string;
+      site: string;
+      size: number;
+      type: string;
+      official: boolean;
+      published_at: string;
+    }>;
+  };
+  reviews?: {
+    results: Array<{
+      id: string;
+      author: string;
+      author_details: {
+        name: string;
+        username: string;
+        avatar_path?: string | null;
+        rating?: number;
+      };
+      content: string;
+      created_at: string;
+      updated_at: string;
+      url: string;
+    }>;
+  };
+  similar?: {
+    results: TMDBMovie[];
+  };
 }
 
 export interface TMDBTVShow {

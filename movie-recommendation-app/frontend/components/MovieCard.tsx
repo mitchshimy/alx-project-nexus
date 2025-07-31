@@ -301,7 +301,7 @@ const MovieCard = memo<MovieCardProps>(({ movie, onFavoriteToggle, onWatchlistTo
   };
 
   const handleCardClick = () => {
-    router.push(`/movies/${movie.id}`);
+    router.push(`/movies/${movie.tmdb_id}`);
   };
 
   const handleFavoriteToggle = async (e: React.MouseEvent) => {
@@ -319,16 +319,23 @@ const MovieCard = memo<MovieCardProps>(({ movie, onFavoriteToggle, onWatchlistTo
           if (movie.favorite_id) {
             await movieAPI.removeFromFavorites(movie.favorite_id);
           } else {
-            await movieAPI.removeFromFavoritesByMovie(movie.id);
+            await movieAPI.removeFromFavoritesByMovie(movie.tmdb_id);
           }
         } catch (error) {
           console.error('Error removing from favorites:', error);
           // Fallback to movie ID removal
-          await movieAPI.removeFromFavoritesByMovie(movie.id);
+          await movieAPI.removeFromFavoritesByMovie(movie.tmdb_id);
         }
         setIsFavorite(false);
       } else {
-        await movieAPI.addToFavorites(movie.id);
+        await movieAPI.addToFavorites({
+          tmdb_id: movie.tmdb_id,
+          title: movie.title,
+          poster_path: movie.poster_path,
+          overview: movie.overview,
+          release_date: movie.release_date,
+          vote_average: movie.vote_average
+        });
         setIsFavorite(true);
       }
       
@@ -358,16 +365,16 @@ const MovieCard = memo<MovieCardProps>(({ movie, onFavoriteToggle, onWatchlistTo
           if (movie.watchlist_id) {
             await movieAPI.removeFromWatchlist(movie.watchlist_id);
           } else {
-            await movieAPI.removeFromWatchlistByMovie(movie.id);
+            await movieAPI.removeFromWatchlistByMovie(movie.tmdb_id);
           }
         } catch (error) {
           console.error('Error removing from watchlist:', error);
           // Fallback to movie ID removal
-          await movieAPI.removeFromWatchlistByMovie(movie.id);
+          await movieAPI.removeFromWatchlistByMovie(movie.tmdb_id);
         }
         setIsInWatchlist(false);
       } else {
-        await movieAPI.addToWatchlist(movie.id);
+        await movieAPI.addToWatchlist(movie.tmdb_id);
         setIsInWatchlist(true);
       }
       

@@ -306,14 +306,17 @@ class TMDBService:
         return data
     
     def get_movie_details(self, movie_id):
-        """Get detailed movie information"""
+        """Get detailed movie information with credits, videos, reviews, and similar movies"""
         cache_key = self._get_cache_key(f'/movie/{movie_id}')
         cached_data = self._get_cached_data(cache_key)
         
         if cached_data:
             return cached_data
         
-        data = self._make_request(f'/movie/{movie_id}')
+        # Fetch comprehensive movie data with all append_to_response parameters
+        data = self._make_request(f'/movie/{movie_id}', {
+            'append_to_response': 'credits,videos,reviews,similar'
+        })
         self._set_cached_data(cache_key, data)
         return data
     

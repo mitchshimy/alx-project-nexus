@@ -1,13 +1,15 @@
 import { useRouter } from 'next/router';
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useRef } from 'react';
 import styled from 'styled-components';
 import { SkeletonPoster, SkeletonTitle, SkeletonText } from '@/components/Skeleton';
 import { TMDBMovie, TMDBCast } from '@/types/tmdb';
 import { movieAPI } from '@/utils/api';
+import { FaStar, FaRegStar, FaImdb, FaPlay } from 'react-icons/fa';
+import { MdDateRange, MdAccessTime, MdLanguage, MdMoney, MdPeople } from 'react-icons/md';
 
-const Container = styled.div`
-  max-width: 800px;
-  margin: 40px auto;
+const Container = styled.div<{ isSidebarOpen?: boolean }>`
+  max-width: ${props => props.isSidebarOpen ? '100%' : '1200px'};
+  margin: ${props => props.isSidebarOpen ? '20px' : '40px auto'};
   background: rgba(26, 26, 26, 0.95);
   backdrop-filter: blur(20px);
   border: 1px solid rgba(255, 255, 255, 0.1);
@@ -16,6 +18,7 @@ const Container = styled.div`
   padding: 32px;
   position: relative;
   color: #FFFFFF;
+  transition: all 0.3s ease;
 
   @media (max-width: 600px) {
     padding: 24px;
@@ -28,25 +31,35 @@ const MovieHeader = styled.div`
   gap: 32px;
   margin-bottom: 24px;
 
-  @media (max-width: 600px) {
+  @media (max-width: 768px) {
     flex-direction: column;
-    gap: 16px;
+    gap: 24px;
   }
 `;
 
 const PosterContainer = styled.div`
   flex: 0 0 300px;
   position: relative;
+  border-radius: 12px;
+  overflow: hidden;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.5);
+  transition: transform 0.3s ease;
 
-  @media (max-width: 600px) {
+  &:hover {
+    transform: scale(1.02);
+  }
+
+  @media (max-width: 768px) {
     flex: 0 0 auto;
+    max-width: 300px;
+    margin: 0 auto;
   }
 `;
 
 const Poster = styled.img`
   width: 100%;
-  border-radius: 12px;
-  box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+  height: auto;
+  display: block;
 `;
 
 const MovieInfo = styled.div`
@@ -54,231 +67,596 @@ const MovieInfo = styled.div`
 `;
 
 const Title = styled.h1`
-  font-size: 2rem;
+  font-size: 2.5rem;
   margin-bottom: 16px;
   color: #FFFFFF;
   text-shadow: 0 2px 8px rgba(0, 0, 0, 0.8);
+  font-weight: 700;
   
   @media (max-width: 768px) {
-    font-size: 1.5rem;
+    font-size: 2rem;
   }
   
   @media (max-width: 480px) {
-    font-size: 1.3rem;
+    font-size: 1.8rem;
+  }
+`;
+
+const Tagline = styled.p`
+  font-size: 1.2rem;
+  color: rgba(255, 255, 255, 0.8);
+  font-style: italic;
+  margin-bottom: 16px;
+  
+  @media (max-width: 768px) {
+    font-size: 1.1rem;
   }
 `;
 
 const Metadata = styled.div`
   display: flex;
-  gap: 16px;
-  margin-bottom: 16px;
   flex-wrap: wrap;
+  gap: 16px;
+  margin-bottom: 24px;
+  align-items: center;
   
   @media (max-width: 768px) {
     gap: 12px;
-  }
-  
-  @media (max-width: 480px) {
-    gap: 8px;
   }
 `;
 
 const MetadataItem = styled.div`
   display: flex;
   align-items: center;
-  gap: 4px;
-  font-size: 0.9rem;
-  color: rgba(255, 255, 255, 0.8);
+  gap: 6px;
+  font-size: 0.95rem;
+  color: rgba(255, 255, 255, 0.9);
+  background: rgba(255, 255, 255, 0.1);
+  padding: 6px 12px;
+  border-radius: 20px;
 
-  & > strong {
-    color: #FFFFFF;
+  & > svg {
+    color: #00D4FF;
+    font-size: 1.1rem;
   }
   
   @media (max-width: 480px) {
-    font-size: 0.8rem;
+    font-size: 0.85rem;
+    padding: 4px 10px;
   }
 `;
 
-const Overview = styled.p`
+const RatingContainer = styled.div`
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 16px;
+`;
+
+const RatingStars = styled.div`
+  display: flex;
+  align-items: center;
+  gap: 2px;
+`;
+
+const RatingText = styled.div`
   font-size: 1.1rem;
-  line-height: 1.6;
+  color: #FFD700;
+  font-weight: 600;
+`;
+
+const VoteCount = styled.div`
+  font-size: 0.9rem;
+  color: rgba(255, 255, 255, 0.7);
+`;
+
+const IMDBLink = styled.a`
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  color: #F5C518;
+  text-decoration: none;
+  font-weight: 600;
+  margin-left: 16px;
+  transition: opacity 0.2s ease;
+
+  &:hover {
+    opacity: 0.8;
+  }
+`;
+
+const GenresList = styled.div`
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-bottom: 16px;
+`;
+
+const Genre = styled.span`
+  background: rgba(0, 212, 255, 0.2);
+  color: #00D4FF;
+  padding: 4px 12px;
+  border-radius: 20px;
+  font-size: 0.85rem;
+`;
+
+const Overview = styled.p`
+  font-size: 1.05rem;
+  line-height: 1.7;
   color: rgba(255, 255, 255, 0.9);
   margin-bottom: 24px;
-  
-  @media (max-width: 768px) {
-    font-size: 1rem;
-  }
-  
-  @media (max-width: 480px) {
-    font-size: 0.9rem;
-  }
 `;
 
 const ActionButtons = styled.div`
   display: flex;
   gap: 16px;
-  margin-top: 32px;
-  
-  @media (max-width: 768px) {
-    gap: 12px;
-  }
-  
-  @media (max-width: 480px) {
-    gap: 8px;
-    flex-direction: column;
-  }
+  margin-top: 24px;
+  flex-wrap: wrap;
 `;
 
-const Button = styled.button`
-  padding: 10px 24px;
-  border: none;
-  border-radius: 6px;
-  font-weight: 600;
+const BackButton = styled.button`
+  background: rgba(255, 255, 255, 0.1);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  color: #FFFFFF;
+  padding: 12px 24px;
+  border-radius: 8px;
   cursor: pointer;
-  transition: all 0.2s;
-  display: inline-flex;
+  font-size: 0.95rem;
+  transition: all 0.2s ease;
+  display: flex;
   align-items: center;
   gap: 8px;
-  min-height: 44px; // Better touch target
   
-  @media (max-width: 768px) {
-    padding: 8px 20px;
-    font-size: 0.9rem;
-  }
-  
-  @media (max-width: 480px) {
-    padding: 6px 16px;
-    font-size: 0.8rem;
+  &:hover {
+    background: rgba(255, 255, 255, 0.2);
+    border-color: rgba(255, 255, 255, 0.3);
   }
 `;
 
-const BackButton = styled(Button)`
-  background: linear-gradient(135deg, #00D4FF 0%, #0099CC 100%);
-  color: #000000;
-  box-shadow: 0 4px 16px rgba(0, 212, 255, 0.3);
+const FavoriteButton = styled.button<{ $isFavorite: boolean }>`
+  background: ${props => props.$isFavorite ? 'rgba(239, 68, 68, 0.2)' : 'rgba(34, 197, 94, 0.2)'};
+  border: 1px solid ${props => props.$isFavorite ? 'rgba(239, 68, 68, 0.3)' : 'rgba(34, 197, 94, 0.3)'};
+  color: ${props => props.$isFavorite ? '#f87171' : '#4ade80'};
+  padding: 12px 24px;
+  border-radius: 8px;
+  cursor: pointer;
+  font-size: 0.95rem;
+  transition: all 0.2s ease;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  
+  &:hover {
+    background: ${props => props.$isFavorite ? 'rgba(239, 68, 68, 0.3)' : 'rgba(34, 197, 94, 0.3)'};
+    border-color: ${props => props.$isFavorite ? 'rgba(239, 68, 68, 0.4)' : 'rgba(34, 197, 94, 0.4)'};
+  }
+`;
+
+const WatchTrailerButton = styled.button`
+  background: rgba(239, 68, 68, 0.2);
+  border: 1px solid rgba(239, 68, 68, 0.3);
+  color: #f87171;
+  padding: 12px 24px;
+  border-radius: 8px;
+  cursor: pointer;
+  font-size: 0.95rem;
+  transition: all 0.2s ease;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  
+  &:hover {
+    background: rgba(239, 68, 68, 0.3);
+    border-color: rgba(239, 68, 68, 0.4);
+  }
+`;
+
+const WatchlistButton = styled.button<{ $isWatchlisted: boolean }>`
+  background: ${props => props.$isWatchlisted ? 'rgba(59, 130, 246, 0.2)' : 'rgba(168, 85, 247, 0.2)'};
+  border: 1px solid ${props => props.$isWatchlisted ? 'rgba(59, 130, 246, 0.3)' : 'rgba(168, 85, 247, 0.3)'};
+  color: ${props => props.$isWatchlisted ? '#60a5fa' : '#a855f7'};
+  padding: 12px 24px;
+  border-radius: 8px;
+  cursor: pointer;
+  font-size: 0.95rem;
+  transition: all 0.2s ease;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  
+  &:hover {
+    background: ${props => props.$isWatchlisted ? 'rgba(59, 130, 246, 0.3)' : 'rgba(168, 85, 247, 0.3)'};
+    border-color: ${props => props.$isWatchlisted ? 'rgba(59, 130, 246, 0.4)' : 'rgba(168, 85, 247, 0.4)'};
+  }
+`;
+
+const ModalOverlay = styled.div`
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.8);
+  display: flex;
+  justify-content: center;
+  align-items: flex-start;
+  z-index: 1000;
+  backdrop-filter: blur(5px);
+  padding-top: 20px;
+`;
+
+const ModalContent = styled.div`
+  position: relative;
+  width: 90%;
+  max-width: 1200px;
+  background: #111;
+  border-radius: 12px;
+  overflow: hidden;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
+`;
+
+const CloseButton = styled.button`
+  position: absolute;
+  top: 15px;
+  right: -5px;
+  background: rgba(255, 255, 255, 0.2);
+  border: none;
+  color: white;
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  z-index: 10;
+  transition: all 0.2s ease;
 
   &:hover {
-    background: linear-gradient(135deg, #0099CC 0%, #00D4FF 100%);
-    transform: translateY(-2px);
-    box-shadow: 0 8px 32px rgba(0, 212, 255, 0.4);
+    background: rgba(255, 255, 255, 0.3);
+    transform: scale(1.1);
   }
 `;
 
-const FavoriteButton = styled(Button)<{ $isFavorite: boolean }>`
-  background: ${({ $isFavorite }) => 
-    $isFavorite ? 'linear-gradient(135deg, #FF6B35 0%, #FF4500 100%)' : 'rgba(255, 255, 255, 0.1)'};
-  color: ${({ $isFavorite }) => $isFavorite ? '#FFFFFF' : '#FFFFFF'};
-  border: 1px solid ${({ $isFavorite }) => $isFavorite ? 'transparent' : 'rgba(255, 255, 255, 0.2)'};
-  backdrop-filter: blur(20px);
+const VideoContainer = styled.div`
+  position: relative;
+  padding-bottom: 56.25%; /* 16:9 aspect ratio */
+  height: 0;
+  overflow: hidden;
 
-  &:hover {
-    background: ${({ $isFavorite }) => $isFavorite ? 'linear-gradient(135deg, #FF4500 0%, #FF6B35 100%)' : 'rgba(0, 212, 255, 0.15)'};
-    border-color: ${({ $isFavorite }) => $isFavorite ? 'transparent' : 'rgba(0, 212, 255, 0.4)'};
-    transform: translateY(-2px);
+  iframe {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    border: none;
   }
 `;
 
-const SimilarMoviesSection = styled.div`
-  margin-top: 40px;
-`;
-
-const SimilarMoviesTitle = styled.h2`
+const SectionTitle = styled.h2`
   font-size: 1.5rem;
-  margin-bottom: 16px;
+  margin: 2rem 0 1.5rem;
   color: #FFFFFF;
-  text-shadow: 0 2px 8px rgba(0, 0, 0, 0.8);
+  font-weight: 600;
+  position: relative;
+  padding-bottom: 8px;
+
+  &:after {
+    content: '';
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    width: 60px;
+    height: 3px;
+    background: linear-gradient(90deg, #00D4FF, transparent);
+    border-radius: 3px;
+  }
+`;
+
+const InfoGrid = styled.div`
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+  gap: 20px;
+  margin-bottom: 2rem;
+`;
+
+const InfoCard = styled.div`
+  background: rgba(255, 255, 255, 0.05);
+  border-radius: 12px;
+  padding: 16px;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+`;
+
+const InfoCardTitle = styled.h3`
+  font-size: 1rem;
+  color: #00D4FF;
+  margin-bottom: 12px;
+  font-weight: 600;
+`;
+
+const InfoCardContent = styled.div`
+  font-size: 0.95rem;
+  color: rgba(255, 255, 255, 0.9);
+  line-height: 1.6;
+`;
+
+const CastList = styled.div`
+  margin-top: 2rem;
+`;
+
+const CastGrid = styled.div`
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+  gap: 1.5rem;
+  margin-bottom: 2rem;
   
   @media (max-width: 768px) {
-    font-size: 1.3rem;
+    grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
+    gap: 1rem;
   }
+`;
+
+const CastCard = styled.div`
+  text-align: center;
+  background: rgba(255, 255, 255, 0.05);
+  border-radius: 12px;
+  padding: 12px;
+  transition: all 0.3s ease;
+  border: 1px solid rgba(255, 255, 255, 0.1);
   
-  @media (max-width: 480px) {
-    font-size: 1.1rem;
+  &:hover {
+    transform: translateY(-5px);
+    background: rgba(255, 255, 255, 0.1);
+    box-shadow: 0 8px 16px rgba(0, 0, 0, 0.2);
   }
+`;
+
+const CastImage = styled.img`
+  width: 100%;
+  height: 160px;
+  object-fit: cover;
+  border-radius: 8px;
+  margin-bottom: 12px;
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+`;
+
+const CastName = styled.div`
+  font-size: 0.95rem;
+  color: #FFFFFF;
+  font-weight: 600;
+  margin-bottom: 4px;
+`;
+
+const CastCharacter = styled.div`
+  font-size: 0.85rem;
+  color: #A1A1AA;
+  line-height: 1.4;
+`;
+
+const TabContainer = styled.div`
+  margin-top: 2rem;
+`;
+
+const TabButtons = styled.div`
+  display: flex;
+  gap: 8px;
+  margin-bottom: 1.5rem;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+  padding-bottom: 8px;
+`;
+
+const TabButton = styled.button<{ $active: boolean }>`
+  background: ${props => props.$active ? 'rgba(0, 212, 255, 0.2)' : 'transparent'};
+  border: none;
+  color: ${props => props.$active ? '#00D4FF' : '#A1A1AA'};
+  padding: 10px 20px;
+  border-radius: 8px;
+  cursor: pointer;
+  font-weight: 500;
+  transition: all 0.2s ease;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  
+  &:hover {
+    background: ${props => props.$active ? 'rgba(0, 212, 255, 0.3)' : 'rgba(255, 255, 255, 0.1)'};
+    color: ${props => props.$active ? '#00D4FF' : '#FFFFFF'};
+  }
+`;
+
+const TabContent = styled.div`
+  min-height: 200px;
+`;
+
+const FullCastGrid = styled.div`
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+  gap: 1rem;
+  margin-bottom: 2rem;
+  
+  @media (max-width: 768px) {
+    grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+  }
+`;
+
+const FullCastCard = styled.div`
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  background: rgba(255, 255, 255, 0.05);
+  border-radius: 12px;
+  padding: 12px;
+  transition: all 0.3s ease;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  
+  &:hover {
+    transform: translateY(-3px);
+    background: rgba(255, 255, 255, 0.1);
+    box-shadow: 0 8px 16px rgba(0, 0, 0, 0.1);
+  }
+`;
+
+const FullCastImage = styled.img`
+  width: 60px;
+  height: 60px;
+  object-fit: cover;
+  border-radius: 50%;
+  flex-shrink: 0;
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+`;
+
+const FullCastInfo = styled.div`
+  flex: 1;
+  min-width: 0;
+`;
+
+const FullCastName = styled.div`
+  font-size: 0.95rem;
+  color: #FFFFFF;
+  font-weight: 600;
+  margin-bottom: 4px;
+`;
+
+const FullCastCharacter = styled.div`
+  font-size: 0.85rem;
+  color: #A1A1AA;
+  line-height: 1.4;
+`;
+
+const ReviewsGrid = styled.div`
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+  gap: 1.5rem;
+  margin-bottom: 2rem;
+  
+  @media (max-width: 768px) {
+    grid-template-columns: 1fr;
+  }
+`;
+
+const ReviewCard = styled.div`
+  background: rgba(255, 255, 255, 0.05);
+  border-radius: 12px;
+  padding: 20px;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  transition: all 0.3s ease;
+  
+  &:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 8px 16px rgba(0, 0, 0, 0.2);
+  }
+`;
+
+const ReviewHeader = styled.div`
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 16px;
+`;
+
+const ReviewAuthorImage = styled.img`
+  width: 50px;
+  height: 50px;
+  object-fit: cover;
+  border-radius: 50%;
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+`;
+
+const ReviewAuthorInfo = styled.div`
+  flex: 1;
+`;
+
+const ReviewAuthorName = styled.div`
+  font-size: 1rem;
+  color: #FFFFFF;
+  font-weight: 600;
+  margin-bottom: 4px;
+`;
+
+const ReviewDate = styled.div`
+  font-size: 0.85rem;
+  color: #A1A1AA;
+`;
+
+const ReviewRating = styled.div`
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 1rem;
+  color: #FFD700;
+  font-weight: 600;
+`;
+
+const ReviewContent = styled.div`
+  font-size: 0.95rem;
+  color: #E5E7EB;
+  line-height: 1.7;
 `;
 
 const SimilarMoviesGrid = styled.div`
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
-  gap: 16px;
-  margin-top: 16px;
+  grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+  gap: 1.5rem;
+  margin-bottom: 2rem;
   
   @media (max-width: 768px) {
-    grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
-    gap: 12px;
-  }
-  
-  @media (max-width: 480px) {
-    grid-template-columns: repeat(auto-fill, minmax(100px, 1fr));
-    gap: 8px;
+    grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
   }
 `;
 
 const SimilarMovie = styled.div`
   cursor: pointer;
-  transition: transform 0.2s;
-
+  transition: all 0.3s ease;
+  
   &:hover {
-    transform: translateY(-4px);
+    transform: translateY(-5px);
   }
 `;
 
 const SimilarPoster = styled.img`
   width: 100%;
   border-radius: 8px;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.2);
+  margin-bottom: 8px;
   aspect-ratio: 2/3;
   object-fit: cover;
-  box-shadow: 0 2px 8px rgba(0,0,0,0.1);
 `;
 
-const CastList = styled.div`
-  margin-top: 32px;
+const SimilarTitle = styled.div`
+  font-size: 0.95rem;
+  color: #FFFFFF;
+  font-weight: 500;
+  line-height: 1.4;
 `;
 
-const CastGrid = styled.div`
+const SimilarRating = styled.div`
   display: flex;
-  gap: 16px;
-  overflow-x: auto;
-  padding-bottom: 8px;
-  
-  @media (max-width: 768px) {
-    gap: 12px;
-  }
-  
-  @media (max-width: 480px) {
-    gap: 8px;
-  }
-`;
-
-const CastCard = styled.div`
-  flex: 0 0 auto;
-  width: 100px;
-  text-align: center;
-  
-  @media (max-width: 480px) {
-    width: 80px;
-  }
-`;
-
-const CastImage = styled.img`
-  width: 100%;
-  border-radius: 50%;
-  aspect-ratio: 1;
-  object-fit: cover;
-  margin-bottom: 8px;
-`;
-
-const CastName = styled.p`
+  align-items: center;
+  gap: 4px;
   font-size: 0.85rem;
-  color: rgba(255, 255, 255, 0.9);
-  margin: 0;
-  
-  @media (max-width: 480px) {
-    font-size: 0.75rem;
-  }
+  color: #FFD700;
+  margin-top: 4px;
 `;
 
-export default function MovieDetailPage() {
+const NoContentMessage = styled.div`
+  text-align: center;
+  padding: 40px 20px;
+  color: rgba(255, 255, 255, 0.6);
+  font-size: 1rem;
+`;
+
+const LoadingMessage = styled.div`
+  text-align: center;
+  padding: 20px;
+  color: rgba(255, 255, 255, 0.7);
+  font-size: 0.9rem;
+  background: rgba(255, 255, 255, 0.05);
+  border-radius: 8px;
+  margin: 10px 0;
+`;
+
+export default function MovieDetailPage({ isSidebarOpen = false }: { isSidebarOpen?: boolean }) {
   const router = useRouter();
   const { id } = router.query;
   const [movie, setMovie] = useState<TMDBMovie | null>(null);
@@ -286,7 +664,16 @@ export default function MovieDetailPage() {
   const [error, setError] = useState<string | null>(null);
   const [similarMovies, setSimilarMovies] = useState<TMDBMovie[]>([]);
   const [isFavoriteMovie, setIsFavoriteMovie] = useState(false);
+  const [isWatchlistedMovie, setIsWatchlistedMovie] = useState(false);
   const [cast, setCast] = useState<TMDBCast[]>([]);
+  const [fullCast, setFullCast] = useState<TMDBCast[]>([]);
+  const [reviews, setReviews] = useState<any[]>([]);
+  const [activeTab, setActiveTab] = useState<'details' | 'cast' | 'reviews'>('details');
+  const [videos, setVideos] = useState<any[]>([]);
+  const [showTrailerModal, setShowTrailerModal] = useState(false);
+  const [selectedTrailer, setSelectedTrailer] = useState<any>(null);
+  const [navigatingToSimilar, setNavigatingToSimilar] = useState(false);
+  const navigatingTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
   useEffect(() => {
     if (!id) return;
@@ -296,16 +683,34 @@ export default function MovieDetailPage() {
     setSimilarMovies([]);
     setCast([]);
     setError(null);
-    setLoading(true); 
+    setLoading(true);
+    setNavigatingToSimilar(false);
+    
+    // Clear any existing timeout
+    if (navigatingTimeoutRef.current) {
+      clearTimeout(navigatingTimeoutRef.current);
+      navigatingTimeoutRef.current = null;
+    }
 
     const fetchData = async () => {
       try {
         setLoading(true);
-        console.log(`Fetching movie details for ID: ${id}`); // Debug
+        console.log(`Fetching movie details for ID: ${id}`);
         
         // Fetch movie details from our backend API
         const movieData = await movieAPI.getMovieDetails(Number(id));
-        console.log('Movie data received:', movieData); // Debug
+        console.log('Movie data received:', movieData);
+        
+        // Check if API returned an error object
+        if (movieData && movieData.error) {
+          setError(movieData.error);
+          setLoading(false);
+          return;
+        }
+        
+        // If we get here, navigation was successful, so reset the navigating state
+        setNavigatingToSimilar(false);
+        
         setMovie(movieData);
         
         // Check if movie is in favorites
@@ -313,13 +718,68 @@ export default function MovieDetailPage() {
           setIsFavoriteMovie(true);
         }
 
-        // Set cast if available
-        if (movieData.credits?.cast) {
-          setCast(movieData.credits.cast.slice(0, 10)); // Top 10 cast
+        // Check if movie is in watchlist
+        if (movieData.is_watchlisted) {
+          setIsWatchlistedMovie(true);
         }
 
-        // For now, we'll skip similar movies since we don't have that endpoint yet
-        // TODO: Add similar movies endpoint to backend
+        // Set cast if available
+        if (movieData.credits?.cast) {
+          const allCast = movieData.credits.cast;
+          setCast(allCast.slice(0, 10)); // Top 10 cast for main section
+          setFullCast(allCast); // Full cast for detailed view
+        }
+
+        // Set videos if available
+        if (movieData.videos?.results) {
+          setVideos(movieData.videos.results.filter((video: any) => video.type === 'Trailer'));
+        }
+
+        // Set reviews if available
+        if (movieData.reviews?.results) {
+          setReviews(movieData.reviews.results);
+        } else {
+          // Mock reviews for demonstration
+          setReviews([
+            {
+              id: 1,
+              author: 'MovieFan123',
+              author_details: { 
+                avatar_path: null,
+                rating: 9 
+              },
+              content: 'This movie was absolutely fantastic! The acting was superb and the storyline kept me engaged throughout.',
+              created_at: '2024-01-15T10:30:00Z'
+            },
+            {
+              id: 2,
+              author: 'CinemaLover',
+              author_details: { 
+                avatar_path: null,
+                rating: 8 
+              },
+              content: 'A solid film with great performances. The cinematography was beautiful and the pacing was perfect.',
+              created_at: '2024-01-14T15:45:00Z'
+            },
+            {
+              id: 3,
+              author: 'FilmCritic',
+              author_details: { 
+                avatar_path: null,
+                rating: 7 
+              },
+              content: 'While not perfect, this movie delivers on its promises. Worth watching for the performances alone.',
+              created_at: '2024-01-13T09:20:00Z'
+            }
+          ]);
+        }
+
+        // Fetch similar movies if available
+        if (movieData.similar?.results) {
+          // Filter out movies without valid TMDB IDs
+          const validSimilarMovies = movieData.similar.results.filter((movie: any) => movie.tmdb_id || movie.id);
+          setSimilarMovies(validSimilarMovies.slice(0, 10));
+        }
         
       } catch (err: any) {
         console.error('Error fetching movie details:', err);
@@ -327,7 +787,7 @@ export default function MovieDetailPage() {
           message: err.message,
           stack: err.stack,
           id: id
-        }); // Debug
+        });
         setError(err.message || 'Failed to fetch movie details');
       } finally {
         setLoading(false);
@@ -337,6 +797,15 @@ export default function MovieDetailPage() {
     fetchData();
   }, [id]);
 
+  // Cleanup timeout on unmount
+  useEffect(() => {
+    return () => {
+      if (navigatingTimeoutRef.current) {
+        clearTimeout(navigatingTimeoutRef.current);
+      }
+    };
+  }, []);
+
   const formatDate = (dateString: string) => {
     if (!dateString) return 'Unknown';
     return new Date(dateString).toLocaleDateString('en-US', {
@@ -344,9 +813,47 @@ export default function MovieDetailPage() {
     });
   };
 
-  const formatRating = (rating: number | null) => {
-    if (rating === null || rating === undefined) return 'Not rated';
-    return `${rating.toFixed(1)}/10`;
+  const formatRuntime = (minutes: number) => {
+    if (!minutes) return 'Unknown';
+    const hours = Math.floor(minutes / 60);
+    const mins = minutes % 60;
+    return `${hours}h ${mins}m`;
+  };
+
+  const formatCurrency = (amount: number) => {
+    if (!amount) return 'Unknown';
+    return new Intl.NumberFormat('en-US', {
+      style: 'currency',
+      currency: 'USD',
+      maximumFractionDigits: 0
+    }).format(amount);
+  };
+
+  const formatReviewDate = (dateString: string) => {
+    if (!dateString) return 'Unknown date';
+    return new Date(dateString).toLocaleDateString('en-US', {
+      year: 'numeric',
+      month: 'short',
+      day: 'numeric'
+    });
+  };
+
+  const renderStars = (rating: number) => {
+    const stars = [];
+    const fullStars = Math.floor(rating / 2);
+    const hasHalfStar = rating % 2 >= 0.5;
+    
+    for (let i = 0; i < 5; i++) {
+      if (i < fullStars) {
+        stars.push(<FaStar key={i} />);
+      } else if (i === fullStars && hasHalfStar) {
+        stars.push(<FaStar key={i} style={{ opacity: 0.7 }} />);
+      } else {
+        stars.push(<FaRegStar key={i} style={{ opacity: 0.5 }} />);
+      }
+    }
+    
+    return stars;
   };
 
   const handleFavorite = async () => {
@@ -355,32 +862,153 @@ export default function MovieDetailPage() {
     try {
       if (isFavoriteMovie) {
         // Remove from favorites
+        let result;
         if (movie.favorite_id) {
-          await movieAPI.removeFromFavorites(movie.favorite_id);
+          result = await movieAPI.removeFromFavorites(movie.favorite_id);
         } else {
-          await movieAPI.removeFromFavoritesByMovie(movie.tmdb_id);
+          result = await movieAPI.removeFromFavoritesByMovie(movie.tmdb_id);
         }
+        
+        // Check if API returned an error object
+        if (result && result.error) {
+          const { showError } = await import('@/utils/api');
+          showError('Error', result.error);
+          return;
+        }
+        
         setIsFavoriteMovie(false);
       } else {
         // Add to favorites
-        await movieAPI.addToFavorites(movie.tmdb_id);
+        const result = await movieAPI.addToFavorites(movie.tmdb_id);
+        
+        // Check if API returned an error object
+        if (result && result.error) {
+          const { showError } = await import('@/utils/api');
+          showError('Error', result.error);
+          return;
+        }
+        
         setIsFavoriteMovie(true);
       }
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error toggling favorite:', error);
-      alert('Failed to update favorites');
+      
+      // Handle unauthenticated user gracefully
+      if (error?.message?.includes('401') || error?.message?.includes('Unauthorized')) {
+        // Use global error handler instead of alert
+        const { showError } = await import('@/utils/api');
+        showError('Authentication Required', 'Please log in to your account to add movies to favorites.');
+        return;
+      }
+      
+      // Use global error handler for other errors
+      const { showError } = await import('@/utils/api');
+      showError('Error', 'Failed to update favorites. Please try again.');
+    }
+  };
+
+  const handleWatchlist = async () => {
+    if (!movie) return;
+    
+    try {
+      if (isWatchlistedMovie) {
+        // Remove from watchlist
+        let result;
+        if (movie.watchlist_id) {
+          result = await movieAPI.removeFromWatchlist(movie.watchlist_id);
+        } else {
+          result = await movieAPI.removeFromWatchlistByMovie(movie.tmdb_id);
+        }
+        
+        // Check if API returned an error object
+        if (result && result.error) {
+          const { showError } = await import('@/utils/api');
+          showError('Error', result.error);
+          return;
+        }
+        
+        setIsWatchlistedMovie(false);
+      } else {
+        // Add to watchlist
+        const result = await movieAPI.addToWatchlist(movie.tmdb_id);
+        
+        // Check if API returned an error object
+        if (result && result.error) {
+          const { showError } = await import('@/utils/api');
+          showError('Error', result.error);
+          return;
+        }
+        
+        setIsWatchlistedMovie(true);
+      }
+    } catch (error: any) {
+      console.error('Error toggling watchlist:', error);
+      
+      // Handle unauthenticated user gracefully
+      if (error?.message?.includes('401') || error?.message?.includes('Unauthorized')) {
+        // Use global error handler instead of alert
+        const { showError } = await import('@/utils/api');
+        showError('Authentication Required', 'Please log in to your account to add movies to your watchlist.');
+        return;
+      }
+      
+      // Use global error handler for other errors
+      const { showError } = await import('@/utils/api');
+      showError('Error', 'Failed to update watchlist. Please try again.');
+    }
+  };
+
+  const handleWatchTrailer = () => {
+    if (videos.length > 0) {
+      setSelectedTrailer(videos[0]); // Get the first trailer
+      setShowTrailerModal(true);
+    } else {
+      // Use global error handler instead of alert
+      const showError = async () => {
+        const { showError: showErrorFn } = await import('@/utils/api');
+        showErrorFn('No Trailer Available', 'No trailer available for this movie');
+      };
+      showError();
+    }
+  };
+
+  const closeTrailerModal = () => {
+    setShowTrailerModal(false);
+    setSelectedTrailer(null);
+  };
+
+  const handleSimilarMovieClick = (similar: TMDBMovie) => {
+    const movieId = similar.tmdb_id || similar.id;
+    if (movieId) {
+      setNavigatingToSimilar(true);
+      router.push(`/movies/${movieId}`);
+      
+      // Reset navigating state after 5 seconds in case navigation fails
+      if (navigatingTimeoutRef.current) {
+        clearTimeout(navigatingTimeoutRef.current);
+      }
+      navigatingTimeoutRef.current = setTimeout(() => {
+        setNavigatingToSimilar(false);
+      }, 5000);
+    } else {
+      // Use global error handler for missing TMDB ID
+      const showError = async () => {
+        const { showError: showErrorFn } = await import('@/utils/api');
+        showErrorFn('Error', 'Unable to navigate to this movie. Please try another one.');
+      };
+      showError();
     }
   };
 
   if (loading) {
     return (
-      <Container>
+      <Container isSidebarOpen={isSidebarOpen}>
         <MovieHeader>
           <PosterContainer><SkeletonPoster /></PosterContainer>
           <MovieInfo>
-            <SkeletonTitle width="80%" />
-            <SkeletonText width="60%" />
-            <SkeletonText width="40%" />
+            <SkeletonTitle />
+            <SkeletonText />
+            <SkeletonText />
             <SkeletonText />
           </MovieInfo>
         </MovieHeader>
@@ -390,7 +1018,7 @@ export default function MovieDetailPage() {
 
   if (error || !movie) {
     return (
-      <Container>
+      <Container isSidebarOpen={isSidebarOpen}>
         <Title>Movie Not Found</Title>
         <p>{error || 'We couldn\'t find that movie.'}</p>
         <BackButton onClick={() => router.back()}>Go Back</BackButton>
@@ -399,7 +1027,7 @@ export default function MovieDetailPage() {
   }
 
   return (
-    <Container>
+    <Container isSidebarOpen={isSidebarOpen}>
       <MovieHeader>
         <PosterContainer>
           <Poster
@@ -409,62 +1037,292 @@ export default function MovieDetailPage() {
         </PosterContainer>
         <MovieInfo>
           <Title>{movie.title}</Title>
+          {movie.tagline && <Tagline>"{movie.tagline}"</Tagline>}
+          
+          <RatingContainer>
+            <RatingStars>
+              {renderStars(movie.vote_average)}
+            </RatingStars>
+            <RatingText>{movie.vote_average.toFixed(1)}</RatingText>
+            <VoteCount>({movie.vote_count} votes)</VoteCount>
+            {movie.imdb_id && (
+              <IMDBLink 
+                href={`https://www.imdb.com/title/${movie.imdb_id}`} 
+                target="_blank" 
+                rel="noopener noreferrer"
+              >
+                <FaImdb size={20} /> IMDb
+              </IMDBLink>
+            )}
+          </RatingContainer>
+          
           <Metadata>
-            <MetadataItem><strong>Release:</strong> {formatDate(movie.release_date)}</MetadataItem>
-            <MetadataItem><strong>Rating:</strong> {formatRating(movie.vote_average)}</MetadataItem>
-            {movie.runtime && <MetadataItem><strong>Runtime:</strong> {Math.floor(movie.runtime / 60)}h {movie.runtime % 60}m</MetadataItem>}
+            <MetadataItem>
+              <MdDateRange /> {formatDate(movie.release_date)}
+            </MetadataItem>
+            {movie.runtime && (
+              <MetadataItem>
+                <MdAccessTime /> {formatRuntime(movie.runtime)}
+              </MetadataItem>
+            )}
+            {movie.original_language && (
+              <MetadataItem>
+                <MdLanguage /> {movie.original_language.toUpperCase()}
+              </MetadataItem>
+            )}
+            {movie.budget && movie.budget > 0 && (
+              <MetadataItem>
+                <MdMoney /> Budget: {formatCurrency(movie.budget)}
+              </MetadataItem>
+            )}
+            {movie.revenue && movie.revenue > 0 && (
+              <MetadataItem>
+                <MdMoney /> Revenue: {formatCurrency(movie.revenue)}
+              </MetadataItem>
+            )}
           </Metadata>
+          
+          {movie.genres && movie.genres.length > 0 && (
+            <GenresList>
+              {movie.genres.map(genre => (
+                <Genre key={genre.id}>{genre.name}</Genre>
+              ))}
+            </GenresList>
+          )}
+          
           <Overview>{movie.overview || 'No overview available.'}</Overview>
+          
           <ActionButtons>
-            <BackButton onClick={() => router.back()}>← Back</BackButton>
-            <FavoriteButton $isFavorite={isFavoriteMovie} onClick={handleFavorite}>
-              {isFavoriteMovie ? '❤️ Remove' : '🤍 Favorite'}
+            <BackButton onClick={() => router.back()}>
+              ← Back
+            </BackButton>
+            <FavoriteButton 
+              $isFavorite={isFavoriteMovie} 
+              onClick={handleFavorite}
+            >
+              {isFavoriteMovie ? '❤️ Remove Favorite' : '🤍 Add to Favorites'}
             </FavoriteButton>
+            <WatchlistButton 
+              $isWatchlisted={isWatchlistedMovie} 
+              onClick={handleWatchlist}
+            >
+              {isWatchlistedMovie ? '📺 Remove from Watchlist' : '📺 Add to Watchlist'}
+            </WatchlistButton>
+            {videos.length > 0 && (
+              <WatchTrailerButton onClick={handleWatchTrailer}>
+                <FaPlay /> Watch Trailer
+              </WatchTrailerButton>
+            )}
           </ActionButtons>
         </MovieInfo>
       </MovieHeader>
 
-      {cast.length > 0 && (
-        <CastList>
-          <SimilarMoviesTitle>Top Cast</SimilarMoviesTitle>
-          <CastGrid>
-            {cast.map((actor) => (
-              <CastCard key={actor.id}>
-                <CastImage
-                  src={actor.profile_path
-                    ? `https://image.tmdb.org/t/p/w185${actor.profile_path}`
-                    : '/no-poster.png'}
-                  alt={actor.name}
-                />
-                <CastName>{actor.name}</CastName>
-              </CastCard>
-            ))}
-          </CastGrid>
-        </CastList>
-      )}
-
-      {similarMovies.length > 0 && (
-        <SimilarMoviesSection>
-          <SimilarMoviesTitle>Similar Movies</SimilarMoviesTitle>
-          <SimilarMoviesGrid>
-            {similarMovies.map((similar) => (
-              <SimilarMovie
-                key={similar.id}
-                onClick={() => router.push(`/movies/${similar.id}`)}
-              >
-                <SimilarPoster
-                  src={
-                    similar.poster_path
-                      ? `https://image.tmdb.org/t/p/w300${similar.poster_path}`
-                      : '/no-poster.png'
-                  }
-                  alt={similar.title}
-                />
-              </SimilarMovie>
-            ))}
-          </SimilarMoviesGrid>
-        </SimilarMoviesSection>
-      )}
+      <TabContainer>
+        <TabButtons>
+          <TabButton 
+            $active={activeTab === 'details'} 
+            onClick={() => setActiveTab('details')}
+          >
+            Details
+          </TabButton>
+          <TabButton 
+            $active={activeTab === 'cast'} 
+            onClick={() => setActiveTab('cast')}
+          >
+            Cast ({fullCast.length})
+          </TabButton>
+          <TabButton 
+            $active={activeTab === 'reviews'} 
+            onClick={() => setActiveTab('reviews')}
+          >
+            Reviews ({reviews.length})
+          </TabButton>
+        </TabButtons>
+        
+        <TabContent>
+          {activeTab === 'details' && (
+            <>
+              <InfoGrid>
+                <InfoCard>
+                  <InfoCardTitle>Production Companies</InfoCardTitle>
+                  <InfoCardContent>
+                    {movie.production_companies && movie.production_companies.length > 0 ? (
+                      movie.production_companies.map(company => (
+                        <div key={company.id}>{company.name}</div>
+                      ))
+                    ) : 'No production companies available'}
+                  </InfoCardContent>
+                </InfoCard>
+                
+                <InfoCard>
+                  <InfoCardTitle>Production Countries</InfoCardTitle>
+                  <InfoCardContent>
+                    {movie.production_countries && movie.production_countries.length > 0 ? (
+                      movie.production_countries.map(country => (
+                        <div key={country.iso_3166_1}>{country.name}</div>
+                      ))
+                    ) : 'No production countries available'}
+                  </InfoCardContent>
+                </InfoCard>
+                
+                <InfoCard>
+                  <InfoCardTitle>Spoken Languages</InfoCardTitle>
+                  <InfoCardContent>
+                    {movie.spoken_languages && movie.spoken_languages.length > 0 ? (
+                      movie.spoken_languages.map(language => (
+                        <div key={language.iso_639_1}>{language.english_name}</div>
+                      ))
+                    ) : 'No language information available'}
+                  </InfoCardContent>
+                </InfoCard>
+                
+                <InfoCard>
+                  <InfoCardTitle>Status</InfoCardTitle>
+                  <InfoCardContent>
+                    {movie.status || 'Unknown'}
+                    {movie.release_date && new Date(movie.release_date) > new Date() && (
+                      <div>Coming soon: {formatDate(movie.release_date)}</div>
+                    )}
+                  </InfoCardContent>
+                </InfoCard>
+              </InfoGrid>
+              
+              {cast.length > 0 && (
+                <>
+                  <SectionTitle>Top Cast</SectionTitle>
+                  <CastGrid>
+                    {cast.map((actor) => (
+                      <CastCard key={actor.id}>
+                        <CastImage
+                          src={actor.profile_path
+                            ? `https://image.tmdb.org/t/p/w185${actor.profile_path}`
+                            : '/no-poster.png'}
+                          alt={actor.name}
+                        />
+                        <CastName>{actor.name}</CastName>
+                        <CastCharacter>{actor.character}</CastCharacter>
+                      </CastCard>
+                    ))}
+                  </CastGrid>
+                </>
+              )}
+              
+              {similarMovies.length > 0 && (
+                <>
+                  <SectionTitle>Similar Movies</SectionTitle>
+                  {navigatingToSimilar && (
+                    <LoadingMessage>
+                      Loading movie details...
+                    </LoadingMessage>
+                  )}
+                  <SimilarMoviesGrid>
+                    {similarMovies.map((similar) => (
+                      <SimilarMovie
+                        key={similar.id}
+                        onClick={() => handleSimilarMovieClick(similar)}
+                        style={{ 
+                          opacity: navigatingToSimilar ? 0.6 : 1,
+                          pointerEvents: navigatingToSimilar ? 'none' : 'auto'
+                        }}
+                      >
+                        <SimilarPoster
+                          src={
+                            similar.poster_path
+                              ? `https://image.tmdb.org/t/p/w300${similar.poster_path}`
+                              : '/no-poster.png'
+                          }
+                          alt={similar.title}
+                        />
+                        <SimilarTitle>{similar.title}</SimilarTitle>
+                        <SimilarRating>
+                          <FaStar /> {similar.vote_average.toFixed(1)}
+                        </SimilarRating>
+                      </SimilarMovie>
+                    ))}
+                  </SimilarMoviesGrid>
+                </>
+              )}
+            </>
+          )}
+          
+          {activeTab === 'cast' && (
+            <>
+              <SectionTitle>Full Cast</SectionTitle>
+              {fullCast.length > 0 ? (
+                <FullCastGrid>
+                  {fullCast.map((actor) => (
+                    <FullCastCard key={actor.id}>
+                      <FullCastImage
+                        src={actor.profile_path
+                          ? `https://image.tmdb.org/t/p/w92${actor.profile_path}`
+                          : '/no-poster.png'}
+                        alt={actor.name}
+                      />
+                      <FullCastInfo>
+                        <FullCastName>{actor.name}</FullCastName>
+                        <FullCastCharacter>{actor.character}</FullCastCharacter>
+                      </FullCastInfo>
+                    </FullCastCard>
+                  ))}
+                </FullCastGrid>
+              ) : (
+                <NoContentMessage>No cast information available</NoContentMessage>
+              )}
+            </>
+          )}
+          
+          {activeTab === 'reviews' && (
+            <>
+              <SectionTitle>User Reviews</SectionTitle>
+              {reviews.length > 0 ? (
+                <ReviewsGrid>
+                  {reviews.map((review) => (
+                    <ReviewCard key={review.id}>
+                      <ReviewHeader>
+                        <ReviewAuthorImage
+                          src={review.author_details?.avatar_path
+                            ? `https://image.tmdb.org/t/p/w45${review.author_details.avatar_path}`
+                            : '/no-poster.png'}
+                          alt={review.author}
+                        />
+                        <ReviewAuthorInfo>
+                          <ReviewAuthorName>{review.author}</ReviewAuthorName>
+                          <ReviewDate>{formatReviewDate(review.created_at)}</ReviewDate>
+                        </ReviewAuthorInfo>
+                        {review.author_details?.rating && (
+                          <ReviewRating>
+                            ⭐ {review.author_details.rating.toFixed(1)}
+                          </ReviewRating>
+                        )}
+                      </ReviewHeader>
+                      <ReviewContent>{review.content}</ReviewContent>
+                    </ReviewCard>
+                  ))}
+                </ReviewsGrid>
+              ) : (
+                <NoContentMessage>No reviews available for this movie</NoContentMessage>
+              )}
+            </>
+          )}
+        </TabContent>
+      </TabContainer>
+      {showTrailerModal && selectedTrailer && (
+    <ModalOverlay onClick={closeTrailerModal}>
+      <ModalContent onClick={(e) => e.stopPropagation()}>
+        <CloseButton onClick={closeTrailerModal}>
+          &times;
+        </CloseButton>
+        <VideoContainer>
+          <iframe
+            src={`https://www.youtube.com/embed/${selectedTrailer.key}?autoplay=1&rel=0&modestbranding=1`}
+            allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+            allowFullScreen
+            title={selectedTrailer.name}
+          />
+        </VideoContainer>
+      </ModalContent>
+    </ModalOverlay>
+  )}
     </Container>
   );
 }

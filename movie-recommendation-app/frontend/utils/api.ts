@@ -98,9 +98,8 @@ const apiRequest = async (endpoint: string, options: RequestInit = {}) => {
 
     if (!response.ok) {
       if (response.status === 401) {
-        // Token expired or invalid
-        removeAuthToken();
-        window.location.href = '/signin';
+        // Token expired or invalid - don't redirect, just return error object
+        return { error: 'Please log in to your account to perform this action.', errorTitle: 'Authentication Required' };
       }
       
       // Try to get error details from response
@@ -108,46 +107,64 @@ const apiRequest = async (endpoint: string, options: RequestInit = {}) => {
       let errorTitle = 'Request Failed';
       
       try {
-        const errorData = await response.json();
+        const contentType = response.headers.get('content-type');
         
-        // Handle Django REST Framework validation errors
-        if (errorData.current_password) {
-          const fieldError = Array.isArray(errorData.current_password) ? errorData.current_password[0] : errorData.current_password;
-          errorMessage = fieldError;
-          errorTitle = 'Password Error';
-        } else if (errorData.new_password) {
-          const fieldError = Array.isArray(errorData.new_password) ? errorData.new_password[0] : errorData.new_password;
-          errorMessage = fieldError;
-          errorTitle = 'Password Error';
-        } else if (errorData.confirm_password) {
-          const fieldError = Array.isArray(errorData.confirm_password) ? errorData.confirm_password[0] : errorData.confirm_password;
-          errorMessage = fieldError;
-          errorTitle = 'Password Error';
-        } else if (errorData.non_field_errors) {
-          errorMessage = Array.isArray(errorData.non_field_errors) ? errorData.non_field_errors[0] : errorData.non_field_errors;
-          errorTitle = 'Validation Error';
-        } else if (errorData.detail) {
-          errorMessage = errorData.detail;
-          errorTitle = 'Error';
-        } else if (errorData.message) {
-          errorMessage = errorData.message;
-          errorTitle = 'Error';
-        } else if (errorData.error) {
-          errorMessage = errorData.error;
-          errorTitle = 'Error';
-        } else if (typeof errorData === 'object') {
-          // Handle nested validation errors
-          const firstError = Object.values(errorData)[0];
-          if (Array.isArray(firstError)) {
-            errorMessage = firstError[0];
-          } else {
-            errorMessage = String(firstError);
+        // Check if response is JSON before trying to parse it
+        if (contentType && contentType.includes('application/json')) {
+          const errorData = await response.json();
+          
+          // Handle Django REST Framework validation errors
+          if (errorData.current_password) {
+            const fieldError = Array.isArray(errorData.current_password) ? errorData.current_password[0] : errorData.current_password;
+            errorMessage = fieldError;
+            errorTitle = 'Password Error';
+          } else if (errorData.new_password) {
+            const fieldError = Array.isArray(errorData.new_password) ? errorData.new_password[0] : errorData.new_password;
+            errorMessage = fieldError;
+            errorTitle = 'Password Error';
+          } else if (errorData.confirm_password) {
+            const fieldError = Array.isArray(errorData.confirm_password) ? errorData.confirm_password[0] : errorData.confirm_password;
+            errorMessage = fieldError;
+            errorTitle = 'Password Error';
+          } else if (errorData.non_field_errors) {
+            errorMessage = Array.isArray(errorData.non_field_errors) ? errorData.non_field_errors[0] : errorData.non_field_errors;
+            errorTitle = 'Validation Error';
+          } else if (errorData.detail) {
+            errorMessage = errorData.detail;
+            errorTitle = 'Error';
+          } else if (errorData.message) {
+            errorMessage = errorData.message;
+            errorTitle = 'Error';
+          } else if (errorData.error) {
+            errorMessage = errorData.error;
+            errorTitle = 'Error';
+          } else if (typeof errorData === 'object') {
+            // Handle nested validation errors
+            const firstError = Object.values(errorData)[0];
+            if (Array.isArray(firstError)) {
+              errorMessage = firstError[0];
+            } else {
+              errorMessage = String(firstError);
+            }
+            errorTitle = 'Validation Error';
           }
-          errorTitle = 'Validation Error';
+        } else {
+          // Handle HTML responses (like 404 pages)
+          if (response.status === 404) {
+            errorMessage = 'Movie not found. Please check the URL and try again.';
+            errorTitle = 'Not Found';
+          } else {
+            errorMessage = `Server returned an invalid response (${response.status}). Please try again.`;
+            errorTitle = 'Server Error';
+          }
         }
       } catch (e) {
         // If we can't parse the error response, use the status text
         console.error('Error parsing error response:', e);
+        if (response.status === 404) {
+          errorMessage = 'Movie not found. Please check the URL and try again.';
+          errorTitle = 'Not Found';
+        }
       }
       
       // For validation errors (400), don't show global modal - let component handle it
@@ -371,9 +388,16 @@ export const movieAPI = {
     } catch (error) {
       // Handle timeout gracefully for movie details
       if (error instanceof Error && error.message.includes('timeout')) {
-        return null;
+        return { error: 'Request timed out. Please try again.', errorTitle: 'Timeout Error' };
       }
-      throw error;
+      
+      // Handle 404 errors gracefully
+      if (error instanceof Error && error.message.includes('404')) {
+        return { error: 'Movie not found. Please check the URL and try again.', errorTitle: 'Not Found' };
+      }
+      
+      // Handle other errors gracefully
+      return { error: 'Failed to load movie details. Please try again.', errorTitle: 'Error' };
     }
   },
 
@@ -420,15 +444,31 @@ export const movieAPI = {
   },
 
   removeFromFavorites: async (favoriteId: number) => {
-    return apiRequest(`/movies/favorites/${favoriteId}/`, {
-      method: 'DELETE',
-    });
+    try {
+      return await apiRequest(`/movies/favorites/${favoriteId}/`, {
+        method: 'DELETE',
+      });
+    } catch (error) {
+      // Handle timeout gracefully for removing favorites
+      if (error instanceof Error && error.message.includes('timeout')) {
+        return { error: 'Failed to remove from favorites. Please try again.', errorTitle: 'Timeout Error' };
+      }
+      throw error;
+    }
   },
 
   removeFromFavoritesByMovie: async (movieId: number) => {
-    return apiRequest(`/movies/favorites/movie/${movieId}/`, {
-      method: 'DELETE',
-    });
+    try {
+      return await apiRequest(`/movies/favorites/movie/${movieId}/`, {
+        method: 'DELETE',
+      });
+    } catch (error) {
+      // Handle timeout gracefully for removing favorites
+      if (error instanceof Error && error.message.includes('timeout')) {
+        return { error: 'Failed to remove from favorites. Please try again.', errorTitle: 'Timeout Error' };
+      }
+      throw error;
+    }
   },
 
   // Watchlist
@@ -437,22 +477,46 @@ export const movieAPI = {
   },
 
   addToWatchlist: async (movieId: number) => {
-    return apiRequest('/movies/watchlist/', {
-      method: 'POST',
-      body: JSON.stringify({ movie_id: movieId }),
-    });
+    try {
+      return await apiRequest('/movies/watchlist/', {
+        method: 'POST',
+        body: JSON.stringify({ movie_id: movieId }),
+      });
+    } catch (error) {
+      // Handle timeout gracefully for adding to watchlist
+      if (error instanceof Error && error.message.includes('timeout')) {
+        return { error: 'Failed to add to watchlist. Please try again.', errorTitle: 'Timeout Error' };
+      }
+      throw error;
+    }
   },
 
   removeFromWatchlist: async (watchlistId: number) => {
-    return apiRequest(`/movies/watchlist/${watchlistId}/`, {
-      method: 'DELETE',
-    });
+    try {
+      return await apiRequest(`/movies/watchlist/${watchlistId}/`, {
+        method: 'DELETE',
+      });
+    } catch (error) {
+      // Handle timeout gracefully for removing from watchlist
+      if (error instanceof Error && error.message.includes('timeout')) {
+        return { error: 'Failed to remove from watchlist. Please try again.', errorTitle: 'Timeout Error' };
+      }
+      throw error;
+    }
   },
 
   removeFromWatchlistByMovie: async (movieId: number) => {
-    return apiRequest(`/movies/watchlist/movie/${movieId}/`, {
-      method: 'DELETE',
-    });
+    try {
+      return await apiRequest(`/movies/watchlist/movie/${movieId}/`, {
+        method: 'DELETE',
+      });
+    } catch (error) {
+      // Handle timeout gracefully for removing from watchlist
+      if (error instanceof Error && error.message.includes('timeout')) {
+        return { error: 'Failed to remove from watchlist. Please try again.', errorTitle: 'Timeout Error' };
+      }
+      throw error;
+    }
   },
 
   // Ratings

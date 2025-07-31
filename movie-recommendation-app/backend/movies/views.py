@@ -4,6 +4,7 @@ from rest_framework.response import Response
 from django_filters.rest_framework import DjangoFilterBackend
 from .serializers import (
     MovieSerializer, 
+    MovieDetailSerializer,
     FavoriteSerializer, 
     WatchlistSerializer,
     MovieRatingSerializer
@@ -118,8 +119,8 @@ class MovieListView(generics.ListAPIView):
 
 
 class MovieDetailView(generics.RetrieveAPIView):
-    """View for movie details"""
-    serializer_class = MovieSerializer
+    """View for movie details with enhanced data"""
+    serializer_class = MovieDetailSerializer
     permission_classes = [permissions.AllowAny]
     lookup_field = 'tmdb_id'
     
@@ -134,17 +135,57 @@ class MovieDetailView(generics.RetrieveAPIView):
             try:
                 movie = Movie.objects.get(tmdb_id=tmdb_id)
                 print(f"MovieDetailView: Found movie in database: {movie.title}")  # Debug
-                return movie
+                
+                # Get enhanced data from TMDB API
+                try:
+                    enhanced_data = tmdb_service.get_movie_details(tmdb_id)
+                    print(f"MovieDetailView: Got enhanced data from TMDB for movie: {enhanced_data.get('title', 'Unknown')}")  # Debug
+                    
+                    # Attach enhanced data to the movie object
+                    movie.credits = enhanced_data.get('credits')
+                    movie.videos = enhanced_data.get('videos')
+                    movie.reviews = enhanced_data.get('reviews')
+                    movie.similar = enhanced_data.get('similar')
+                    
+                    # Update movie with additional fields if they exist
+                    additional_fields = ['tagline', 'imdb_id', 'original_language', 'budget', 'revenue', 'status', 
+                                      'production_companies', 'production_countries', 'spoken_languages', 'runtime']
+                    for field in additional_fields:
+                        if field in enhanced_data:
+                            setattr(movie, field, enhanced_data[field])
+                    
+                    return movie
+                except Exception as e:
+                    print(f"MovieDetailView: Error fetching enhanced data from TMDB: {str(e)}")  # Debug
+                    # Return movie without enhanced data if TMDB fails
+                    return movie
+                    
             except Movie.DoesNotExist:
                 print(f"MovieDetailView: Movie not found in database, fetching from TMDB")  # Debug
                 
                 # Try to get from TMDB and sync to database
                 try:
-                    data = tmdb_service.get_movie_details(tmdb_id)
-                    print(f"MovieDetailView: Got data from TMDB for movie: {data.get('title', 'Unknown')}")  # Debug
-                    movie = tmdb_service.sync_movie_to_db(data)
+                    enhanced_data = tmdb_service.get_movie_details(tmdb_id)
+                    print(f"MovieDetailView: Got enhanced data from TMDB for movie: {enhanced_data.get('title', 'Unknown')}")  # Debug
+                    
+                    # Sync basic movie data to database
+                    movie = tmdb_service.sync_movie_to_db(enhanced_data)
                     if movie:
                         print(f"MovieDetailView: Successfully synced movie to database: {movie.title}")  # Debug
+                        
+                        # Attach enhanced data to the movie object
+                        movie.credits = enhanced_data.get('credits')
+                        movie.videos = enhanced_data.get('videos')
+                        movie.reviews = enhanced_data.get('reviews')
+                        movie.similar = enhanced_data.get('similar')
+                        
+                        # Update movie with additional fields if they exist
+                        additional_fields = ['tagline', 'imdb_id', 'original_language', 'budget', 'revenue', 'status', 
+                                          'production_companies', 'production_countries', 'spoken_languages', 'runtime']
+                        for field in additional_fields:
+                            if field in enhanced_data:
+                                setattr(movie, field, enhanced_data[field])
+                        
                         return movie
                     else:
                         print(f"MovieDetailView: Failed to sync movie to database")  # Debug
