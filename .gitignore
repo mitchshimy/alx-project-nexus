@@ -122,3 +122,4 @@ env/
 env.bak/
 venv.bak/
 backend/venv/
+env.local
