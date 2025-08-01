@@ -123,3 +123,4 @@ env.bak/
 venv.bak/
 backend/venv/
 env.local
+env.production
