@@ -24,13 +24,52 @@ schema_view = get_schema_view(
     openapi.Info(
         title="Movie Recommendation API",
         default_version='v1',
-        description="A comprehensive movie recommendation API with TMDB integration",
+        description="""
+        # Movie Recommendation API
+        
+        A comprehensive movie recommendation API with TMDB integration.
+        
+        ## Features
+        
+        - **Movie Discovery**: Browse movies, TV shows, trending content, and top-rated films
+        - **Search**: Search through movies and TV shows with real-time results
+        - **User Management**: Registration, login, profile management, and password changes
+        - **Personalization**: Favorites, watchlist, and movie ratings
+        - **Authentication**: JWT-based authentication with refresh tokens
+        
+        ## Authentication
+        
+        Most endpoints require authentication using JWT tokens. Include the token in the Authorization header:
+        ```
+        Authorization: Bearer <your_access_token>
+        ```
+        
+        ## Rate Limiting
+        
+        API requests are rate-limited to ensure fair usage.
+        
+        ## TMDB Integration
+        
+        This API integrates with The Movie Database (TMDB) to provide comprehensive movie and TV show data.
+        """,
         terms_of_service="https://www.google.com/policies/terms/",
-        contact=openapi.Contact(email="contact@movieapi.com"),
-        license=openapi.License(name="BSD License"),
+        contact=openapi.Contact(
+            email="contact@movieapi.com",
+            name="API Support",
+            url="https://github.com/your-repo"
+        ),
+        license=openapi.License(
+            name="MIT License",
+            url="https://opensource.org/licenses/MIT"
+        ),
     ),
     public=True,
     permission_classes=(permissions.AllowAny,),
+    patterns=[
+        path('api/v1/', include('api.urls')),
+        path('api/v1/users/', include('users.urls')),
+        path('api/v1/movies/', include('movies.urls')),
+    ],
 )
 
 urlpatterns = [

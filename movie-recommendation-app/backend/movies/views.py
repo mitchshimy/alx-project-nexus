@@ -2,6 +2,8 @@ from rest_framework import status, generics, permissions, filters
 from rest_framework.decorators import api_view, permission_classes
 from rest_framework.response import Response
 from django_filters.rest_framework import DjangoFilterBackend
+from drf_yasg.utils import swagger_auto_schema
+from drf_yasg import openapi
 from .serializers import (
     MovieSerializer, 
     MovieDetailSerializer,
@@ -18,10 +20,58 @@ from django.core.cache import cache
 
 
 class MovieListView(generics.ListAPIView):
-    """View for listing movies with TMDB integration"""
+    """
+    List movies with TMDB integration
+    
+    This endpoint provides access to various types of movies and TV shows:
+    - **movies**: Regular movies
+    - **tv**: TV shows
+    - **trending**: Currently trending content
+    - **top_rated**: Top rated content
+    
+    The response includes pagination information and movie details.
+    """
     serializer_class = MovieSerializer
     permission_classes = [permissions.AllowAny]
-    # Removed filter_backends and filterset_fields to avoid JSONField issues
+    
+    @swagger_auto_schema(
+        operation_description="Get a list of movies or TV shows",
+        manual_parameters=[
+            openapi.Parameter(
+                'type',
+                openapi.IN_QUERY,
+                description="Type of content to retrieve",
+                type=openapi.TYPE_STRING,
+                enum=['movies', 'tv', 'trending', 'top_rated'],
+                default='movies'
+            ),
+            openapi.Parameter(
+                'page',
+                openapi.IN_QUERY,
+                description="Page number for pagination",
+                type=openapi.TYPE_INTEGER,
+                default=1
+            ),
+        ],
+        responses={
+            200: openapi.Response(
+                description="List of movies",
+                schema=openapi.Schema(
+                    type=openapi.TYPE_OBJECT,
+                    properties={
+                        'count': openapi.Schema(type=openapi.TYPE_INTEGER),
+                        'next': openapi.Schema(type=openapi.TYPE_STRING, nullable=True),
+                        'previous': openapi.Schema(type=openapi.TYPE_STRING, nullable=True),
+                                                 'results': openapi.Schema(type=openapi.TYPE_ARRAY, items=openapi.Schema(type=openapi.TYPE_OBJECT))
+                    }
+                )
+            ),
+            400: 'Bad Request',
+            500: 'Internal Server Error'
+        }
+    )
+    def get(self, request, *args, **kwargs):
+        return super().get(request, *args, **kwargs)
     
     def get_queryset(self):
         tmdb_service = TMDBService()
@@ -162,10 +212,43 @@ class MovieListView(generics.ListAPIView):
 
 
 class MovieDetailView(generics.RetrieveAPIView):
-    """View for movie details with enhanced data"""
+    """
+    Retrieve detailed movie information
+    
+    This endpoint provides comprehensive movie details including:
+    - Basic movie information (title, overview, poster, etc.)
+    - Cast and crew information
+    - Videos and trailers
+    - Reviews and ratings
+    - Similar movies
+    - User-specific data (favorites, watchlist, ratings) if authenticated
+    """
     serializer_class = MovieDetailSerializer
     permission_classes = [permissions.AllowAny]
     lookup_field = 'tmdb_id'
+    
+    @swagger_auto_schema(
+        operation_description="Get detailed information about a specific movie",
+        manual_parameters=[
+            openapi.Parameter(
+                'tmdb_id',
+                openapi.IN_PATH,
+                description="TMDB ID of the movie",
+                type=openapi.TYPE_INTEGER,
+                required=True
+            ),
+        ],
+        responses={
+            200: openapi.Response(
+                description="Movie details",
+                schema=openapi.Schema(type=openapi.TYPE_OBJECT)
+            ),
+            404: 'Movie not found',
+            500: 'Internal Server Error'
+        }
+    )
+    def get(self, request, *args, **kwargs):
+        return super().get(request, *args, **kwargs)
     
     def get_object(self):
         tmdb_id = self.kwargs.get('tmdb_id')
@@ -253,9 +336,55 @@ class MovieDetailView(generics.RetrieveAPIView):
 
 
 class SearchView(generics.ListAPIView):
-    """View for searching movies and TV shows"""
+    """
+    Search movies and TV shows
+    
+    This endpoint allows searching through movies and TV shows using:
+    - **q**: Search query (required)
+    - **page**: Page number for pagination
+    
+    The search is performed against TMDB's database and returns matching results.
+    """
     serializer_class = MovieSerializer
     permission_classes = [permissions.AllowAny]
+    
+    @swagger_auto_schema(
+        operation_description="Search for movies and TV shows",
+        manual_parameters=[
+            openapi.Parameter(
+                'q',
+                openapi.IN_QUERY,
+                description="Search query",
+                type=openapi.TYPE_STRING,
+                required=True
+            ),
+            openapi.Parameter(
+                'page',
+                openapi.IN_QUERY,
+                description="Page number for pagination",
+                type=openapi.TYPE_INTEGER,
+                default=1
+            ),
+        ],
+        responses={
+            200: openapi.Response(
+                description="Search results",
+                schema=openapi.Schema(
+                    type=openapi.TYPE_OBJECT,
+                    properties={
+                        'count': openapi.Schema(type=openapi.TYPE_INTEGER),
+                        'next': openapi.Schema(type=openapi.TYPE_STRING, nullable=True),
+                        'previous': openapi.Schema(type=openapi.TYPE_STRING, nullable=True),
+                                                 'results': openapi.Schema(type=openapi.TYPE_ARRAY, items=openapi.Schema(type=openapi.TYPE_OBJECT))
+                    }
+                )
+            ),
+            400: 'Bad Request - Missing search query',
+            500: 'Internal Server Error'
+        }
+    )
+    def get(self, request, *args, **kwargs):
+        return super().get(request, *args, **kwargs)
     
     def get_queryset(self):
         query = self.request.query_params.get('q', '')
@@ -403,9 +532,56 @@ class SearchView(generics.ListAPIView):
 
 
 class FavoriteListView(generics.ListCreateAPIView):
-    """View for user favorites"""
+    """
+    Manage user favorites
+    
+    **GET**: Retrieve user's favorite movies
+    **POST**: Add a movie to user's favorites
+    
+    Requires authentication.
+    """
     serializer_class = FavoriteSerializer
     permission_classes = [permissions.IsAuthenticated]
+    
+    @swagger_auto_schema(
+        operation_description="Get user's favorite movies",
+        responses={
+            200: openapi.Response(
+                description="List of favorite movies",
+                                 schema=openapi.Schema(
+                     type=openapi.TYPE_ARRAY,
+                     items=openapi.Schema(type=openapi.TYPE_OBJECT)
+                 )
+            ),
+            401: 'Unauthorized - Authentication required'
+        }
+    )
+    def get(self, request, *args, **kwargs):
+        return super().get(request, *args, **kwargs)
+    
+    @swagger_auto_schema(
+        operation_description="Add a movie to user's favorites",
+        request_body=openapi.Schema(
+            type=openapi.TYPE_OBJECT,
+            required=['movie_id'],
+            properties={
+                'movie_id': openapi.Schema(
+                    type=openapi.TYPE_INTEGER,
+                    description="TMDB ID of the movie to add to favorites"
+                )
+            }
+        ),
+        responses={
+            201: openapi.Response(
+                description="Movie added to favorites",
+                schema=openapi.Schema(type=openapi.TYPE_OBJECT)
+            ),
+            400: 'Bad Request - Invalid movie ID or already in favorites',
+            401: 'Unauthorized - Authentication required'
+        }
+    )
+    def post(self, request, *args, **kwargs):
+        return super().post(request, *args, **kwargs)
     
     def get_queryset(self):
         print(f"FavoriteListView: User {self.request.user.email} requesting favorites")
@@ -440,9 +616,56 @@ class FavoriteRemoveByMovieView(generics.DestroyAPIView):
 
 
 class WatchlistListView(generics.ListCreateAPIView):
-    """View for user watchlist"""
+    """
+    Manage user watchlist
+    
+    **GET**: Retrieve user's watchlist
+    **POST**: Add a movie to user's watchlist
+    
+    Requires authentication.
+    """
     serializer_class = WatchlistSerializer
     permission_classes = [permissions.IsAuthenticated]
+    
+    @swagger_auto_schema(
+        operation_description="Get user's watchlist",
+        responses={
+            200: openapi.Response(
+                description="List of watchlist movies",
+                                 schema=openapi.Schema(
+                     type=openapi.TYPE_ARRAY,
+                     items=openapi.Schema(type=openapi.TYPE_OBJECT)
+                 )
+            ),
+            401: 'Unauthorized - Authentication required'
+        }
+    )
+    def get(self, request, *args, **kwargs):
+        return super().get(request, *args, **kwargs)
+    
+    @swagger_auto_schema(
+        operation_description="Add a movie to user's watchlist",
+        request_body=openapi.Schema(
+            type=openapi.TYPE_OBJECT,
+            required=['movie_id'],
+            properties={
+                'movie_id': openapi.Schema(
+                    type=openapi.TYPE_INTEGER,
+                    description="TMDB ID of the movie to add to watchlist"
+                )
+            }
+        ),
+        responses={
+            201: openapi.Response(
+                description="Movie added to watchlist",
+                schema=openapi.Schema(type=openapi.TYPE_OBJECT)
+            ),
+            400: 'Bad Request - Invalid movie ID or already in watchlist',
+            401: 'Unauthorized - Authentication required'
+        }
+    )
+    def post(self, request, *args, **kwargs):
+        return super().post(request, *args, **kwargs)
     
     def get_queryset(self):
         print(f"WatchlistListView: User {self.request.user.email} requesting watchlist")
@@ -477,9 +700,80 @@ class WatchlistRemoveByMovieView(generics.DestroyAPIView):
 
 
 class MovieRatingView(generics.CreateAPIView, generics.UpdateAPIView):
-    """View for movie ratings"""
+    """
+    Manage movie ratings
+    
+    **POST**: Create a new rating for a movie
+    **PUT/PATCH**: Update an existing rating for a movie
+    
+    Requires authentication.
+    """
     serializer_class = MovieRatingSerializer
     permission_classes = [permissions.IsAuthenticated]
+    
+    @swagger_auto_schema(
+        operation_description="Rate a movie",
+        request_body=openapi.Schema(
+            type=openapi.TYPE_OBJECT,
+            required=['movie_id', 'rating'],
+            properties={
+                'movie_id': openapi.Schema(
+                    type=openapi.TYPE_INTEGER,
+                    description="TMDB ID of the movie to rate"
+                ),
+                'rating': openapi.Schema(
+                    type=openapi.TYPE_INTEGER,
+                    description="Rating value (1-5 stars)",
+                    minimum=1,
+                    maximum=5
+                ),
+                'review': openapi.Schema(
+                    type=openapi.TYPE_STRING,
+                    description="Optional review text"
+                )
+            }
+        ),
+        responses={
+            201: openapi.Response(
+                description="Rating created successfully",
+                schema=openapi.Schema(type=openapi.TYPE_OBJECT)
+            ),
+            400: 'Bad Request - Invalid rating or movie ID',
+            401: 'Unauthorized - Authentication required'
+        }
+    )
+    def post(self, request, *args, **kwargs):
+        return super().post(request, *args, **kwargs)
+    
+    @swagger_auto_schema(
+        operation_description="Update movie rating",
+        request_body=openapi.Schema(
+            type=openapi.TYPE_OBJECT,
+            properties={
+                'rating': openapi.Schema(
+                    type=openapi.TYPE_INTEGER,
+                    description="Rating value (1-5 stars)",
+                    minimum=1,
+                    maximum=5
+                ),
+                'review': openapi.Schema(
+                    type=openapi.TYPE_STRING,
+                    description="Optional review text"
+                )
+            }
+        ),
+        responses={
+            200: openapi.Response(
+                description="Rating updated successfully",
+                schema=openapi.Schema(type=openapi.TYPE_OBJECT)
+            ),
+            400: 'Bad Request - Invalid rating',
+            401: 'Unauthorized - Authentication required',
+            404: 'Rating not found'
+        }
+    )
+    def put(self, request, *args, **kwargs):
+        return super().put(request, *args, **kwargs)
     
     def get_object(self):
         movie_id = self.kwargs.get('movie_id')
@@ -491,6 +785,31 @@ class MovieRatingView(generics.CreateAPIView, generics.UpdateAPIView):
         serializer.save(user=self.request.user, movie=movie)
 
 
+@swagger_auto_schema(
+    method='get',
+    operation_description="Get list of available movie genres",
+    responses={
+        200: openapi.Response(
+            description="List of genres",
+            schema=openapi.Schema(
+                type=openapi.TYPE_OBJECT,
+                properties={
+                    'genres': openapi.Schema(
+                        type=openapi.TYPE_ARRAY,
+                        items=openapi.Schema(
+                            type=openapi.TYPE_OBJECT,
+                            properties={
+                                'id': openapi.Schema(type=openapi.TYPE_INTEGER),
+                                'name': openapi.Schema(type=openapi.TYPE_STRING)
+                            }
+                        )
+                    )
+                }
+            )
+        ),
+        500: 'Internal Server Error'
+    }
+)
 @api_view(['GET'])
 @permission_classes([permissions.AllowAny])
 def genres_list(request):
@@ -504,6 +823,23 @@ def genres_list(request):
         return Response({'error': str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
 
+@swagger_auto_schema(
+    method='get',
+    operation_description="Test API endpoint to verify API is working",
+    responses={
+        200: openapi.Response(
+            description="API status",
+            schema=openapi.Schema(
+                type=openapi.TYPE_OBJECT,
+                properties={
+                    'message': openapi.Schema(type=openapi.TYPE_STRING),
+                    'status': openapi.Schema(type=openapi.TYPE_STRING),
+                    'timestamp': openapi.Schema(type=openapi.TYPE_STRING)
+                }
+            )
+        )
+    }
+)
 @api_view(['GET'])
 @permission_classes([permissions.AllowAny])
 def test_api(request):
