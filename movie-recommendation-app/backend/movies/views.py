@@ -12,6 +12,9 @@ from .serializers import (
 from .models import Movie, Favorite, Watchlist, MovieRating
 from .services import TMDBService
 from django.utils import timezone
+import asyncio
+from concurrent.futures import ThreadPoolExecutor
+from django.core.cache import cache
 
 
 class MovieListView(generics.ListAPIView):
@@ -53,39 +56,79 @@ class MovieListView(generics.ListAPIView):
             # Store the TMDB data for pagination info
             self.tmdb_data = data  # Store for use in list() method
             
-            # Sync movies to database
-            movies = []
-            for item in data.get('results', []):
-                # Handle TV shows from /discover/tv endpoint (they don't have media_type field)
-                is_tv_show = 'first_air_date' in item
-                is_movie = item.get('media_type') == 'movie' or ('release_date' in item and not is_tv_show)
-                
-                if is_movie or is_tv_show:
-                    try:
-                        print(f"TMDB View: Attempting to sync item: {item.get('title', item.get('name', 'Unknown'))} (ID: {item.get('id')})")  # Debug
-                        movie = tmdb_service.sync_movie_to_db(item)
-                        if movie:  # Check if sync returned a movie
-                            movies.append(movie)
-                            print(f"TMDB View: Successfully synced movie: {movie.title} (type: {movie.media_type})")  # Debug
-                        else:
-                            print(f"TMDB View: Sync returned None for item: {item.get('title', item.get('name', 'Unknown'))}")  # Debug
-                    except Exception as e:
-                        print(f"TMDB View: Error syncing movie {item.get('title', item.get('name', 'Unknown'))}: {e}")  # Debug
-                        import traceback
-                        print(f"TMDB View: Full traceback: {traceback.format_exc()}")  # Debug
+            # Start background sync process
+            self._start_background_sync(data.get('results', []), tmdb_service)
             
-            if movies:
-                queryset = Movie.objects.filter(id__in=[m.id for m in movies])
-                print(f"Final queryset count: {queryset.count()}")  # Debug
-                return queryset
-            else:
-                print("No movies synced, returning all movies from database")  # Debug
-                return Movie.objects.all()
+            # Return movies from database that match the TMDB IDs for immediate display
+            tmdb_ids = [item.get('id') for item in data.get('results', [])]
+            existing_movies = Movie.objects.filter(tmdb_id__in=tmdb_ids)
+            
+            # Create a mapping of tmdb_id to movie for quick lookup
+            existing_movie_map = {movie.tmdb_id: movie for movie in existing_movies}
+            
+            # Create a list of movies in the same order as TMDB results
+            ordered_movies = []
+            for item in data.get('results', []):
+                tmdb_id = item.get('id')
+                if tmdb_id in existing_movie_map:
+                    ordered_movies.append(existing_movie_map[tmdb_id])
+                else:
+                    # Create a temporary movie object for display if not in database yet
+                    temp_movie = Movie(
+                        tmdb_id=tmdb_id,
+                        title=item.get('title') or item.get('name', ''),
+                        overview=item.get('overview', ''),
+                        poster_path=item.get('poster_path'),
+                        backdrop_path=item.get('backdrop_path'),
+                        vote_average=item.get('vote_average', 0.0),
+                        vote_count=item.get('vote_count', 0),
+                        popularity=item.get('popularity', 0.0),
+                        genre_ids=item.get('genre_ids', []),
+                        media_type=item.get('media_type', 'movie'),
+                        release_date=None  # Will be set during background sync
+                    )
+                    ordered_movies.append(temp_movie)
+            
+            print(f"Returning {len(ordered_movies)} movies for immediate display")  # Debug
+            return ordered_movies
             
         except Exception as e:
             print(f"Error in get_queryset: {e}")  # Debug
             # Fallback to database if TMDB fails
             return Movie.objects.all()
+    
+    def _start_background_sync(self, tmdb_results, tmdb_service):
+        """Start background sync process for movies"""
+        try:
+            # Use ThreadPoolExecutor for background sync to avoid blocking
+            executor = ThreadPoolExecutor(max_workers=4)
+            
+            def sync_movie_batch():
+                """Sync a batch of movies to database"""
+                synced_count = 0
+                for item in tmdb_results:
+                    try:
+                        # Handle TV shows from /discover/tv endpoint (they don't have media_type field)
+                        is_tv_show = 'first_air_date' in item
+                        is_movie = item.get('media_type') == 'movie' or ('release_date' in item and not is_tv_show)
+                        
+                        if is_movie or is_tv_show:
+                            print(f"Background sync: Syncing {item.get('title', item.get('name', 'Unknown'))}")  # Debug
+                            movie = tmdb_service.sync_movie_to_db(item)
+                            if movie:
+                                synced_count += 1
+                                print(f"Background sync: Successfully synced {movie.title}")  # Debug
+                    except Exception as e:
+                        print(f"Background sync: Error syncing movie {item.get('title', item.get('name', 'Unknown'))}: {e}")  # Debug
+                
+                print(f"Background sync: Completed syncing {synced_count} movies")  # Debug
+            
+            # Submit the sync task to run in background
+            executor.submit(sync_movie_batch)
+            print("Background sync: Started async movie sync process")  # Debug
+            
+        except Exception as e:
+            print(f"Background sync: Error starting sync process: {e}")  # Debug
     
     def get_serializer_context(self):
         context = super().get_serializer_context()
@@ -224,18 +267,77 @@ class SearchView(generics.ListAPIView):
         try:
             data = tmdb_service.search_multi(query)
             
-            # Filter out people and sync movies to database
-            movies = []
+            # Store the TMDB data for pagination info
+            self.tmdb_data = data
+            
+            # Start background sync process for search results
+            self._start_background_sync_search(data.get('results', []), tmdb_service)
+            
+            # Return movies from database that match the TMDB IDs for immediate display
+            tmdb_ids = [item.get('id') for item in data.get('results', []) if item.get('media_type') in ['movie', 'tv']]
+            existing_movies = Movie.objects.filter(tmdb_id__in=tmdb_ids)
+            
+            # Create a mapping of tmdb_id to movie for quick lookup
+            existing_movie_map = {movie.tmdb_id: movie for movie in existing_movies}
+            
+            # Create a list of movies in the same order as TMDB results
+            ordered_movies = []
             for item in data.get('results', []):
                 if item.get('media_type') in ['movie', 'tv']:
-                    movie = tmdb_service.sync_movie_to_db(item)
-                    movies.append(movie)
+                    tmdb_id = item.get('id')
+                    if tmdb_id in existing_movie_map:
+                        ordered_movies.append(existing_movie_map[tmdb_id])
+                    else:
+                        # Create a temporary movie object for display if not in database yet
+                        temp_movie = Movie(
+                            tmdb_id=tmdb_id,
+                            title=item.get('title') or item.get('name', ''),
+                            overview=item.get('overview', ''),
+                            poster_path=item.get('poster_path'),
+                            backdrop_path=item.get('backdrop_path'),
+                            vote_average=item.get('vote_average', 0.0),
+                            vote_count=item.get('vote_count', 0),
+                            popularity=item.get('popularity', 0.0),
+                            genre_ids=item.get('genre_ids', []),
+                            media_type=item.get('media_type', 'movie'),
+                            release_date=None  # Will be set during background sync
+                        )
+                        ordered_movies.append(temp_movie)
             
-            return Movie.objects.filter(id__in=[m.id for m in movies])
+            return ordered_movies
             
         except Exception as e:
             # Fallback to database search
             return Movie.objects.filter(title__icontains=query)
+    
+    def _start_background_sync_search(self, tmdb_results, tmdb_service):
+        """Start background sync process for search results"""
+        try:
+            # Use ThreadPoolExecutor for background sync to avoid blocking
+            executor = ThreadPoolExecutor(max_workers=4)
+            
+            def sync_search_batch():
+                """Sync a batch of search results to database"""
+                synced_count = 0
+                for item in tmdb_results:
+                    try:
+                        if item.get('media_type') in ['movie', 'tv']:
+                            print(f"Background sync search: Syncing {item.get('title', item.get('name', 'Unknown'))}")  # Debug
+                            movie = tmdb_service.sync_movie_to_db(item)
+                            if movie:
+                                synced_count += 1
+                                print(f"Background sync search: Successfully synced {movie.title}")  # Debug
+                    except Exception as e:
+                        print(f"Background sync search: Error syncing movie {item.get('title', item.get('name', 'Unknown'))}: {e}")  # Debug
+                
+                print(f"Background sync search: Completed syncing {synced_count} movies")  # Debug
+            
+            # Submit the sync task to run in background
+            executor.submit(sync_search_batch)
+            print("Background sync search: Started async movie sync process")  # Debug
+            
+        except Exception as e:
+            print(f"Background sync search: Error starting sync process: {e}")  # Debug
     
     def get_serializer_context(self):
         context = super().get_serializer_context()
@@ -247,24 +349,19 @@ class SearchView(generics.ListAPIView):
         queryset = self.get_queryset()
         serializer = self.get_serializer(queryset, many=True)
         
-        # Get the original TMDB search data to extract pagination info
-        tmdb_service = TMDBService()
-        query = request.query_params.get('q', '')
+        # Use stored TMDB data for pagination info (avoid double API call)
         page = int(request.query_params.get('page', 1))
         
-        try:
-            tmdb_data = tmdb_service.search_multi(query, page=page)
-            
+        if hasattr(self, 'tmdb_data'):
             # Return TMDB format with actual pagination data
             return Response({
                 'page': page,
                 'results': serializer.data,
-                'total_pages': tmdb_data.get('total_pages', 1),
-                'total_results': tmdb_data.get('total_results', len(serializer.data))
+                'total_pages': self.tmdb_data.get('total_pages', 1),
+                'total_results': self.tmdb_data.get('total_results', len(serializer.data))
             })
-        except Exception as e:
-            print(f"Error getting TMDB search pagination data: {e}")  # Debug
-            # Fallback to basic pagination
+        else:
+            # Fallback if no TMDB data available
             return Response({
                 'page': page,
                 'results': serializer.data,

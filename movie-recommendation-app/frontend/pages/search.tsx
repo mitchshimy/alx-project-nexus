@@ -109,6 +109,54 @@ const Loading = styled.div`
   border-radius: 16px;
   backdrop-filter: blur(10px);
   border: 1px solid rgba(255, 255, 255, 0.05);
+  
+  .progress-container {
+    width: 100%;
+    height: 4px;
+    background: rgba(255, 255, 255, 0.1);
+    border-radius: 2px;
+    overflow: hidden;
+    margin: 1rem 0;
+  }
+  
+  .progress-fill {
+    height: 100%;
+    background: linear-gradient(90deg, #00D4FF 0%, #7C3AED 100%);
+    animation: progressAnimation 2s ease-in-out infinite;
+  }
+  
+  @keyframes progressAnimation {
+    0% { width: 0%; }
+    50% { width: 70%; }
+    100% { width: 100%; }
+  }
+`;
+
+const SearchProgress = styled.div`
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 1rem;
+  margin: 2rem 0;
+  padding: 1.5rem;
+  background: rgba(255, 255, 255, 0.03);
+  border-radius: 16px;
+  backdrop-filter: blur(10px);
+  border: 1px solid rgba(255, 255, 255, 0.05);
+  
+  .spinner {
+    width: 20px;
+    height: 20px;
+    border: 2px solid rgba(255, 255, 255, 0.1);
+    border-top: 2px solid #00D4FF;
+    border-radius: 50%;
+    animation: spin 1s linear infinite;
+  }
+  
+  @keyframes spin {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+  }
 `;
 
 const NoResults = styled.div`
@@ -197,6 +245,7 @@ export default function Search() {
   
   const [searchResults, setSearchResults] = useState<SearchResult[]>([]);
   const [loading, setLoading] = useState(false);
+  const [initialLoading, setInitialLoading] = useState(false);
   const [page, setPage] = useState(1);
   const [hasMore, setHasMore] = useState(true);
   const [filter, setFilter] = useState<'all' | 'movie' | 'tv'>('all');
@@ -205,9 +254,25 @@ export default function Search() {
   const loadSearchResults = useCallback(async (query: string, pageNum: number = 1, reset: boolean = false) => {
     if (!query || loading) return;
 
-    setLoading(true);
+    if (reset) {
+      setInitialLoading(true);
+    } else {
+      setLoading(true);
+    }
+    
     try {
       const data = await movieAPI.searchMovies(query, pageNum);
+      
+      // Check if response has error property
+      if (data && data.error) {
+        console.error('Search error:', data.error);
+        if (reset) {
+          setSearchResults([]);
+        }
+        setHasMore(false);
+        setTotalResults(0);
+        return;
+      }
       
       if (data?.results?.length) {
         // Transform all results to match SearchResult format (don't filter here)
@@ -244,6 +309,7 @@ export default function Search() {
       }
     } finally {
       setLoading(false);
+      setInitialLoading(false);
     }
   }, [loading]);
 
@@ -255,7 +321,12 @@ export default function Search() {
       setPage(1);
       setHasMore(true);
       setTotalResults(0);
-      loadSearchResults(searchQuery, 1, true);
+      setInitialLoading(true);
+      
+      // Add a small delay to show loading state immediately
+      setTimeout(() => {
+        loadSearchResults(searchQuery, 1, true);
+      }, 100);
     }
   }, [searchQuery]);
 
@@ -327,8 +398,16 @@ export default function Search() {
       </FilterContainer>
 
       <ResultsContainer>
-        {loading && searchResults.length === 0 ? (
-          <Loading>Searching for "{searchQuery}"...</Loading>
+        {initialLoading ? (
+          <SearchProgress>
+            <div className="spinner"></div>
+            <div>
+              <div>🔍 Searching for "{searchQuery}"...</div>
+              <div style={{ fontSize: '0.9rem', opacity: 0.7, marginTop: '0.5rem' }}>
+                This may take a moment...
+              </div>
+            </div>
+          </SearchProgress>
         ) : filteredResults.length > 0 ? (
           <>
             <ResultCount>
@@ -338,10 +417,21 @@ export default function Search() {
             </ResultCount>
             <MovieGrid>
               {filteredResults.map(movie => (
-                <MovieCard key={movie.id} movie={movie} />
+                <MovieCard key={movie.id} movie={{
+                  tmdb_id: movie.tmdb_id || movie.id,
+                  title: movie.title,
+                  poster_path: movie.poster_path,
+                  vote_average: movie.vote_average,
+                  release_date: movie.release_date
+                }} />
               ))}
             </MovieGrid>
-            {loading && <Loading>Loading more results...</Loading>}
+            {loading && (
+              <SearchProgress>
+                <div className="spinner"></div>
+                <div>Loading more results...</div>
+              </SearchProgress>
+            )}
           </>
         ) : (
           <NoResults>

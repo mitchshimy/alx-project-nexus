@@ -197,6 +197,7 @@ export default function Trending() {
   const [movies, setMovies] = useState<TMDBMovie[]>([]);
   const [page, setPage] = useState(1);
   const [loading, setLoading] = useState(false);
+  const [initialLoading, setInitialLoading] = useState(true);
   const [hasMore, setHasMore] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
   const [filter, setFilter] = useState('all');
@@ -245,39 +246,71 @@ export default function Trending() {
         data = await movieAPI.getMovies({ type: 'trending', page });
       }
 
+      // Check if response has error property
+      if (data && data.error) {
+        console.error('API error:', data.error);
+        setHasMore(false);
+        return;
+      }
+      
       if (data?.results?.length) {
-        console.log('Received data from API:', data); // Debug
         setMovies(prev => {
           const existingIds = new Set(prev.map((m: TMDBMovie) => m.id));
           const uniqueNew = data.results.filter((m: TMDBMovie) => !existingIds.has(m.id));
-          console.log('New movies to add:', uniqueNew.length); // Debug
           return [...prev, ...uniqueNew];
         });
         setPage(prev => prev + 1);
         setHasMore(data.page < data.total_pages);
-        console.log('Has more:', data.page < data.total_pages); // Debug
       } else {
-        console.log('No results in data:', data); // Debug
         setHasMore(false);
       }
     } catch (err) {
       console.error('Error loading movies:', err);
     } finally {
       setLoading(false);
+      setInitialLoading(false);
     }
   }, [loading, hasMore, page, isSearchMode, searchTerm]);
 
   // Infinite scroll effect
   useEffect(() => {
     const onScroll = () => {
-      if (window.innerHeight + window.scrollY >= document.documentElement.scrollHeight - 200) {
-        loadMoreMovies();
+      // Find the footer element
+      const footer = document.querySelector('footer');
+      
+      if (footer) {
+        const footerRect = footer.getBoundingClientRect();
+        const windowHeight = window.innerHeight;
+        
+        // Trigger when the beginning of the footer is visible (top of footer reaches bottom of viewport)
+        const footerReached = footerRect.top <= windowHeight;
+        
+        if (footerReached && !loading && hasMore) {
+          loadMoreMovies();
+        }
+      } else {
+        // Fallback to original logic if footer is not found
+        if (window.innerHeight + window.scrollY >= document.documentElement.scrollHeight - 200) {
+          loadMoreMovies();
+        }
       }
     };
 
-    window.addEventListener('scroll', onScroll, { passive: true });
-    return () => window.removeEventListener('scroll', onScroll);
-  }, [loadMoreMovies]);
+    // Use throttled scroll listener for better performance
+    let ticking = false;
+    const throttledScroll = () => {
+      if (!ticking) {
+        setTimeout(() => {
+          onScroll();
+          ticking = false;
+        }, 100); // Use setTimeout instead of requestAnimationFrame for better performance
+        ticking = true;
+      }
+    };
+
+    window.addEventListener('scroll', throttledScroll, { passive: true });
+    return () => window.removeEventListener('scroll', throttledScroll);
+  }, [loadMoreMovies, loading, hasMore]);
 
   // Load initial movies
   useEffect(() => {
@@ -346,7 +379,13 @@ export default function Trending() {
 
       <MovieGrid>
         {filteredMovies.map((movie) => (
-          <MovieCard key={movie.id} movie={movie} />
+          <MovieCard key={movie.id} movie={{
+            tmdb_id: movie.tmdb_id || movie.id,
+            title: movie.title,
+            poster_path: movie.poster_path,
+            vote_average: movie.vote_average,
+            release_date: movie.release_date
+          }} />
         ))}
       </MovieGrid>
 

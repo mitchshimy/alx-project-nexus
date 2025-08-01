@@ -5,7 +5,7 @@ import Hero from '@/components/Hero';
 import MovieCard from '@/components/MovieCard';
 import { movieAPI } from '@/utils/api';
 import { TMDBMovie, Genre } from '@/types/tmdb';
-import { preloadedContent } from './_app';
+
 
 // Modern glassmorphism and neumorphism inspired design
 const PageContainer = styled.div`
@@ -74,29 +74,41 @@ const ViewAllButton = styled.button`
 
 const MovieGrid = styled.div`
   display: grid;
-  grid-template-columns: repeat(7, 1fr); // Changed to 7 columns
-  gap: 1.5rem; // Reduced gap to fit more cards
+  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+  gap: 1.5rem;
   
-  @media (max-width: 1400px) {
-    grid-template-columns: repeat(6, 1fr); // 6 columns on medium screens
+  @media (max-width: 2000px) {
+    grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+  }
+
+  @media (max-width: 1600px) {
+    grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+    gap: 1.25rem;
   }
   
   @media (max-width: 1200px) {
-    grid-template-columns: repeat(5, 1fr); // 5 columns on smaller screens
-  }
-  
-  @media (max-width: 1000px) {
-    grid-template-columns: repeat(4, 1fr); // 4 columns on tablets
-  }
-  
-  @media (max-width: 768px) {
-    grid-template-columns: repeat(3, 1fr); // 3 columns on mobile
+    grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
     gap: 1rem;
   }
+ 
+  @media (max-width: 900px) {
+    grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
+    gap: 0.9rem;
+  }
   
-  @media (max-width: 480px) {
-    grid-template-columns: repeat(2, 1fr); // 2 columns on small mobile
+  @media (max-width: 700px) {
+    grid-template-columns: repeat(auto-fill, minmax(110px, 1fr));
     gap: 0.8rem;
+  }
+  
+  @media (max-width: 500px) {
+    grid-template-columns: repeat(auto-fill, minmax(100px, 1fr));
+    gap: 0.7rem;
+  }
+  
+  @media (max-width: 400px) {
+    grid-template-columns: 1fr;
+    gap: 0.6rem;
   }
 `;
 
@@ -265,18 +277,11 @@ const ErrorMessage = styled.div`
   }
 `;
 
-// Main component remains the same, just using the new styled components
 export default function Home({ isSidebarOpen = false }: { isSidebarOpen?: boolean }) {
   const [featuredMovies, setFeaturedMovies] = useState<TMDBMovie[]>([]);
   const [trendingMovies, setTrendingMovies] = useState<TMDBMovie[]>([]);
   const [topRatedMovies, setTopRatedMovies] = useState<TMDBMovie[]>([]);
-  const [loading, setLoading] = useState(() => {
-    // Start with loading false if we have preloaded content
-    if (typeof window !== 'undefined' && preloadedContent.isPreloaded) {
-      return false;
-    }
-    return true;
-  });
+  const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [loadingProgress, setLoadingProgress] = useState(0);
   const router = useRouter();
@@ -285,13 +290,23 @@ export default function Home({ isSidebarOpen = false }: { isSidebarOpen?: boolea
     for (let attempt = 1; attempt <= retries; attempt++) {
       try {
         const response = await apiCall();
+        
+        if (response && response.error) {
+          console.error(`API error on attempt ${attempt}:`, response.error);
+          if (attempt === retries) {
+            return [];
+          }
+          await new Promise(resolve => setTimeout(resolve, 500));
+          continue;
+        }
+        
         return response.results || [];
       } catch (error) {
         if (attempt === retries) {
           console.error(`Failed to load data after ${retries} attempts:`, error);
           return [];
         }
-        await new Promise(resolve => setTimeout(resolve, 500)); // Reduced from 1000ms to 500ms
+        await new Promise(resolve => setTimeout(resolve, 500));
       }
     }
   };
@@ -315,9 +330,9 @@ export default function Home({ isSidebarOpen = false }: { isSidebarOpen?: boolea
         result.status === 'fulfilled' ? result.value : []
       );
 
-      setFeaturedMovies(featured.slice(0, 21));
-      setTrendingMovies(trending.slice(0, 21));
-      setTopRatedMovies(topRated.slice(0, 21));
+      setFeaturedMovies(featured.slice(0, 22));
+      setTrendingMovies(trending.slice(0, 22));
+      setTopRatedMovies(topRated.slice(0, 22));
 
       if (results.every(result => result.status === 'rejected')) {
         setError('Unable to load content. Please check your connection and try again.');
@@ -332,41 +347,7 @@ export default function Home({ isSidebarOpen = false }: { isSidebarOpen?: boolea
   };
 
   useEffect(() => {
-    // Reduced delay to ensure app initialization is complete
-    const timer = setTimeout(() => {
-      // Check for preloaded content immediately
-      console.log('Index page useEffect - preloadedContent:', {
-        isPreloaded: preloadedContent.isPreloaded,
-        hasTrending: !!preloadedContent.trending,
-        hasTopRated: !!preloadedContent.topRated,
-        hasPopular: !!preloadedContent.popular
-      });
-      
-      if (preloadedContent.isPreloaded && preloadedContent.trending && preloadedContent.topRated && preloadedContent.popular) {
-        console.log('Using preloaded content instantly!');
-        
-        // Extract results from API response structure
-        const trendingResults = (preloadedContent.trending as any)?.results || preloadedContent.trending;
-        const topRatedResults = (preloadedContent.topRated as any)?.results || preloadedContent.topRated;
-        const popularResults = (preloadedContent.popular as any)?.results || preloadedContent.popular;
-        
-        console.log('Extracted results:', {
-          trendingCount: Array.isArray(trendingResults) ? trendingResults.length : 'not array',
-          topRatedCount: Array.isArray(topRatedResults) ? topRatedResults.length : 'not array',
-          popularCount: Array.isArray(popularResults) ? popularResults.length : 'not array'
-        });
-        
-        setTrendingMovies(Array.isArray(trendingResults) ? trendingResults.slice(0, 21) : []);
-        setTopRatedMovies(Array.isArray(topRatedResults) ? topRatedResults.slice(0, 21) : []);
-        setFeaturedMovies(Array.isArray(popularResults) ? popularResults.slice(0, 21) : []);
-        setLoading(false);
-      } else {
-        console.log('No preloaded content, loading normally...');
-        loadFeaturedContent();
-      }
-    }, 50); // Reduced from 100ms to 50ms for faster loading
-
-    return () => clearTimeout(timer);
+    loadFeaturedContent();
   }, []);
 
   const handleBrowseMovies = () => {
@@ -437,9 +418,27 @@ export default function Home({ isSidebarOpen = false }: { isSidebarOpen?: boolea
           </SectionHeader>
           <MovieGrid>
             {featuredMovies.length > 0 ? (
-              featuredMovies.map((movie) => (
-                <MovieCard key={movie.id} movie={movie} />
-              ))
+              <>
+                {featuredMovies.map((movie) => (
+                  <MovieCard key={movie.id} movie={{
+                    tmdb_id: movie.tmdb_id || movie.id,
+                    title: movie.title,
+                    poster_path: movie.poster_path,
+                    vote_average: movie.vote_average,
+                    release_date: movie.release_date
+                  }} />
+                ))}
+                {/* Debug info - remove in production */}
+                <div style={{ 
+                  gridColumn: '1 / -1', 
+                  textAlign: 'center', 
+                  color: 'rgba(255, 255, 255, 0.3)', 
+                  fontSize: '0.8rem',
+                  padding: '10px'
+                }}>
+                  Showing {featuredMovies.length} featured movies
+                </div>
+              </>
             ) : (
               <div style={{ gridColumn: '1 / -1', textAlign: 'center', color: 'rgba(255, 255, 255, 0.5)' }}>
                 No featured movies available
@@ -455,9 +454,27 @@ export default function Home({ isSidebarOpen = false }: { isSidebarOpen?: boolea
           </SectionHeader>
           <MovieGrid>
             {trendingMovies.length > 0 ? (
-              trendingMovies.map((movie) => (
-                <MovieCard key={movie.id} movie={movie} />
-              ))
+              <>
+                {trendingMovies.map((movie) => (
+                  <MovieCard key={movie.id} movie={{
+                    tmdb_id: movie.tmdb_id || movie.id,
+                    title: movie.title,
+                    poster_path: movie.poster_path,
+                    vote_average: movie.vote_average,
+                    release_date: movie.release_date
+                  }} />
+                ))}
+                {/* Debug info - remove in production */}
+                <div style={{ 
+                  gridColumn: '1 / -1', 
+                  textAlign: 'center', 
+                  color: 'rgba(255, 255, 255, 0.3)', 
+                  fontSize: '0.8rem',
+                  padding: '10px'
+                }}>
+                  Showing {trendingMovies.length} trending movies
+                </div>
+              </>
             ) : (
               <div style={{ gridColumn: '1 / -1', textAlign: 'center', color: 'rgba(255, 255, 255, 0.5)' }}>
                 No trending movies available
@@ -473,9 +490,27 @@ export default function Home({ isSidebarOpen = false }: { isSidebarOpen?: boolea
           </SectionHeader>
           <MovieGrid>
             {topRatedMovies.length > 0 ? (
-              topRatedMovies.map((movie) => (
-                <MovieCard key={movie.id} movie={movie} />
-              ))
+              <>
+                {topRatedMovies.map((movie) => (
+                  <MovieCard key={movie.id} movie={{
+                    tmdb_id: movie.tmdb_id || movie.id,
+                    title: movie.title,
+                    poster_path: movie.poster_path,
+                    vote_average: movie.vote_average,
+                    release_date: movie.release_date
+                  }} />
+                ))}
+                {/* Debug info - remove in production */}
+                <div style={{ 
+                  gridColumn: '1 / -1', 
+                  textAlign: 'center', 
+                  color: 'rgba(255, 255, 255, 0.3)', 
+                  fontSize: '0.8rem',
+                  padding: '10px'
+                }}>
+                  Showing {topRatedMovies.length} top rated movies
+                </div>
+              </>
             ) : (
               <div style={{ gridColumn: '1 / -1', textAlign: 'center', color: 'rgba(255, 255, 255, 0.5)' }}>
                 No top rated movies available

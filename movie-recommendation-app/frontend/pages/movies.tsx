@@ -54,6 +54,7 @@ export default function Movies() {
   const [movies, setMovies] = useState<TMDBMovie[]>([]);
   const [page, setPage] = useState(1);
   const [loading, setLoading] = useState(false);
+  const [initialLoading, setInitialLoading] = useState(true);
   const [hasMore, setHasMore] = useState(true);
   const [filter, setFilter] = useState('all');
   const [genres, setGenres] = useState<Genre[]>([]);
@@ -63,25 +64,31 @@ export default function Movies() {
 
     setLoading(true);
     try {
-      const data = await movieAPI.getMovies({ type: 'movies', page });
+      let data = await movieAPI.getMovies({ type: 'movies', page });
+      
+      // Check if response has error property
+      if (data && data.error) {
+        console.error('API error:', data.error);
+        setHasMore(false);
+        return;
+      }
+      
       if (data?.results?.length) {
-        console.log('Movies page - Received data:', data); // Debug
         setMovies(prev => {
           const existingIds = new Set(prev.map((m: TMDBMovie) => m.id));
           const uniqueNew = data.results.filter((m: TMDBMovie) => !existingIds.has(m.id));
-          console.log('Movies page - New movies to add:', uniqueNew.length); // Debug
           return [...prev, ...uniqueNew];
         });
-        setPage(prev => prev + 1);
-        setHasMore(data.page < data.total_pages);
+        setHasMore(page < (data.total_pages || 1));
+        setPage(page + 1);
       } else {
-        console.log('Movies page - No results:', data); // Debug
         setHasMore(false);
       }
     } catch (err) {
       console.error('Error loading movies:', err);
     } finally {
       setLoading(false);
+      setInitialLoading(false);
     }
   }, [loading, hasMore, page]);
 
@@ -91,18 +98,28 @@ export default function Movies() {
 
   useEffect(() => {
     const onScroll = () => {
-      // Calculate scroll position more accurately
-      const scrollTop = window.pageYOffset || document.documentElement.scrollTop;
-      const windowHeight = window.innerHeight;
-      const documentHeight = document.documentElement.scrollHeight;
+      // Find the footer element
+      const footer = document.querySelector('footer');
       
-      // Trigger when user is 200px from bottom (more generous threshold)
-      const scrolledToBottom = scrollTop + windowHeight >= documentHeight - 200;
-      
-      // Add debouncing to prevent multiple rapid calls
-      if (scrolledToBottom && !loading && hasMore) {
-        console.log('Scroll trigger: Loading more movies...'); // Debug
-        loadMoreMovies();
+      if (footer) {
+        const footerRect = footer.getBoundingClientRect();
+        const windowHeight = window.innerHeight;
+        
+        // Trigger when the beginning of the footer is visible (top of footer reaches bottom of viewport)
+        const footerReached = footerRect.top <= windowHeight;
+        
+        if (footerReached && !loading && hasMore) {
+          loadMoreMovies();
+        }
+      } else {
+        // Fallback to original logic if footer is not found
+        const scrollTop = window.pageYOffset || document.documentElement.scrollTop;
+        const documentHeight = document.documentElement.scrollHeight;
+        const scrolledToBottom = scrollTop + window.innerHeight >= documentHeight - 200;
+        
+        if (scrolledToBottom && !loading && hasMore) {
+          loadMoreMovies();
+        }
       }
     };
 
@@ -110,10 +127,10 @@ export default function Movies() {
     let ticking = false;
     const throttledScroll = () => {
       if (!ticking) {
-        requestAnimationFrame(() => {
+        setTimeout(() => {
           onScroll();
           ticking = false;
-        });
+        }, 100); // Use setTimeout instead of requestAnimationFrame for better performance
         ticking = true;
       }
     };
@@ -155,13 +172,25 @@ export default function Movies() {
           </GenreSelect>
         </FilterContainer>
 
-        <MovieGrid>
-          {filteredMovies.map(movie => (
-            <MovieCard key={movie.id} movie={movie} />
-          ))}
-        </MovieGrid>
+        {initialLoading ? (
+          <Loading>Loading movies...</Loading>
+        ) : (
+          <>
+            <MovieGrid>
+              {filteredMovies.map(movie => (
+                <MovieCard key={movie.id} movie={{
+                  tmdb_id: movie.tmdb_id || movie.id,
+                  title: movie.title,
+                  poster_path: movie.poster_path,
+                  vote_average: movie.vote_average,
+                  release_date: movie.release_date
+                }} />
+              ))}
+            </MovieGrid>
 
-        {loading && <Loading>Loading more movies...</Loading>}
+            {loading && <Loading>Loading more movies...</Loading>}
+          </>
+        )}
       </Section>
     </>
   );

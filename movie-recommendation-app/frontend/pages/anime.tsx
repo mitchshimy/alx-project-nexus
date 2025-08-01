@@ -54,6 +54,7 @@ export default function Anime() {
   const [movies, setMovies] = useState<TMDBMovie[]>([]);
   const [page, setPage] = useState(1);
   const [loading, setLoading] = useState(false);
+  const [initialLoading, setInitialLoading] = useState(true);
   const [hasMore, setHasMore] = useState(true);
   const [filter, setFilter] = useState('all');
   const [genres, setGenres] = useState<Genre[]>([]);
@@ -63,7 +64,15 @@ export default function Anime() {
 
     setLoading(true);
     try {
-      const data = await movieAPI.getMovies({ type: 'movies', page });
+      let data = await movieAPI.getMovies({ type: 'movies', page });
+      
+      // Check if response has error property
+      if (data && data.error) {
+        console.error('API error:', data.error);
+        setHasMore(false);
+        return;
+      }
+      
       if (data?.results?.length) {
         // Filter for animation genre (ID: 16)
         const animeMovies = data.results.filter((movie: TMDBMovie) => 
@@ -84,6 +93,7 @@ export default function Anime() {
       console.error('Error loading anime movies:', err);
     } finally {
       setLoading(false);
+      setInitialLoading(false);
     }
   }, [loading, hasMore, page]);
 
@@ -93,16 +103,44 @@ export default function Anime() {
 
   useEffect(() => {
     const onScroll = () => {
-      const scrolledToBottom =
-        window.innerHeight + window.scrollY >= document.body.scrollHeight - 90;
+      // Find the footer element
+      const footer = document.querySelector('footer');
+      
+      if (footer) {
+        const footerRect = footer.getBoundingClientRect();
+        const windowHeight = window.innerHeight;
+        
+        // Trigger when the beginning of the footer is visible (top of footer reaches bottom of viewport)
+        const footerReached = footerRect.top <= windowHeight;
+        
+        if (footerReached && !loading && hasMore) {
+          loadMoreMovies();
+        }
+      } else {
+        // Fallback to original logic if footer is not found
+        const scrolledToBottom =
+          window.innerHeight + window.scrollY >= document.body.scrollHeight - 90;
 
-      if (scrolledToBottom && !loading && hasMore) {
-        loadMoreMovies();
+        if (scrolledToBottom && !loading && hasMore) {
+          loadMoreMovies();
+        }
       }
     };
 
-    window.addEventListener('scroll', onScroll);
-    return () => window.removeEventListener('scroll', onScroll);
+    // Use throttled scroll listener for better performance
+    let ticking = false;
+    const throttledScroll = () => {
+      if (!ticking) {
+        setTimeout(() => {
+          onScroll();
+          ticking = false;
+        }, 100); // Use setTimeout instead of requestAnimationFrame for better performance
+        ticking = true;
+      }
+    };
+
+    window.addEventListener('scroll', throttledScroll, { passive: true });
+    return () => window.removeEventListener('scroll', throttledScroll);
   }, [loadMoreMovies, loading, hasMore]);
 
   useEffect(() => {
@@ -138,13 +176,19 @@ export default function Anime() {
           </GenreSelect>
         </FilterContainer>
 
-        <MovieGrid>
-          {filteredMovies.map(item => (
-            <MovieCard key={item.id} movie={item} />
-          ))}
-        </MovieGrid>
+        {initialLoading ? (
+          <Loading>Loading anime...</Loading>
+        ) : (
+          <>
+            <MovieGrid>
+              {filteredMovies.map(item => (
+                <MovieCard key={item.id} movie={item} />
+              ))}
+            </MovieGrid>
 
-        {loading && <Loading>Loading more anime...</Loading>}
+            {loading && <Loading>Loading more anime...</Loading>}
+          </>
+        )}
       </Section>
     </>
   );

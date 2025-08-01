@@ -58,6 +58,11 @@ const setCachedResponse = (cacheKey: string, data: any) => {
   cache.set(cacheKey, { data, timestamp: Date.now() });
 };
 
+// Function to clear the in-memory cache
+export const clearApiCache = () => {
+  cache.clear();
+};
+
 // API request helper with authentication, timeout, and caching
 const apiRequest = async (endpoint: string, options: RequestInit = {}) => {
   const method = options.method || 'GET';
@@ -172,9 +177,9 @@ const apiRequest = async (endpoint: string, options: RequestInit = {}) => {
         return { error: errorMessage, errorTitle };
       }
       
-      // For other errors (401, 500, etc.), show global modal and reject
+      // For other errors (401, 500, etc.), show global modal and return error object
       showError(errorTitle, errorMessage, 'error');
-      return Promise.reject(new Error(errorMessage));
+      return { error: errorMessage, errorTitle };
     }
 
     // Handle empty responses (common with DELETE requests)
@@ -198,17 +203,17 @@ const apiRequest = async (endpoint: string, options: RequestInit = {}) => {
     if (error instanceof TypeError && error.message.includes('fetch')) {
       const timeoutMessage = 'Network error. Please check your connection and try again.';
       showError('Connection Error', timeoutMessage, 'error');
-      return Promise.reject(new Error(timeoutMessage));
+      return { error: timeoutMessage, errorTitle: 'Connection Error' };
     }
     if (error instanceof Error && error.message === 'Request timeout') {
       const timeoutMessage = 'The server is taking too long to respond. Please try again in a moment.';
       showError('Timeout Error', timeoutMessage, 'warning');
-      return Promise.reject(new Error(timeoutMessage));
+      return { error: timeoutMessage, errorTitle: 'Timeout Error' };
     }
     // For any other unexpected errors, show a generic message
     const genericMessage = 'An unexpected error occurred. Please try again.';
     showError('Error', genericMessage, 'error');
-    return Promise.reject(new Error(genericMessage));
+    return { error: genericMessage, errorTitle: 'Error' };
   }
 };
 
@@ -222,44 +227,35 @@ export const authAPI = {
     first_name?: string;
     last_name?: string;
   }) => {
-    try {
-      return await apiRequest('/users/register/', {
-        method: 'POST',
-        body: JSON.stringify(userData),
-      });
-    } catch (error) {
-      // Handle timeout gracefully for registration
-      if (error instanceof Error && error.message.includes('timeout')) {
-        return { error: 'Registration request timed out. Please try again.', errorTitle: 'Timeout Error' };
-      }
-      throw error;
+    const response = await apiRequest('/users/register/', {
+      method: 'POST',
+      body: JSON.stringify(userData),
+    });
+    
+    // Check if response has error property
+    if (response && response.error) {
+      return { error: response.error, errorTitle: response.errorTitle };
     }
+    
+    return response;
   },
 
   login: async (credentials: { email: string; password: string }) => {
-    try {
-      const response = await apiRequest('/users/login/', {
-        method: 'POST',
-        body: JSON.stringify(credentials),
-      });
-      
-      // If response has error property, it means there was a validation error
-      if (response && response.error) {
-        return { error: response.error, errorTitle: response.errorTitle };
-      }
-      
-      if (response.tokens?.access) {
-        setAuthToken(response.tokens.access);
-      }
-      
-      return response;
-    } catch (error) {
-      // Handle timeout gracefully for login
-      if (error instanceof Error && error.message.includes('timeout')) {
-        return { error: 'Login request timed out. Please try again.', errorTitle: 'Timeout Error' };
-      }
-      throw error;
+    const response = await apiRequest('/users/login/', {
+      method: 'POST',
+      body: JSON.stringify(credentials),
+    });
+    
+    // If response has error property, it means there was a validation error or timeout
+    if (response && response.error) {
+      return { error: response.error, errorTitle: response.errorTitle };
     }
+    
+    if (response.tokens?.access) {
+      setAuthToken(response.tokens.access);
+    }
+    
+    return response;
   },
 
   logout: () => {
@@ -280,42 +276,28 @@ export const authAPI = {
   },
 
   getProfile: async () => {
-    try {
-      return await apiRequest('/users/profile/');
-    } catch (error) {
-      // Handle timeout gracefully for profile
-      if (error instanceof Error && error.message.includes('timeout')) {
-        return null;
-      }
-      throw error;
+    const response = await apiRequest('/users/profile/');
+    
+    // Return null if there was an error
+    if (response && response.error) {
+      return null;
     }
+    
+    return response;
   },
 
   updateProfile: async (profileData: any) => {
-    try {
-      return await apiRequest('/users/profile/', {
-        method: 'PUT',
-        body: JSON.stringify(profileData),
-      });
-    } catch (error) {
-      // Handle timeout gracefully for profile update
-      if (error instanceof Error && error.message.includes('timeout')) {
-        return { error: 'Profile update request timed out. Please try again.', errorTitle: 'Timeout Error' };
-      }
-      throw error;
+    const response = await apiRequest('/users/profile/', {
+      method: 'PUT',
+      body: JSON.stringify(profileData),
+    });
+    
+    // Check if response has error property
+    if (response && response.error) {
+      return { error: response.error, errorTitle: response.errorTitle };
     }
-  },
-
-  getUserStats: async () => {
-    try {
-      return await apiRequest('/users/stats/');
-    } catch (error) {
-      // Handle timeout gracefully for stats
-      if (error instanceof Error && error.message.includes('timeout')) {
-        return { favorites_count: 0, watchlist_count: 0, ratings_count: 0, member_since: 'N/A' };
-      }
-      throw error;
-    }
+    
+    return response;
   },
 
   changePassword: async (passwordData: {
@@ -323,18 +305,17 @@ export const authAPI = {
     new_password: string;
     confirm_password: string;
   }) => {
-    try {
-      return await apiRequest('/users/change-password/', {
-        method: 'POST',
-        body: JSON.stringify(passwordData),
-      });
-    } catch (error) {
-      // Handle timeout gracefully for password change
-      if (error instanceof Error && error.message.includes('timeout')) {
-        return { error: 'Password change request timed out. Please try again.', errorTitle: 'Timeout Error' };
-      }
-      throw error;
+    const response = await apiRequest('/users/change-password/', {
+      method: 'POST',
+      body: JSON.stringify(passwordData),
+    });
+    
+    // Check if response has error property
+    if (response && response.error) {
+      return { error: response.error, errorTitle: response.errorTitle };
     }
+    
+    return response;
   },
 };
 
@@ -383,163 +364,248 @@ export const movieAPI = {
 
   // Get movie details
   getMovieDetails: async (tmdbId: number) => {
-    try {
-      return await apiRequest(`/movies/${tmdbId}/`);
-    } catch (error) {
-      // Handle timeout gracefully for movie details
-      if (error instanceof Error && error.message.includes('timeout')) {
-        return { error: 'Request timed out. Please try again.', errorTitle: 'Timeout Error' };
-      }
-      
-      // Handle 404 errors gracefully
-      if (error instanceof Error && error.message.includes('404')) {
-        return { error: 'Movie not found. Please check the URL and try again.', errorTitle: 'Not Found' };
-      }
-      
-      // Handle other errors gracefully
-      return { error: 'Failed to load movie details. Please try again.', errorTitle: 'Error' };
+    const response = await apiRequest(`/movies/${tmdbId}/`);
+    
+    // Check if response has error property
+    if (response && response.error) {
+      return { error: response.error, errorTitle: response.errorTitle };
     }
+    
+    return response;
   },
 
   // Get genres
   getGenres: async () => {
-    try {
-      return await apiRequest('/movies/genres/');
-    } catch (error) {
-      // Handle timeout gracefully for genres
-      if (error instanceof Error && error.message.includes('timeout')) {
-        return [];
-      }
-      throw error;
+    const response = await apiRequest('/movies/genres/');
+    
+    // Return empty array if there was an error
+    if (response && response.error) {
+      return [];
     }
+    
+    return response;
   },
 
   // Get favorites
   getFavorites: async () => {
     try {
-      return await apiRequest('/movies/favorites/');
-    } catch (error) {
-      // Handle timeout gracefully for favorites
-      if (error instanceof Error && error.message.includes('timeout')) {
+      const response = await apiRequest('/movies/favorites/');
+      
+      // Return empty array if there was an error
+      if (response && response.error) {
         return [];
       }
-      throw error;
+      
+      return response;
+    } catch (error) {
+      console.error('Error getting favorites:', error);
+      return [];
     }
   },
 
   // Add to favorites
-  addToFavorites: async (movieData: any) => {
+  addToFavorites: async (movieId: number) => {
     try {
-      return await apiRequest('/movies/favorites/', {
+      const response = await apiRequest('/movies/favorites/', {
         method: 'POST',
-        body: JSON.stringify(movieData),
+        body: JSON.stringify({ movie_id: movieId }),
       });
-    } catch (error) {
-      // Handle timeout gracefully for adding favorites
-      if (error instanceof Error && error.message.includes('timeout')) {
-        return { error: 'Failed to add to favorites. Please try again.', errorTitle: 'Timeout Error' };
+      
+      // Check if response has error property
+      if (response && response.error) {
+        return { error: response.error, errorTitle: response.errorTitle };
       }
-      throw error;
+      
+      return response;
+    } catch (error) {
+      // Handle any thrown errors and return them as error objects
+      console.error('Error adding to favorites:', error);
+      return { 
+        error: 'Failed to add to favorites. Please try again.', 
+        errorTitle: 'Error' 
+      };
     }
   },
 
   removeFromFavorites: async (favoriteId: number) => {
     try {
-      return await apiRequest(`/movies/favorites/${favoriteId}/`, {
+      const response = await apiRequest(`/movies/favorites/${favoriteId}/`, {
         method: 'DELETE',
       });
-    } catch (error) {
-      // Handle timeout gracefully for removing favorites
-      if (error instanceof Error && error.message.includes('timeout')) {
-        return { error: 'Failed to remove from favorites. Please try again.', errorTitle: 'Timeout Error' };
+      
+      // Check if response has error property
+      if (response && response.error) {
+        return { error: response.error, errorTitle: response.errorTitle };
       }
-      throw error;
+      
+      return response;
+    } catch (error) {
+      // Handle any thrown errors and return them as error objects
+      console.error('Error removing from favorites:', error);
+      return { 
+        error: 'Failed to remove from favorites. Please try again.', 
+        errorTitle: 'Error' 
+      };
     }
   },
 
   removeFromFavoritesByMovie: async (movieId: number) => {
     try {
-      return await apiRequest(`/movies/favorites/movie/${movieId}/`, {
+      const response = await apiRequest(`/movies/favorites/movie/${movieId}/`, {
         method: 'DELETE',
       });
-    } catch (error) {
-      // Handle timeout gracefully for removing favorites
-      if (error instanceof Error && error.message.includes('timeout')) {
-        return { error: 'Failed to remove from favorites. Please try again.', errorTitle: 'Timeout Error' };
+      
+      // Check if response has error property
+      if (response && response.error) {
+        return { error: response.error, errorTitle: response.errorTitle };
       }
-      throw error;
+      
+      return response;
+    } catch (error) {
+      // Handle any thrown errors and return them as error objects
+      console.error('Error removing from favorites by movie:', error);
+      return { 
+        error: 'Failed to remove from favorites. Please try again.', 
+        errorTitle: 'Error' 
+      };
     }
   },
 
   // Watchlist
   getWatchlist: async () => {
-    return apiRequest('/movies/watchlist/');
+    try {
+      const response = await apiRequest('/movies/watchlist/');
+      
+      // Return empty array if there was an error
+      if (response && response.error) {
+        return [];
+      }
+      
+      return response;
+    } catch (error) {
+      console.error('Error getting watchlist:', error);
+      return [];
+    }
   },
 
   addToWatchlist: async (movieId: number) => {
     try {
-      return await apiRequest('/movies/watchlist/', {
+      const response = await apiRequest('/movies/watchlist/', {
         method: 'POST',
         body: JSON.stringify({ movie_id: movieId }),
       });
-    } catch (error) {
-      // Handle timeout gracefully for adding to watchlist
-      if (error instanceof Error && error.message.includes('timeout')) {
-        return { error: 'Failed to add to watchlist. Please try again.', errorTitle: 'Timeout Error' };
+      
+      // Check if response has error property
+      if (response && response.error) {
+        return { error: response.error, errorTitle: response.errorTitle };
       }
-      throw error;
+      
+      return response;
+    } catch (error) {
+      // Handle any thrown errors and return them as error objects
+      console.error('Error adding to watchlist:', error);
+      return { 
+        error: 'Failed to add to watchlist. Please try again.', 
+        errorTitle: 'Error' 
+      };
     }
   },
 
   removeFromWatchlist: async (watchlistId: number) => {
     try {
-      return await apiRequest(`/movies/watchlist/${watchlistId}/`, {
+      const response = await apiRequest(`/movies/watchlist/${watchlistId}/`, {
         method: 'DELETE',
       });
-    } catch (error) {
-      // Handle timeout gracefully for removing from watchlist
-      if (error instanceof Error && error.message.includes('timeout')) {
-        return { error: 'Failed to remove from watchlist. Please try again.', errorTitle: 'Timeout Error' };
+      
+      // Check if response has error property
+      if (response && response.error) {
+        return { error: response.error, errorTitle: response.errorTitle };
       }
-      throw error;
+      
+      return response;
+    } catch (error) {
+      // Handle any thrown errors and return them as error objects
+      console.error('Error removing from watchlist:', error);
+      return { 
+        error: 'Failed to remove from watchlist. Please try again.', 
+        errorTitle: 'Error' 
+      };
     }
   },
 
   removeFromWatchlistByMovie: async (movieId: number) => {
     try {
-      return await apiRequest(`/movies/watchlist/movie/${movieId}/`, {
+      const response = await apiRequest(`/movies/watchlist/movie/${movieId}/`, {
         method: 'DELETE',
       });
-    } catch (error) {
-      // Handle timeout gracefully for removing from watchlist
-      if (error instanceof Error && error.message.includes('timeout')) {
-        return { error: 'Failed to remove from watchlist. Please try again.', errorTitle: 'Timeout Error' };
+      
+      // Check if response has error property
+      if (response && response.error) {
+        return { error: response.error, errorTitle: response.errorTitle };
       }
-      throw error;
+      
+      return response;
+    } catch (error) {
+      // Handle any thrown errors and return them as error objects
+      console.error('Error removing from watchlist by movie:', error);
+      return { 
+        error: 'Failed to remove from watchlist. Please try again.', 
+        errorTitle: 'Error' 
+      };
     }
   },
 
   // Ratings
   rateMovie: async (movieId: number, rating: number, review?: string) => {
-    return apiRequest(`/movies/${movieId}/rate/`, {
-      method: 'POST',
-      body: JSON.stringify({ 
-        movie_id: movieId,
-        rating,
-        review: review || '',
-      }),
-    });
+    try {
+      const response = await apiRequest(`/movies/${movieId}/rate/`, {
+        method: 'POST',
+        body: JSON.stringify({ 
+          movie_id: movieId,
+          rating,
+          review: review || '',
+        }),
+      });
+      
+      // Check if response has error property
+      if (response && response.error) {
+        return { error: response.error, errorTitle: response.errorTitle };
+      }
+      
+      return response;
+    } catch (error) {
+      console.error('Error rating movie:', error);
+      return { 
+        error: 'Failed to rate movie. Please try again.', 
+        errorTitle: 'Error' 
+      };
+    }
   },
 
   updateMovieRating: async (movieId: number, rating: number, review?: string) => {
-    return apiRequest(`/movies/${movieId}/rate/`, {
-      method: 'PUT',
-      body: JSON.stringify({ 
-        movie_id: movieId,
-        rating,
-        review: review || '',
-      }),
-    });
+    try {
+      const response = await apiRequest(`/movies/${movieId}/rate/`, {
+        method: 'PUT',
+        body: JSON.stringify({ 
+          movie_id: movieId,
+          rating,
+          review: review || '',
+        }),
+      });
+      
+      // Check if response has error property
+      if (response && response.error) {
+        return { error: response.error, errorTitle: response.errorTitle };
+      }
+      
+      return response;
+    } catch (error) {
+      console.error('Error updating movie rating:', error);
+      return { 
+        error: 'Failed to update movie rating. Please try again.', 
+        errorTitle: 'Error' 
+      };
+    }
   },
 };
 

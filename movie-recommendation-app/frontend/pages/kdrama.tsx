@@ -54,6 +54,7 @@ export default function KDrama() {
   const [shows, setShows] = useState<TMDBMovie[]>([]);
   const [page, setPage] = useState(1);
   const [loading, setLoading] = useState(false);
+  const [initialLoading, setInitialLoading] = useState(true);
   const [hasMore, setHasMore] = useState(true);
   const [filter, setFilter] = useState('all');
   const [genres, setGenres] = useState<Genre[]>([]);
@@ -63,9 +64,36 @@ export default function KDrama() {
 
     setLoading(true);
     try {
-      const data = await movieAPI.getMovies({ type: 'tv', page });
+      let data = await movieAPI.getMovies({ type: 'movie', page });
       if (data?.results?.length) {
         // Filter for Korean dramas
+        const kdramaShows = data.results.filter((show: TMDBMovie) => {
+          const title = show.title?.toLowerCase() || '';
+          const overview = show.overview?.toLowerCase() || '';
+          return title.includes('korean') || title.includes('k-drama') || 
+                 overview.includes('korean') || overview.includes('k-drama');
+        });
+        
+        setShows(prev => {
+          const existingIds = new Set(prev.map((m: TMDBMovie) => m.id));
+          const uniqueNew = kdramaShows.filter((m: TMDBMovie) => !existingIds.has(m.id));
+          return [...prev, ...uniqueNew];
+        });
+        setPage(prev => prev + 1);
+        setHasMore(data.page < data.total_pages);
+      } else {
+        // Use TV shows API and filter for Korean dramas
+        data = await movieAPI.getMovies({ type: 'tv', page });
+      }
+
+      // Check if response has error property
+      if (data && data.error) {
+        console.error('API error:', data.error);
+        setHasMore(false);
+        return;
+      }
+
+      if (data?.results?.length) {
         const kdramaShows = data.results.filter((show: TMDBMovie) => {
           const title = show.title?.toLowerCase() || '';
           const overview = show.overview?.toLowerCase() || '';
@@ -87,6 +115,7 @@ export default function KDrama() {
       console.error('Error loading K-dramas:', err);
     } finally {
       setLoading(false);
+      setInitialLoading(false);
     }
   }, [loading, hasMore, page]);
 
@@ -96,16 +125,44 @@ export default function KDrama() {
 
   useEffect(() => {
     const onScroll = () => {
-      const scrolledToBottom =
-        window.innerHeight + window.scrollY >= document.body.scrollHeight - 90;
+      // Find the footer element
+      const footer = document.querySelector('footer');
+      
+      if (footer) {
+        const footerRect = footer.getBoundingClientRect();
+        const windowHeight = window.innerHeight;
+        
+        // Trigger when the beginning of the footer is visible (top of footer reaches bottom of viewport)
+        const footerReached = footerRect.top <= windowHeight;
+        
+        if (footerReached && !loading && hasMore) {
+          loadMoreShows();
+        }
+      } else {
+        // Fallback to original logic if footer is not found
+        const scrolledToBottom =
+          window.innerHeight + window.scrollY >= document.body.scrollHeight - 90;
 
-      if (scrolledToBottom && !loading && hasMore) {
-        loadMoreShows();
+        if (scrolledToBottom && !loading && hasMore) {
+          loadMoreShows();
+        }
       }
     };
 
-    window.addEventListener('scroll', onScroll);
-    return () => window.removeEventListener('scroll', onScroll);
+    // Use throttled scroll listener for better performance
+    let ticking = false;
+    const throttledScroll = () => {
+      if (!ticking) {
+        setTimeout(() => {
+          onScroll();
+          ticking = false;
+        }, 100); // Use setTimeout instead of requestAnimationFrame for better performance
+        ticking = true;
+      }
+    };
+
+    window.addEventListener('scroll', throttledScroll, { passive: true });
+    return () => window.removeEventListener('scroll', throttledScroll);
   }, [loadMoreShows, loading, hasMore]);
 
   useEffect(() => {
@@ -141,13 +198,19 @@ export default function KDrama() {
           </GenreSelect>
         </FilterContainer>
 
-        <MovieGrid>
-          {filteredKDramas.map(item => (
-            <MovieCard key={item.id} movie={item} />
-          ))}
-        </MovieGrid>
+        {initialLoading ? (
+          <Loading>Loading K-Dramas...</Loading>
+        ) : (
+          <>
+            <MovieGrid>
+              {filteredKDramas.map(item => (
+                <MovieCard key={item.id} movie={item} />
+              ))}
+            </MovieGrid>
 
-        {loading && <Loading>Loading more K-Dramas...</Loading>}
+            {loading && <Loading>Loading more K-Dramas...</Loading>}
+          </>
+        )}
       </Section>
     </>
   );

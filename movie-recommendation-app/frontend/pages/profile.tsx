@@ -2,80 +2,34 @@ import { useState, useEffect } from 'react';
 import { useRouter } from 'next/router';
 import styled from 'styled-components';
 import { authAPI, getAuthToken } from '@/utils/api';
-import Layout from '@/components/Layout';
+import { t } from '@/utils/translations';
+
+const Container = styled.div`
+  padding: 2rem;
+  max-width: 800px;
+  margin: 0 auto;
+`;
 
 const Title = styled.h1`
-  font-size: 3rem;
+  font-size: 2.5rem;
   margin-bottom: 2rem;
-  color: #fff;
+  color: #f0f0f0;
   text-align: center;
-  background: linear-gradient(135deg, #fff 0%, #00d4ff 100%);
-  -webkit-background-clip: text;
-  -webkit-text-fill-color: transparent;
-  background-clip: text;
-  font-weight: 700;
-  
-  @media (max-width: 768px) {
-    font-size: 2.5rem;
-    margin-bottom: 1.5rem;
-  }
-  
-  @media (max-width: 480px) {
-    font-size: 2rem;
-    margin-bottom: 1rem;
-  }
 `;
 
 const ProfileCard = styled.div`
-  background: rgba(255, 255, 255, 0.03);
-  backdrop-filter: blur(20px);
-  border-radius: 24px;
-  padding: 2.5rem;
+  background: rgba(255, 255, 255, 0.05);
+  backdrop-filter: blur(10px);
+  border-radius: 16px;
+  padding: 2rem;
   border: 1px solid rgba(255, 255, 255, 0.1);
   margin-bottom: 2rem;
-  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
-  transition: all 0.3s ease;
-  
-  &:hover {
-    transform: translateY(-2px);
-    box-shadow: 0 12px 40px rgba(0, 0, 0, 0.4);
-    border-color: rgba(0, 212, 255, 0.2);
-  }
-  
-  @media (max-width: 768px) {
-    padding: 2rem;
-  }
-  
-  @media (max-width: 480px) {
-    padding: 1.5rem;
-  }
 `;
 
 const SectionTitle = styled.h2`
-  font-size: 1.8rem;
-  margin-bottom: 1.5rem;
-  color: #00d4ff;
-  font-weight: 600;
-  position: relative;
-  
-  &::after {
-    content: '';
-    position: absolute;
-    bottom: -8px;
-    left: 0;
-    width: 40px;
-    height: 3px;
-    background: linear-gradient(90deg, #00d4ff 0%, #ff6b35 100%);
-    border-radius: 3px;
-  }
-  
-  @media (max-width: 768px) {
-    font-size: 1.5rem;
-  }
-  
-  @media (max-width: 480px) {
-    font-size: 1.3rem;
-  }
+  font-size: 1.5rem;
+  margin-bottom: 1rem;
+  color: #e50914;
 `;
 
 const InfoGrid = styled.div`
@@ -119,7 +73,7 @@ const Label = styled.label`
 `;
 
 const Value = styled.div`
-  color: #fff;
+  color: #f0f0f0;
   font-size: 1.1rem;
   font-weight: 500;
   padding: 0.5rem 0;
@@ -227,40 +181,31 @@ const Button = styled.button`
 const AuthPrompt = styled.div`
   text-align: center;
   padding: 4rem 2rem;
-  background: rgba(255, 255, 255, 0.03);
-  border-radius: 24px;
-  backdrop-filter: blur(20px);
-  border: 1px solid rgba(255, 255, 255, 0.1);
-  margin: 2rem auto;
-  max-width: 500px;
+  color: #666;
   
   h2 {
-    color: #fff;
-    font-size: 1.8rem;
+    color: #333;
     margin-bottom: 1rem;
   }
   
   p {
-    color: rgba(255, 255, 255, 0.7);
-    font-size: 1.1rem;
     margin-bottom: 2rem;
-    line-height: 1.6;
+    font-size: 1.1rem;
   }
   
   button {
-    background: linear-gradient(135deg, #00d4ff 0%, #ff6b35 100%);
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
     border: none;
-    padding: 1rem 2.5rem;
-    border-radius: 50px;
-    font-size: 1.1rem;
+    padding: 12px 24px;
+    border-radius: 8px;
+    font-size: 1rem;
     font-weight: 600;
-    color: #fff;
     cursor: pointer;
-    transition: all 0.3s ease;
+    transition: transform 0.2s ease;
     
     &:hover {
-      transform: translateY(-2px);
-      box-shadow: 0 8px 25px rgba(0, 212, 255, 0.3);
+      transform: scale(1.05);
     }
   }
 `;
@@ -485,16 +430,18 @@ export default function Profile() {
 
     const loadUserData = async () => {
       try {
-        const [userProfile, userStats] = await Promise.all([
-          authAPI.getProfile(),
-          authAPI.getUserStats()
-        ]);
+        const userProfile = await authAPI.getProfile();
         
         console.log('User profile:', userProfile);
-        console.log('User stats:', userStats);
         
         setUser(userProfile);
-        setStats(userStats);
+        
+        // Set default stats since getUserStats is not available
+        setStats({
+          favorites_count: 0,
+          watchlist_count: 0,
+          ratings_count: 0
+        });
       } catch (err: any) {
         console.error('Error loading user data:', err);
         if (err.message.includes('401')) {
@@ -705,96 +652,97 @@ export default function Profile() {
 
   if (!isAuthenticated) {
     return (
-      <Layout>
-        <Title>👤 Profile</Title>
+      <Container>
+        <Title>👤 {t('profile.title')}</Title>
         <AuthPrompt>
-          <h2>Sign in to view your profile</h2>
+          <h2>{t('auth.signIn')} {t('profile.title').toLowerCase()}</h2>
           <p>You need to be signed in to access your profile and account settings.</p>
-          <button onClick={handleSignIn}>Sign In</button>
+          <button onClick={handleSignIn}>{t('auth.signIn')}</button>
         </AuthPrompt>
-      </Layout>
+      </Container>
     );
   }
 
   if (loading) {
     return (
-      <Layout>
-        <Title>👤 Profile</Title>
+      <Container>
+        <Title>👤 {t('profile.title')}</Title>
         <LoadingMessage>Loading your profile...</LoadingMessage>
-      </Layout>
+      </Container>
     );
   }
 
   if (error) {
     return (
-      <Layout>
-        <Title>👤 Profile</Title>
+      <Container>
+        <Title>👤 {t('profile.title')}</Title>
         <ErrorMessage>{error}</ErrorMessage>
-      </Layout>
+      </Container>
     );
   }
 
   return (
-    <Layout>
-      <Title>👤 Profile</Title>
+    <Container>
+      <Title>👤 {t('profile.title')}</Title>
 
       {message && <SuccessMessage>{message}</SuccessMessage>}
 
       <ProfileCard>
-        <SectionTitle>Account Information</SectionTitle>
+        <SectionTitle>{t('profile.accountInfo')}</SectionTitle>
         <InfoGrid>
           <InfoItem>
-            <Label>Full Name</Label>
+            <Label>{t('profile.fullName')}</Label>
             <Value>{getDisplayName()}</Value>
           </InfoItem>
           <InfoItem>
-            <Label>Email</Label>
+            <Label>{t('profile.email')}</Label>
             <Value>{user?.email || 'N/A'}</Value>
           </InfoItem>
           <InfoItem>
-            <Label>Username</Label>
+            <Label>{t('profile.username')}</Label>
             <Value>{user?.username || 'N/A'}</Value>
           </InfoItem>
           <InfoItem>
-            <Label>Member Since</Label>
+            <Label>{t('profile.memberSince')}</Label>
             <Value>{formatDate(user?.date_joined)}</Value>
           </InfoItem>
         </InfoGrid>
-        <Button onClick={handleEditProfile}>Edit Profile</Button>
+        <Button onClick={handleEditProfile}>{t('profile.editProfile')}</Button>
       </ProfileCard>
 
       <ProfileCard>
-        <SectionTitle>Your Activity</SectionTitle>
+        <SectionTitle>{t('profile.activity')}</SectionTitle>
         <StatsGrid>
           <StatCard>
             <StatNumber>{stats?.favorites_count || 0}</StatNumber>
-            <StatLabel>Favorites</StatLabel>
+            <StatLabel>{t('profile.favorites')}</StatLabel>
           </StatCard>
           <StatCard>
             <StatNumber>{stats?.watchlist_count || 0}</StatNumber>
-            <StatLabel>Watchlist</StatLabel>
+            <StatLabel>{t('profile.watchlist')}</StatLabel>
           </StatCard>
           <StatCard>
             <StatNumber>{stats?.ratings_count || 0}</StatNumber>
-            <StatLabel>Reviews</StatLabel>
+            <StatLabel>{t('profile.reviews')}</StatLabel>
           </StatCard>
         </StatsGrid>
       </ProfileCard>
 
       <ProfileCard>
-        <SectionTitle>Account Actions</SectionTitle>
+        <SectionTitle>{t('profile.accountActions')}</SectionTitle>
         <ActionButtons>
-          <Button onClick={handleChangePassword}>Change Password</Button>
-          <DangerButton onClick={handleDeleteAccount}>Delete Account</DangerButton>
+          <Button onClick={handleChangePassword}>{t('profile.changePassword')}</Button>
+          <DangerButton onClick={handleDeleteAccount}>{t('profile.deleteAccount')}</DangerButton>
         </ActionButtons>
       </ProfileCard>
 
+      {/* Password Change Modal */}
       <Modal $isOpen={showPasswordModal}>
         <ModalContent $isOpen={showPasswordModal}>
-          <ModalTitle>Change Password</ModalTitle>
+          <ModalTitle>{t('profile.changePassword')}</ModalTitle>
           <form onSubmit={handlePasswordSubmit}>
             <FormGroup>
-              <FormLabel>Current Password</FormLabel>
+              <FormLabel>{t('auth.password')}</FormLabel>
               <Input
                 type="password"
                 value={currentPassword}
@@ -809,7 +757,7 @@ export default function Profile() {
               {passwordSuccess && <SuccessText>{passwordSuccess}</SuccessText>}
             </FormGroup>
             <FormGroup>
-              <FormLabel>New Password</FormLabel>
+              <FormLabel>{t('auth.password')}</FormLabel>
               <Input
                 type="password"
                 value={newPassword}
@@ -823,7 +771,7 @@ export default function Profile() {
               {newPasswordError && <ErrorText>{newPasswordError}</ErrorText>}
             </FormGroup>
             <FormGroup>
-              <FormLabel>Confirm New Password</FormLabel>
+              <FormLabel>{t('auth.confirmPassword')}</FormLabel>
               <Input
                 type="password"
                 value={confirmPassword}
@@ -837,9 +785,9 @@ export default function Profile() {
               {confirmPasswordError && <ErrorText>{confirmPasswordError}</ErrorText>}
             </FormGroup>
             <ButtonGroup>
-              <CancelButton onClick={handleClosePasswordModal}>Cancel</CancelButton>
+              <CancelButton onClick={handleClosePasswordModal}>{t('common.cancel')}</CancelButton>
               <SubmitButton type="submit" disabled={isChangingPassword}>
-                {isChangingPassword ? 'Changing...' : 'Change Password'}
+                {isChangingPassword ? 'Changing...' : t('profile.changePassword')}
               </SubmitButton>
             </ButtonGroup>
           </form>
@@ -849,7 +797,7 @@ export default function Profile() {
       {/* Edit Profile Modal */}
       <Modal $isOpen={showEditProfileModal}>
         <ModalContent $isOpen={showEditProfileModal}>
-          <ModalTitle>Edit Profile</ModalTitle>
+          <ModalTitle>{t('profile.editProfile')}</ModalTitle>
           <form onSubmit={handleProfileSubmit}>
             <FormGroup>
               <FormLabel>First Name</FormLabel>
@@ -874,7 +822,7 @@ export default function Profile() {
             </FormGroup>
             
             <FormGroup>
-              <FormLabel>Email</FormLabel>
+              <FormLabel>{t('profile.email')}</FormLabel>
               <Input
                 type="email"
                 value={editEmail}
@@ -889,7 +837,7 @@ export default function Profile() {
             </FormGroup>
             
             <FormGroup>
-              <FormLabel>Username</FormLabel>
+              <FormLabel>{t('profile.username')}</FormLabel>
               <Input
                 type="text"
                 value={editUsername}
@@ -907,14 +855,14 @@ export default function Profile() {
             {profileSuccess && <SuccessText>{profileSuccess}</SuccessText>}
             
             <ButtonGroup>
-              <CancelButton onClick={handleCloseEditProfileModal}>Cancel</CancelButton>
+              <CancelButton onClick={handleCloseEditProfileModal}>{t('common.cancel')}</CancelButton>
               <SubmitButton type="submit" disabled={isUpdatingProfile}>
-                {isUpdatingProfile ? 'Updating...' : 'Update Profile'}
+                {isUpdatingProfile ? 'Updating...' : t('common.save')}
               </SubmitButton>
             </ButtonGroup>
           </form>
         </ModalContent>
       </Modal>
-    </Layout>
+    </Container>
   );
 } 

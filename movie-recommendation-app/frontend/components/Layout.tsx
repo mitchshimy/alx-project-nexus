@@ -70,7 +70,6 @@ const HeroWrapper = styled.div`
 
 const Footer = styled.footer`
   background: rgba(10, 10, 10, 0.95);
-  backdrop-filter: blur(20px);
   color: #FFFFFF;
   padding: 4rem 2rem;
   text-align: center;
@@ -212,6 +211,7 @@ const Copyright = styled.div`
   }
 `;
 
+// Performance-optimized floating particles - only show on desktop and if user hasn't disabled animations
 const FloatingParticles = styled.div`
   position: fixed;
   top: 0;
@@ -220,6 +220,11 @@ const FloatingParticles = styled.div`
   height: 100%;
   pointer-events: none;
   z-index: 0;
+  display: none; // Hidden by default for performance
+
+  @media (min-width: 1024px) {
+    display: block; // Only show on desktop
+  }
 
   &::before {
     content: '';
@@ -262,6 +267,7 @@ const FloatingParticles = styled.div`
   }
 `;
 
+// Simplified gradient overlay for better performance
 const GradientOverlay = styled.div`
   position: fixed;
   top: 0;
@@ -281,32 +287,17 @@ interface LayoutProps {
 
 export default function Layout({ children }: LayoutProps) {
   const [isSidebarOpen, setSidebarOpen] = useState(false);
+  
+  // Check if user prefers reduced motion
+  const prefersReducedMotion = typeof window !== 'undefined' && 
+    window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 
   const toggleSidebar = () => {
-    setSidebarOpen(prev => !prev);
+    setSidebarOpen(!isSidebarOpen);
   };
 
-  // Clone children and wrap Hero components with HeroWrapper
   const childrenWithProps = React.Children.map(children, child => {
     if (React.isValidElement(child)) {
-      // Check if this child contains a Hero component
-      const hasHero = React.Children.toArray(child.props.children).some(grandChild => 
-        React.isValidElement(grandChild) && grandChild.type?.name === 'Hero'
-      );
-      
-      if (hasHero) {
-        // Wrap the entire child with HeroWrapper
-        return React.cloneElement(child, { 
-          isSidebarOpen,
-          children: React.Children.map(child.props.children, grandChild => {
-            if (React.isValidElement(grandChild) && grandChild.type?.name === 'Hero') {
-              return <HeroWrapper key="hero-wrapper">{grandChild}</HeroWrapper>;
-            }
-            return grandChild;
-          })
-        });
-      }
-      
       return React.cloneElement(child, { isSidebarOpen } as any);
     }
     return child;
@@ -325,9 +316,10 @@ export default function Layout({ children }: LayoutProps) {
       </Head>
 
       <LayoutWrapper>
-        <FloatingParticles />
+        {/* Only show particles if user doesn't prefer reduced motion */}
+        {!prefersReducedMotion && <FloatingParticles />}
         <GradientOverlay />
-          <Sidebar isOpen={isSidebarOpen} onClose={() => setSidebarOpen(false)} />
+        <Sidebar isOpen={isSidebarOpen} onClose={() => setSidebarOpen(false)} />
 
         <ContentWrapper isSidebarOpen={isSidebarOpen}>
           <Header isSidebarOpen={isSidebarOpen} toggleSidebar={toggleSidebar} />

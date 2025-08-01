@@ -1,52 +1,39 @@
-import { useState, memo, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useRouter } from 'next/router';
 import styled from 'styled-components';
-import { MdFavorite, MdFavoriteBorder, MdBookmark, MdBookmarkBorder } from 'react-icons/md';
-import { movieAPI } from '@/utils/api';
-import { TMDBMovie } from '@/types/tmdb';
+import { movieAPI, getAuthToken } from '@/utils/api';
+import { shouldAutoPlayTrailer, buildYouTubeEmbedUrl } from '@/utils/videoPlayer';
+import TrailerPreview from './TrailerPreview';
+import { FaHeart, FaRegHeart, FaBookmark, FaRegBookmark } from 'react-icons/fa';
+
+interface MovieCardProps {
+  movie: {
+    tmdb_id: number;
+    title?: string;
+    name?: string;
+    poster_path?: string | null;
+    vote_average?: number;
+    release_date?: string;
+    first_air_date?: string;
+  };
+  onFavoriteToggle?: () => void;
+  onWatchlistToggle?: () => void;
+}
 
 const Card = styled.div`
-  background: rgba(26, 26, 26, 0.8);
-  backdrop-filter: blur(20px);
-  border: 1px solid rgba(255, 255, 255, 0.1);
-  border-radius: 20px;
+  background: rgba(255, 255, 255, 0.05);
+  backdrop-filter: blur(10px);
+  border-radius: 12px;
   overflow: hidden;
-  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4);
   transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  border: 1px solid rgba(255, 255, 255, 0.1);
   cursor: pointer;
   position: relative;
-  min-height: 200px; // Ensure minimum height for touch targets
 
   &:hover {
-    transform: translateY(-8px) scale(1.02);
-    box-shadow: 0 20px 60px rgba(0, 0, 0, 0.6);
-    border-color: rgba(0, 212, 255, 0.3);
-    
-    &::before {
-      opacity: 1;
-    }
-  }
-  
-  @media (max-width: 768px) {
-    min-height: 180px;
-  }
-  
-  @media (max-width: 480px) {
-    min-height: 160px;
-  }
-  
-  &::before {
-    content: '';
-    position: absolute;
-    top: 0;
-    left: 0;
-    right: 0;
-    bottom: 0;
-    background: linear-gradient(135deg, rgba(0, 212, 255, 0.1) 0%, rgba(124, 58, 237, 0.1) 100%);
-    opacity: 0;
-    transition: opacity 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-    pointer-events: none;
-    z-index: 1;
+    transform: translateY(-8px);
+    box-shadow: 0 20px 40px rgba(0, 0, 0, 0.3);
+    border-color: rgba(255, 255, 255, 0.2);
   }
 `;
 
@@ -77,13 +64,17 @@ const Skeleton = styled.div`
   height: 100%;
   background: linear-gradient(90deg, #1a1a1a 25%, #2a2a2a 50%, #1a1a1a 75%);
   background-size: 200% 100%;
-  animation: shimmer 3s infinite; // Slowed down from 1.5s to 3s
-  opacity: 0.15; // Reduced from 0.3 to 0.15 for more subtlety
+  animation: shimmer 4s infinite; // Further slowed down for better performance
+  opacity: 0.1; // Further reduced for better performance
   pointer-events: none;
   
   @keyframes shimmer {
     0% { background-position: -200% 0; }
     100% { background-position: 200% 0; }
+  }
+  
+  @media (prefers-reduced-motion: reduce) {
+    animation: none;
   }
 `;
 
@@ -242,9 +233,18 @@ const Badge = styled.div<{ $type: 'movie' | 'tv' }>`
 `;
 
 const ActionButtons = styled.div`
+  position: absolute;
+  bottom: 1rem;
+  right: 1rem;
   display: flex;
   gap: 0.5rem;
-  margin-top: 1rem;
+  z-index: 5;
+  opacity: 0;
+  transition: opacity 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  
+  ${Card}:hover & {
+    opacity: 1;
+  }
 `;
 
 const ActionButton = styled.button`
@@ -280,33 +280,122 @@ const ActionButton = styled.button`
   }
 `;
 
-interface MovieCardProps {
-  movie: TMDBMovie;
-  onFavoriteToggle?: () => void;
-  onWatchlistToggle?: () => void;
-}
 
-const MovieCard = memo<MovieCardProps>(({ movie, onFavoriteToggle, onWatchlistToggle }) => {
+
+const MovieCard = ({ movie, onFavoriteToggle, onWatchlistToggle }: MovieCardProps) => {
   const router = useRouter();
   const [isFavorite, setIsFavorite] = useState(false);
   const [isInWatchlist, setIsInWatchlist] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
+  const [showTrailerPreview, setShowTrailerPreview] = useState(false);
+  const [trailerKey, setTrailerKey] = useState<string | null>(null);
+  const hoverTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const isHoveringRef = useRef(false);
 
-  const isAuthenticated = () => {
-    return typeof window !== 'undefined' && localStorage.getItem('access_token');
-  };
+  useEffect(() => {
+    // Only check favorites/watchlist if user is authenticated
+    const token = getAuthToken();
+    if (!token) {
+      setIsFavorite(false);
+      setIsInWatchlist(false);
+      return;
+    }
 
-  const formatRating = (rating: number | null) => {
-    return rating ? rating.toFixed(1) : 'N/A';
-  };
+    // Check if movie is in favorites
+    const checkFavorites = async () => {
+      try {
+        const favorites = await movieAPI.getFavorites();
+        // Ensure favorites is an array before using .some()
+        const favoritesArray = Array.isArray(favorites) ? favorites : [];
+        const isInFavorites = favoritesArray.some((fav: any) => fav.tmdb_id === movie.tmdb_id);
+        setIsFavorite(isInFavorites);
+      } catch (error) {
+        console.error('Error checking favorites:', error);
+        setIsFavorite(false);
+      }
+    };
+
+    // Check if movie is in watchlist
+    const checkWatchlist = async () => {
+      try {
+        const watchlist = await movieAPI.getWatchlist();
+        // Ensure watchlist is an array before using .some()
+        const watchlistArray = Array.isArray(watchlist) ? watchlist : [];
+        const isInWatchlist = watchlistArray.some((item: any) => item.tmdb_id === movie.tmdb_id);
+        setIsInWatchlist(isInWatchlist);
+      } catch (error) {
+        console.error('Error checking watchlist:', error);
+        setIsInWatchlist(false);
+      }
+    };
+
+    checkFavorites();
+    checkWatchlist();
+  }, [movie.tmdb_id]);
 
   const handleCardClick = () => {
     router.push(`/movies/${movie.tmdb_id}`);
   };
 
+  const handleMouseEnter = () => {
+    isHoveringRef.current = true;
+    
+    // Only start hover timer if auto-play is enabled and user is authenticated
+    if (shouldAutoPlayTrailer() && getAuthToken()) {
+      hoverTimeoutRef.current = setTimeout(async () => {
+        // Check if still hovering after 1.5 seconds
+        if (isHoveringRef.current && !trailerKey) {
+          try {
+            const movieDetails = await movieAPI.getMovieDetails(movie.tmdb_id);
+            
+            // Check if the response has an error
+            if (movieDetails && movieDetails.error) {
+              console.warn('Error fetching trailer:', movieDetails.error);
+              return; // Don't show trailer if there's an error
+            }
+            
+            if (movieDetails && movieDetails.videos?.results) {
+              const trailer = movieDetails.videos.results.find((video: any) => video.type === 'Trailer');
+              if (trailer) {
+                setTrailerKey(trailer.key);
+                setShowTrailerPreview(true);
+              }
+            }
+          } catch (error) {
+            console.error('Error fetching trailer:', error);
+            // Don't show error modal for trailer fetch failures
+            // Just log the error and continue
+          }
+        }
+      }, 1500);
+    }
+  };
+
+  const handleMouseLeave = () => {
+    isHoveringRef.current = false;
+    
+    // Clear the hover timeout
+    if (hoverTimeoutRef.current) {
+      clearTimeout(hoverTimeoutRef.current);
+      hoverTimeoutRef.current = null;
+    }
+    
+    // Close trailer preview when mouse leaves (only if auto-play is enabled)
+    if (showTrailerPreview && shouldAutoPlayTrailer()) {
+      setShowTrailerPreview(false);
+      setTimeout(() => {
+        setTrailerKey(null);
+      }, 300);
+    }
+  };
+
   const handleFavoriteToggle = async (e: React.MouseEvent) => {
     e.stopPropagation();
-    if (!isAuthenticated()) {
+    if (isLoading) return;
+
+    // Check if user is authenticated
+    const token = getAuthToken();
+    if (!token) {
       router.push('/signin');
       return;
     }
@@ -314,28 +403,10 @@ const MovieCard = memo<MovieCardProps>(({ movie, onFavoriteToggle, onWatchlistTo
     setIsLoading(true);
     try {
       if (isFavorite) {
-        // Try to remove by favorite_id first, then by movie ID
-        try {
-          if (movie.favorite_id) {
-            await movieAPI.removeFromFavorites(movie.favorite_id);
-          } else {
-            await movieAPI.removeFromFavoritesByMovie(movie.tmdb_id);
-          }
-        } catch (error) {
-          console.error('Error removing from favorites:', error);
-          // Fallback to movie ID removal
-          await movieAPI.removeFromFavoritesByMovie(movie.tmdb_id);
-        }
+        await movieAPI.removeFromFavoritesByMovie(movie.tmdb_id);
         setIsFavorite(false);
       } else {
-        await movieAPI.addToFavorites({
-          tmdb_id: movie.tmdb_id,
-          title: movie.title,
-          poster_path: movie.poster_path,
-          overview: movie.overview,
-          release_date: movie.release_date,
-          vote_average: movie.vote_average
-        });
+        await movieAPI.addToFavorites(movie.tmdb_id);
         setIsFavorite(true);
       }
       
@@ -352,7 +423,11 @@ const MovieCard = memo<MovieCardProps>(({ movie, onFavoriteToggle, onWatchlistTo
 
   const handleWatchlistToggle = async (e: React.MouseEvent) => {
     e.stopPropagation();
-    if (!isAuthenticated()) {
+    if (isLoading) return;
+
+    // Check if user is authenticated
+    const token = getAuthToken();
+    if (!token) {
       router.push('/signin');
       return;
     }
@@ -360,18 +435,7 @@ const MovieCard = memo<MovieCardProps>(({ movie, onFavoriteToggle, onWatchlistTo
     setIsLoading(true);
     try {
       if (isInWatchlist) {
-        // Try to remove by watchlist_id first, then by movie ID
-        try {
-          if (movie.watchlist_id) {
-            await movieAPI.removeFromWatchlist(movie.watchlist_id);
-          } else {
-            await movieAPI.removeFromWatchlistByMovie(movie.tmdb_id);
-          }
-        } catch (error) {
-          console.error('Error removing from watchlist:', error);
-          // Fallback to movie ID removal
-          await movieAPI.removeFromWatchlistByMovie(movie.tmdb_id);
-        }
+        await movieAPI.removeFromWatchlistByMovie(movie.tmdb_id);
         setIsInWatchlist(false);
       } else {
         await movieAPI.addToWatchlist(movie.tmdb_id);
@@ -389,6 +453,15 @@ const MovieCard = memo<MovieCardProps>(({ movie, onFavoriteToggle, onWatchlistTo
     }
   };
 
+  // Cleanup timeout on unmount
+  useEffect(() => {
+    return () => {
+      if (hoverTimeoutRef.current) {
+        clearTimeout(hoverTimeoutRef.current);
+      }
+    };
+  }, []);
+
   const posterUrl = movie.poster_path
     ? `https://image.tmdb.org/t/p/w342${movie.poster_path}` // Changed from w500 to w342 for faster loading
     : 'https://via.placeholder.com/300x450/1a1a1a/666666?text=No+Image';
@@ -397,7 +470,11 @@ const MovieCard = memo<MovieCardProps>(({ movie, onFavoriteToggle, onWatchlistTo
   const movieTitle = (movie as any).name || movie.title || 'Unknown Title';
 
   return (
-    <Card onClick={handleCardClick}>
+    <Card 
+      onClick={handleCardClick}
+      onMouseEnter={shouldAutoPlayTrailer() ? handleMouseEnter : undefined}
+      onMouseLeave={shouldAutoPlayTrailer() ? handleMouseLeave : undefined}
+    >
       <PosterContainer>
         <Skeleton />
         <Poster 
@@ -408,32 +485,49 @@ const MovieCard = memo<MovieCardProps>(({ movie, onFavoriteToggle, onWatchlistTo
         <Overlay>
           <Title>{movieTitle}</Title>
           <Rating>
-            ⭐ {formatRating(movie.vote_average)} ({movie.vote_count || 0} votes)
+            ⭐ {movie.vote_average?.toFixed(1) || 'N/A'}
           </Rating>
-          
-          <ActionButtons>
-            <ActionButton
-              onClick={handleFavoriteToggle}
-              disabled={isLoading}
-              title={isFavorite ? 'Remove from favorites' : 'Add to favorites'}
-            >
-              {isFavorite ? <MdFavorite /> : <MdFavoriteBorder />}
-            </ActionButton>
-            
-            <ActionButton
-              onClick={handleWatchlistToggle}
-              disabled={isLoading}
-              title={isInWatchlist ? 'Remove from watchlist' : 'Add to watchlist'}
-            >
-              {isInWatchlist ? <MdBookmark /> : <MdBookmarkBorder />}
-            </ActionButton>
-          </ActionButtons>
+          <Year>
+            {movie.release_date?.split('-')[0] || movie.first_air_date?.split('-')[0] || 'N/A'}
+          </Year>
         </Overlay>
+        
+        {/* Always show action buttons, they will be visible on hover */}
+        <ActionButtons>
+          <ActionButton 
+            onClick={handleFavoriteToggle}
+            disabled={isLoading}
+            title={isFavorite ? 'Remove from favorites' : 'Add to favorites'}
+          >
+            {isFavorite ? <FaHeart /> : <FaRegHeart />}
+          </ActionButton>
+          
+          <ActionButton 
+            onClick={handleWatchlistToggle}
+            disabled={isLoading}
+            title={isInWatchlist ? 'Remove from watchlist' : 'Add to watchlist'}
+          >
+            {isInWatchlist ? <FaBookmark /> : <FaRegBookmark />}
+          </ActionButton>
+        </ActionButtons>
       </PosterContainer>
+      
+      {showTrailerPreview && trailerKey && shouldAutoPlayTrailer() && (
+        <TrailerPreview
+          videoKey={trailerKey}
+          movieTitle={movieTitle}
+          onClose={() => {
+            setShowTrailerPreview(false);
+            // Reset trailerKey after a short delay to allow re-triggering
+            setTimeout(() => {
+              setTrailerKey(null);
+            }, 300);
+          }}
+          autoPlay={shouldAutoPlayTrailer()}
+        />
+      )}
     </Card>
   );
-});
-
-MovieCard.displayName = 'MovieCard';
+};
 
 export default MovieCard;

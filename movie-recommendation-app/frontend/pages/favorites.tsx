@@ -125,8 +125,16 @@ export default function Favorites() {
     const loadFavorites = async () => {
       try {
         const data = await movieAPI.getFavorites();
+        
+        // Check if response has error property
+        if (data && data.error) {
+          console.error('Error fetching favorites:', data.error);
+          setFavorites([]);
+          return;
+        }
+        
+        const favorites = data.results || data || [];
       // Handle nested movie data structure from backend
-      const favorites = data.results || data || [];
       const movies = favorites.map((item: any) => {
         // If the item has a nested 'movie' property, extract it
         if (item.movie) {

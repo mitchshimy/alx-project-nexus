@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { useRouter } from 'next/router';
 import Link from 'next/link';
 import styled from 'styled-components';
@@ -164,52 +164,131 @@ const AppTitleLink = styled(Link)`
   }
 `;
 
+const SearchContainer = styled.div`
+  position: relative;
+  flex: 1;
+  max-width: 600px;
+  margin: 0 auto;
+`;
+
 const SearchForm = styled.form`
   display: flex;
   align-items: center;
-  gap: 0.75rem;
-  width: 100%;
-  max-width: 450px;
+  background: rgba(255, 255, 255, 0.1);
+  border-radius: 25px;
+  padding: 8px;
+  backdrop-filter: blur(10px);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  transition: all 0.3s ease;
+  
+  &:focus-within {
+    background: rgba(255, 255, 255, 0.15);
+    border-color: rgba(0, 212, 255, 0.5);
+    box-shadow: 0 0 20px rgba(0, 212, 255, 0.3);
+  }
 `;
 
 const SearchInput = styled.input`
   flex: 1;
-  padding: 0.875rem 1.25rem;
-  border: 1px solid rgba(255, 255, 255, 0.2);
-  border-radius: 12px;
-  background: rgba(255, 255, 255, 0.1);
+  background: transparent;
+  border: none;
   color: #FFFFFF;
+  padding: 8px 16px;
   font-size: 1rem;
-  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-  backdrop-filter: blur(20px);
-  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.3);
+  outline: none;
   
   &::placeholder {
     color: rgba(255, 255, 255, 0.6);
   }
-  
-  &:focus {
-    outline: none;
-    border-color: rgba(0, 212, 255, 0.6);
-    background: rgba(255, 255, 255, 0.15);
-    box-shadow: 0 0 0 3px rgba(0, 212, 255, 0.2);
-  }
 `;
 
 const SearchButton = styled.button`
-  padding: 0.875rem 1.5rem;
   background: linear-gradient(135deg, #00D4FF 0%, #0099CC 100%);
   border: none;
-  border-radius: 12px;
-  color: #000000;
-  font-weight: 600;
+  color: #000;
+  padding: 8px 16px;
+  border-radius: 20px;
   cursor: pointer;
-  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-  box-shadow: 0 4px 16px rgba(0, 212, 255, 0.3);
-
+  font-weight: 600;
+  transition: all 0.3s ease;
+  
   &:hover {
-    transform: translateY(-2px);
-    box-shadow: 0 8px 32px rgba(0, 212, 255, 0.4);
+    transform: translateY(-1px);
+    box-shadow: 0 4px 15px rgba(0, 212, 255, 0.4);
+  }
+  
+  &:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+    transform: none;
+  }
+`;
+
+const SearchSuggestions = styled.div`
+  position: absolute;
+  top: 100%;
+  left: 0;
+  right: 0;
+  background: rgba(26, 26, 26, 0.95);
+  border-radius: 12px;
+  margin-top: 8px;
+  backdrop-filter: blur(20px);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4);
+  z-index: 1000;
+  max-height: 300px;
+  overflow-y: auto;
+`;
+
+const SuggestionItem = styled.div`
+  padding: 12px 16px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+  
+  &:hover {
+    background: rgba(255, 255, 255, 0.1);
+  }
+  
+  &:last-child {
+    border-bottom: none;
+  }
+`;
+
+const SuggestionTitle = styled.div`
+  color: #FFFFFF;
+  font-weight: 500;
+  margin-bottom: 4px;
+`;
+
+const SuggestionType = styled.div`
+  color: rgba(255, 255, 255, 0.6);
+  font-size: 0.85rem;
+`;
+
+const SearchLoading = styled.div`
+  padding: 12px 16px;
+  color: rgba(255, 255, 255, 0.7);
+  text-align: center;
+  font-size: 0.9rem;
+`;
+
+const SearchIcon = styled.button`
+  background: none;
+  border: none;
+  color: #FFFFFF;
+  font-size: 1.2rem;
+  cursor: pointer;
+  padding: 8px;
+  border-radius: 50%;
+  transition: all 0.2s ease;
+  
+  &:hover {
+    background: rgba(255, 255, 255, 0.1);
+  }
+  
+  @media (min-width: 768px) {
+    display: none;
   }
 `;
 
@@ -306,32 +385,6 @@ const LogoutButton = styled.button`
   }
 `;
 
-const SearchIcon = styled.button`
-  background: rgba(255, 255, 255, 0.1);
-  border: 1px solid rgba(255, 255, 255, 0.2);
-  border-radius: 12px;
-  font-size: 1.2rem;
-  cursor: pointer;
-  padding: 0.75rem;
-  color: #FFFFFF;
-  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-  display: none;
-  backdrop-filter: blur(20px);
-  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.3);
-
-  &:hover {
-    background: rgba(0, 212, 255, 0.15);
-    border-color: rgba(0, 212, 255, 0.4);
-    color: #00D4FF;
-    transform: translateY(-1px);
-    box-shadow: 0 8px 32px rgba(0, 212, 255, 0.3);
-  }
-  
-  @media (max-width: 768px) {
-    display: block;
-  }
-`;
-
 const AccountIcon = styled(Link)`
   background: rgba(255, 255, 255, 0.1);
   border: 1px solid rgba(255, 255, 255, 0.2);
@@ -392,10 +445,15 @@ interface HeaderProps {
 
 export default function Header({ isSidebarOpen, toggleSidebar }: HeaderProps) {
   const router = useRouter();
-  const [searchTerm, setSearchTerm] = useState('');
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [user, setUser] = useState<any>(null);
+  const [searchTerm, setSearchTerm] = useState('');
   const [showMobileMenu, setShowMobileMenu] = useState(false);
+  const [searchSuggestions, setSearchSuggestions] = useState<any[]>([]);
+  const [isSearching, setIsSearching] = useState(false);
+  const [showSuggestions, setShowSuggestions] = useState(false);
+  const searchTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const searchInputRef = useRef<HTMLInputElement>(null);
 
   // Check authentication status
   const checkAuthStatus = () => {
@@ -462,24 +520,119 @@ export default function Header({ isSidebarOpen, toggleSidebar }: HeaderProps) {
     }
   };
 
+  const debouncedSearch = useCallback(async (query: string) => {
+    if (!query.trim() || query.length < 2) {
+      setSearchSuggestions([]);
+      setShowSuggestions(false);
+      return;
+    }
+
+    setIsSearching(true);
+    setShowSuggestions(true);
+
+    try {
+      // Import movieAPI dynamically to avoid circular dependencies
+      const { movieAPI } = await import('@/utils/api');
+      const data = await movieAPI.searchMovies(query, 1);
+      
+      // Check if response has error property
+      if (data && data.error) {
+        console.error('Error fetching search suggestions:', data.error);
+        setSearchSuggestions([]);
+        return;
+      }
+      
+      if (data?.results?.length) {
+        const suggestions = data.results.slice(0, 5).map((item: any) => ({
+          id: item.id,
+          title: item.title || item.name || 'Unknown Title',
+          type: item.media_type || 'movie',
+          year: item.release_date ? new Date(item.release_date).getFullYear() : null,
+          poster: item.poster_path
+        }));
+        setSearchSuggestions(suggestions);
+      } else {
+        setSearchSuggestions([]);
+      }
+    } catch (error) {
+      console.error('Error fetching search suggestions:', error);
+      setSearchSuggestions([]);
+    } finally {
+      setIsSearching(false);
+    }
+  }, []);
+
+  const handleSearchInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const value = e.target.value;
+    setSearchTerm(value);
+
+    // Clear existing timeout
+    if (searchTimeoutRef.current) {
+      clearTimeout(searchTimeoutRef.current);
+    }
+
+    // Set new timeout for debounced search
+    if (value.trim().length >= 2) {
+      searchTimeoutRef.current = setTimeout(() => {
+        debouncedSearch(value);
+      }, 300); // 300ms debounce
+    } else {
+      setSearchSuggestions([]);
+      setShowSuggestions(false);
+    }
+  };
+
   const handleSearch = (e: React.FormEvent) => {
     e.preventDefault();
     if (searchTerm.trim()) {
       router.push(`/search?q=${encodeURIComponent(searchTerm.trim())}`);
-      setSearchTerm(''); // Clear the search input after submitting
+      setSearchTerm('');
+      setShowSuggestions(false);
+      setSearchSuggestions([]);
     }
   };
+
+  const handleSuggestionClick = (suggestion: any) => {
+    if (suggestion.type === 'movie') {
+      router.push(`/movies/${suggestion.id}`);
+    } else {
+      router.push(`/search?q=${encodeURIComponent(suggestion.title)}`);
+    }
+    setSearchTerm('');
+    setShowSuggestions(false);
+    setSearchSuggestions([]);
+  };
+
+  const handleSearchIconClick = () => {
+    router.push('/search');
+  };
+
+  // Close suggestions when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (searchInputRef.current && !searchInputRef.current.contains(event.target as Node)) {
+        setShowSuggestions(false);
+      }
+    };
+
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
+
+  // Clear timeout on unmount
+  useEffect(() => {
+    return () => {
+      if (searchTimeoutRef.current) {
+        clearTimeout(searchTimeoutRef.current);
+      }
+    };
+  }, []);
 
   const handleLogout = () => {
     authAPI.logout();
     setIsAuthenticated(false);
     setUser(null);
     router.push('/');
-  };
-
-  const handleSearchIconClick = () => {
-    // For mobile, you could show a search modal or navigate to search page
-    router.push('/search');
   };
 
   return (
@@ -498,15 +651,46 @@ export default function Header({ isSidebarOpen, toggleSidebar }: HeaderProps) {
         </LeftSection>
 
         <CenterSection>
-          <SearchForm onSubmit={handleSearch}>
-            <SearchInput
-              type="text"
-              placeholder="Search movies, TV shows..."
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-            />
-            <SearchButton type="submit">Search</SearchButton>
-          </SearchForm>
+          <SearchContainer>
+            <SearchForm onSubmit={handleSearch}>
+              <SearchInput
+                ref={searchInputRef}
+                type="text"
+                placeholder="Search movies, TV shows..."
+                value={searchTerm}
+                onChange={handleSearchInputChange}
+                onFocus={() => {
+                  if (searchSuggestions.length > 0) {
+                    setShowSuggestions(true);
+                  }
+                }}
+              />
+              <SearchButton type="submit" disabled={!searchTerm.trim()}>
+                {isSearching ? '...' : 'Search'}
+              </SearchButton>
+            </SearchForm>
+            
+            {showSuggestions && (searchSuggestions.length > 0 || isSearching) && (
+              <SearchSuggestions>
+                {isSearching ? (
+                  <SearchLoading>Searching...</SearchLoading>
+                ) : (
+                  searchSuggestions.map((suggestion) => (
+                    <SuggestionItem
+                      key={`${suggestion.type}-${suggestion.id}`}
+                      onClick={() => handleSuggestionClick(suggestion)}
+                    >
+                      <SuggestionTitle>{suggestion.title}</SuggestionTitle>
+                      <SuggestionType>
+                        {suggestion.type === 'movie' ? 'Movie' : 'TV Show'}
+                        {suggestion.year && ` • ${suggestion.year}`}
+                      </SuggestionType>
+                    </SuggestionItem>
+                  ))
+                )}
+              </SearchSuggestions>
+            )}
+          </SearchContainer>
         </CenterSection>
 
         <RightSection>
@@ -519,9 +703,9 @@ export default function Header({ isSidebarOpen, toggleSidebar }: HeaderProps) {
                 <span>{user?.first_name || user?.username || 'User'}</span>
                 <span>{user?.email}</span>
               </UserSection>
-                <LogoutButton onClick={handleLogout}>
-                  Logout
-                </LogoutButton>
+              <LogoutButton onClick={handleLogout}>
+                Logout
+              </LogoutButton>
               <MobileMenuButton onClick={() => setShowMobileMenu(!showMobileMenu)}>
                 ⋯
               </MobileMenuButton>

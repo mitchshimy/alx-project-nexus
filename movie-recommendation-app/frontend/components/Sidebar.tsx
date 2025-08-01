@@ -1,7 +1,9 @@
 // components/Sidebar.tsx
-import React from 'react';
+import { useState, useEffect } from 'react';
 import Link from 'next/link';
+import { useRouter } from 'next/router';
 import styled from 'styled-components';
+import { t } from '@/utils/translations';
 import { 
   MdHome, 
   MdMovie, 
@@ -196,37 +198,71 @@ const CloseButton = styled.button`
   padding: 0.75rem;
   transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
   backdrop-filter: blur(10px);
+  z-index: 1002;
 
   &:hover {
-    background: rgba(239, 68, 68, 0.1);
-    border-color: rgba(239, 68, 68, 0.3);
-    color: #EF4444;
+    background: rgba(255, 255, 255, 0.1);
+    color: #FFFFFF;
     transform: scale(1.05);
   }
-  
+
   @media (min-width: 769px) {
     display: none;
   }
 `;
 
+const NavList = styled.div`
+  padding: 1rem 0;
+  overflow-y: auto;
+  height: 100%;
+  
+  &::-webkit-scrollbar {
+    width: 4px;
+  }
+  
+  &::-webkit-scrollbar-track {
+    background: transparent;
+  }
+  
+  &::-webkit-scrollbar-thumb {
+    background: rgba(255, 255, 255, 0.2);
+    border-radius: 2px;
+  }
+  
+  &::-webkit-scrollbar-thumb:hover {
+    background: rgba(255, 255, 255, 0.3);
+  }
+`;
+
+const NavText = styled.span`
+  opacity: 1;
+  transition: opacity 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  white-space: nowrap;
+  font-weight: 500;
+  
+  @media (max-width: 768px) {
+    opacity: 1;
+  }
+`;
+
 const Divider = styled.div`
   height: 1px;
-  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.1), transparent);
-  margin: 1rem 1rem;
-  opacity: 0.5;
+  background: rgba(255, 255, 255, 0.1);
+  margin: 1rem 1.25rem;
 `;
 
 const SectionTitle = styled.h3<{ isOpen: boolean }>`
-  color: rgba(255, 255, 255, 0.5);
-  font-size: 0.75rem;
+  color: rgba(255, 255, 255, 0.6);
+  font-size: 0.8rem;
   font-weight: 600;
   text-transform: uppercase;
-  letter-spacing: 1px;
-  margin: 1.5rem 1rem 0.75rem 1rem;
-  display: ${({ isOpen }) => (isOpen ? 'block' : 'none')};
+  letter-spacing: 0.5px;
+  margin: 1rem 1.25rem 0.5rem;
+  opacity: ${props => props.isOpen ? 1 : 0};
+  transition: opacity 0.3s cubic-bezier(0.4, 0, 0.2, 1);
   
   @media (max-width: 768px) {
-    display: block;
+    opacity: 1;
   }
 `;
 
@@ -254,27 +290,59 @@ const SidebarContent = styled.div`
 `;
 
 export default function Sidebar({ isOpen, onClose }: SidebarProps) {
+  const router = useRouter();
+  const [currentLanguage, setCurrentLanguage] = useState('en');
+
+  useEffect(() => {
+    // Get current language from settings
+    const getLanguage = () => {
+      try {
+        const savedSettings = localStorage.getItem('userSettings');
+        if (savedSettings) {
+          const parsedSettings = JSON.parse(savedSettings);
+          return parsedSettings.language || 'en';
+        }
+      } catch (error) {
+        console.error('Error loading language setting:', error);
+      }
+      return 'en';
+    };
+
+    setCurrentLanguage(getLanguage());
+
+    // Listen for language changes
+    const handleLanguageChange = (event: CustomEvent) => {
+      setCurrentLanguage(event.detail.language);
+    };
+
+    window.addEventListener('languageChanged', handleLanguageChange as EventListener);
+
+    return () => {
+      window.removeEventListener('languageChanged', handleLanguageChange as EventListener);
+    };
+  }, []);
+
   const navItems = [
-    { href: "/", icon: <MdHome />, label: "Home" },
-    { href: "/movies", icon: <MdMovie />, label: "Movies" },
-    { href: "/tv", icon: <MdLiveTv />, label: "TV Shows" },
-    { href: "/trending", icon: <MdWhatshot />, label: "Trending" },
-    { href: "/top-imdb", icon: <MdStar />, label: "Top Rated" },
+    { href: "/", icon: <MdHome />, label: t('nav.home') },
+    { href: "/movies", icon: <MdMovie />, label: t('nav.movies') },
+    { href: "/tv", icon: <MdLiveTv />, label: t('nav.tv') },
+    { href: "/trending", icon: <MdWhatshot />, label: t('nav.trending') },
+    { href: "/top-imdb", icon: <MdStar />, label: t('nav.topRated') },
   ];
 
   const personalItems = [
-    { href: "/favorites", icon: <MdFavorite />, label: "Favorites" },
-    { href: "/watchlist", icon: <MdBookmark />, label: "Watchlist" },
+    { href: "/favorites", icon: <MdFavorite />, label: t('nav.favorites') },
+    { href: "/watchlist", icon: <MdBookmark />, label: t('nav.watchlist') },
   ];
 
   const accountItems = [
-    { href: "/signin", icon: <MdLogin />, label: "Sign In" },
-    { href: "/signup", icon: <MdPersonAdd />, label: "Sign Up" },
+    { href: "/signin", icon: <MdLogin />, label: t('auth.signIn') },
+    { href: "/signup", icon: <MdPersonAdd />, label: t('auth.signUp') },
   ];
 
   const profileItems = isOpen ? [
-    { href: "/profile", icon: <MdPerson />, label: "Profile" },
-    { href: "/settings", icon: <MdSettings />, label: "Settings" },
+    { href: "/profile", icon: <MdPerson />, label: t('nav.profile') },
+    { href: "/settings", icon: <MdSettings />, label: t('nav.settings') },
   ] : [];
 
   return (
@@ -285,16 +353,18 @@ export default function Sidebar({ isOpen, onClose }: SidebarProps) {
           <MdClose />
         </CloseButton>
         
-        <SidebarContent>
+        <NavList>
           {/* Main Navigation */}
           {navItems.map((item) => (
-            <NavItemWrapper key={item.href} isOpen={isOpen}>
-              <NavItem href={item.href} isOpen={isOpen}>
-                {item.icon}
-                <Label isOpen={isOpen}>{item.label}</Label>
-              </NavItem>
-              <HoverTooltip isOpen={isOpen}>{item.label}</HoverTooltip>
-            </NavItemWrapper>
+            <NavItem 
+              key={item.href}
+              href={item.href}
+              isActive={router.pathname === item.href}
+              isOpen={isOpen}
+            >
+              {item.icon}
+              {isOpen && <NavText>{item.label}</NavText>}
+            </NavItem>
           ))}
           
           <Divider />
@@ -303,13 +373,15 @@ export default function Sidebar({ isOpen, onClose }: SidebarProps) {
           
           {/* Personal Navigation */}
           {personalItems.map((item) => (
-            <NavItemWrapper key={item.href} isOpen={isOpen}>
-              <NavItem href={item.href} isOpen={isOpen}>
-                {item.icon}
-                <Label isOpen={isOpen}>{item.label}</Label>
-              </NavItem>
-              <HoverTooltip isOpen={isOpen}>{item.label}</HoverTooltip>
-            </NavItemWrapper>
+            <NavItem 
+              key={item.href}
+              href={item.href}
+              isActive={router.pathname === item.href}
+              isOpen={isOpen}
+            >
+              {item.icon}
+              {isOpen && <NavText>{item.label}</NavText>}
+            </NavItem>
           ))}
           
           <Divider />
@@ -318,26 +390,30 @@ export default function Sidebar({ isOpen, onClose }: SidebarProps) {
           
           {/* Account Navigation */}
           {accountItems.map((item) => (
-            <NavItemWrapper key={item.href} isOpen={isOpen}>
-              <NavItem href={item.href} isOpen={isOpen}>
-                {item.icon}
-                <Label isOpen={isOpen}>{item.label}</Label>
-              </NavItem>
-              <HoverTooltip isOpen={isOpen}>{item.label}</HoverTooltip>
-            </NavItemWrapper>
+            <NavItem 
+              key={item.href}
+              href={item.href}
+              isActive={router.pathname === item.href}
+              isOpen={isOpen}
+            >
+              {item.icon}
+              {isOpen && <NavText>{item.label}</NavText>}
+            </NavItem>
           ))}
           
-          {/* Profile Navigation (only shown when sidebar is open) */}
+          {/* Profile Navigation (only show when sidebar is open) */}
           {profileItems.map((item) => (
-            <NavItemWrapper key={item.href} isOpen={isOpen}>
-              <NavItem href={item.href} isOpen={isOpen}>
-                {item.icon}
-                <Label isOpen={isOpen}>{item.label}</Label>
-              </NavItem>
-              <HoverTooltip isOpen={isOpen}>{item.label}</HoverTooltip>
-            </NavItemWrapper>
+            <NavItem 
+              key={item.href}
+              href={item.href}
+              isActive={router.pathname === item.href}
+              isOpen={isOpen}
+            >
+              {item.icon}
+              {isOpen && <NavText>{item.label}</NavText>}
+            </NavItem>
           ))}
-        </SidebarContent>
+        </NavList>
       </SidebarContainer>
     </>
   );

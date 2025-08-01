@@ -54,6 +54,7 @@ export default function TVShows() {
   const [shows, setShows] = useState<TMDBMovie[]>([]);
   const [page, setPage] = useState(1);
   const [loading, setLoading] = useState(false);
+  const [initialLoading, setInitialLoading] = useState(true);
   const [hasMore, setHasMore] = useState(true);
   const [filter, setFilter] = useState('all');
   const [genres, setGenres] = useState<Genre[]>([]);
@@ -63,7 +64,15 @@ export default function TVShows() {
 
     setLoading(true);
     try {
-      const data = await movieAPI.getMovies({ type: 'tv', page });
+      let data = await movieAPI.getMovies({ type: 'tv', page });
+      
+      // Check if response has error property
+      if (data && data.error) {
+        console.error('API error:', data.error);
+        setHasMore(false);
+        return;
+      }
+      
       if (data?.results?.length) {
         setShows(prev => {
           const existingIds = new Set(prev.map((m: TMDBMovie) => m.id));
@@ -79,6 +88,7 @@ export default function TVShows() {
       console.error('Error loading TV shows:', err);
     } finally {
       setLoading(false);
+      setInitialLoading(false);
     }
   }, [loading, hasMore, page]);
 
@@ -88,18 +98,28 @@ export default function TVShows() {
 
   useEffect(() => {
     const onScroll = () => {
-      // Calculate scroll position more accurately
-      const scrollTop = window.pageYOffset || document.documentElement.scrollTop;
-      const windowHeight = window.innerHeight;
-      const documentHeight = document.documentElement.scrollHeight;
+      // Find the footer element
+      const footer = document.querySelector('footer');
       
-      // Trigger when user is 200px from bottom (more generous threshold)
-      const scrolledToBottom = scrollTop + windowHeight >= documentHeight - 200;
-      
-      // Add debouncing to prevent multiple rapid calls
-      if (scrolledToBottom && !loading && hasMore) {
-        console.log('Scroll trigger: Loading more TV shows...'); // Debug
-        loadMoreShows();
+      if (footer) {
+        const footerRect = footer.getBoundingClientRect();
+        const windowHeight = window.innerHeight;
+        
+        // Trigger when the beginning of the footer is visible (top of footer reaches bottom of viewport)
+        const footerReached = footerRect.top <= windowHeight;
+        
+        if (footerReached && !loading && hasMore) {
+          loadMoreShows();
+        }
+      } else {
+        // Fallback to original logic if footer is not found
+        const scrollTop = window.pageYOffset || document.documentElement.scrollTop;
+        const documentHeight = document.documentElement.scrollHeight;
+        const scrolledToBottom = scrollTop + window.innerHeight >= documentHeight - 200;
+        
+        if (scrolledToBottom && !loading && hasMore) {
+          loadMoreShows();
+        }
       }
     };
 
@@ -107,10 +127,10 @@ export default function TVShows() {
     let ticking = false;
     const throttledScroll = () => {
       if (!ticking) {
-        requestAnimationFrame(() => {
+        setTimeout(() => {
           onScroll();
           ticking = false;
-        });
+        }, 100); // Use setTimeout instead of requestAnimationFrame for better performance
         ticking = true;
       }
     };
@@ -152,13 +172,19 @@ export default function TVShows() {
           </GenreSelect>
         </FilterContainer>
 
-        <MovieGrid>
-          {filteredShows.map(show => (
-            <MovieCard key={show.id} movie={show} />
-          ))}
-        </MovieGrid>
+        {initialLoading ? (
+          <Loading>Loading TV shows...</Loading>
+        ) : (
+          <>
+            <MovieGrid>
+              {filteredShows.map(show => (
+                <MovieCard key={show.id} movie={show} />
+              ))}
+            </MovieGrid>
 
-        {loading && <Loading>Loading more TV shows...</Loading>}
+            {loading && <Loading>Loading more TV shows...</Loading>}
+          </>
+        )}
       </Section>
     </>
   );

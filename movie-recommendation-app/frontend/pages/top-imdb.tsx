@@ -54,6 +54,7 @@ export default function TopIMDB() {
   const [movies, setMovies] = useState<TMDBMovie[]>([]);
   const [page, setPage] = useState(1);
   const [loading, setLoading] = useState(false);
+  const [initialLoading, setInitialLoading] = useState(true);
   const [hasMore, setHasMore] = useState(true);
   const [filter, setFilter] = useState('all');
   const [genres, setGenres] = useState<Genre[]>([]);
@@ -63,7 +64,15 @@ export default function TopIMDB() {
 
     setLoading(true);
     try {
-      const data = await movieAPI.getMovies({ type: 'top_rated', page });
+      let data = await movieAPI.getMovies({ type: 'top_rated', page });
+      
+      // Check if response has error property
+      if (data && data.error) {
+        console.error('API error:', data.error);
+        setHasMore(false);
+        return;
+      }
+      
       if (data?.results?.length) {
         setMovies(prev => {
           const existingIds = new Set(prev.map((m: TMDBMovie) => m.id));
@@ -79,6 +88,7 @@ export default function TopIMDB() {
       console.error('Error loading top-rated movies:', err);
     } finally {
       setLoading(false);
+      setInitialLoading(false);
     }
   }, [loading, hasMore, page]);
 
@@ -88,16 +98,44 @@ export default function TopIMDB() {
 
   useEffect(() => {
     const onScroll = () => {
-      const scrolledToBottom =
-        window.innerHeight + window.scrollY >= document.body.scrollHeight - 90;
+      // Find the footer element
+      const footer = document.querySelector('footer');
+      
+      if (footer) {
+        const footerRect = footer.getBoundingClientRect();
+        const windowHeight = window.innerHeight;
+        
+        // Trigger when the beginning of the footer is visible (top of footer reaches bottom of viewport)
+        const footerReached = footerRect.top <= windowHeight;
+        
+        if (footerReached && !loading && hasMore) {
+          loadMoreMovies();
+        }
+      } else {
+        // Fallback to original logic if footer is not found
+        const scrolledToBottom =
+          window.innerHeight + window.scrollY >= document.body.scrollHeight - 90;
 
-      if (scrolledToBottom && !loading && hasMore) {
-        loadMoreMovies();
+        if (scrolledToBottom && !loading && hasMore) {
+          loadMoreMovies();
+        }
       }
     };
 
-    window.addEventListener('scroll', onScroll);
-    return () => window.removeEventListener('scroll', onScroll);
+    // Use throttled scroll listener for better performance
+    let ticking = false;
+    const throttledScroll = () => {
+      if (!ticking) {
+        setTimeout(() => {
+          onScroll();
+          ticking = false;
+        }, 100); // Use setTimeout instead of requestAnimationFrame for better performance
+        ticking = true;
+      }
+    };
+
+    window.addEventListener('scroll', throttledScroll, { passive: true });
+    return () => window.removeEventListener('scroll', throttledScroll);
   }, [loadMoreMovies, loading, hasMore]);
 
   useEffect(() => {
@@ -133,13 +171,19 @@ export default function TopIMDB() {
           </GenreSelect>
         </FilterContainer>
 
-        <MovieGrid>
-          {filteredMovies.map(movie => (
-            <MovieCard key={movie.id} movie={movie} />
-          ))}
-        </MovieGrid>
+        {initialLoading ? (
+          <Loading>Loading top-rated movies...</Loading>
+        ) : (
+          <>
+            <MovieGrid>
+              {filteredMovies.map(movie => (
+                <MovieCard key={movie.id} movie={movie} />
+              ))}
+            </MovieGrid>
 
-        {loading && <Loading>Loading more top-rated movies...</Loading>}
+            {loading && <Loading>Loading more top-rated movies...</Loading>}
+          </>
+        )}
       </Section>
     </>
   );

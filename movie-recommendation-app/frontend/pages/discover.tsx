@@ -75,6 +75,7 @@ export default function Discover() {
   const [content, setContent] = useState<TMDBMovie[]>([]);
   const [page, setPage] = useState(1);
   const [loading, setLoading] = useState(false);
+  const [initialLoading, setInitialLoading] = useState(true);
   const [hasMore, setHasMore] = useState(true);
   const [contentType, setContentType] = useState<'movies' | 'tv'>('movies');
   const [filter, setFilter] = useState('all');
@@ -104,6 +105,7 @@ export default function Discover() {
       console.error('Error loading content:', err);
     } finally {
       setLoading(false);
+      setInitialLoading(false);
     }
   }, [loading, hasMore, page, contentType]);
 
@@ -117,16 +119,44 @@ export default function Discover() {
 
   useEffect(() => {
     const onScroll = () => {
-      const scrolledToBottom =
-        window.innerHeight + window.scrollY >= document.body.scrollHeight - 90;
+      // Find the footer element
+      const footer = document.querySelector('footer');
+      
+      if (footer) {
+        const footerRect = footer.getBoundingClientRect();
+        const windowHeight = window.innerHeight;
+        
+        // Trigger when the beginning of the footer is visible (top of footer reaches bottom of viewport)
+        const footerReached = footerRect.top <= windowHeight;
+        
+        if (footerReached && !loading && hasMore) {
+          loadMoreContent();
+        }
+      } else {
+        // Fallback to original logic if footer is not found
+        const scrolledToBottom =
+          window.innerHeight + window.scrollY >= document.body.scrollHeight - 90;
 
-      if (scrolledToBottom && !loading && hasMore) {
-        loadMoreContent();
+        if (scrolledToBottom && !loading && hasMore) {
+          loadMoreContent();
+        }
       }
     };
 
-    window.addEventListener('scroll', onScroll);
-    return () => window.removeEventListener('scroll', onScroll);
+    // Use throttled scroll listener for better performance
+    let ticking = false;
+    const throttledScroll = () => {
+      if (!ticking) {
+        setTimeout(() => {
+          onScroll();
+          ticking = false;
+        }, 100); // Use setTimeout instead of requestAnimationFrame for better performance
+        ticking = true;
+      }
+    };
+
+    window.addEventListener('scroll', throttledScroll, { passive: true });
+    return () => window.removeEventListener('scroll', throttledScroll);
   }, [loadMoreContent, loading, hasMore]);
 
   useEffect(() => {
@@ -177,13 +207,29 @@ export default function Discover() {
           </FilterSelect>
         </FilterContainer>
 
-        <MovieGrid>
-          {filteredContent.map(item => (
-            <MovieCard key={item.id} movie={item} />
-          ))}
-        </MovieGrid>
+        {initialLoading ? (
+          <Loading>Loading {contentType}...</Loading>
+        ) : (
+          <>
+            <MovieGrid>
+              {filteredContent.map(item => (
+                <MovieCard 
+                  key={item.id} 
+                  movie={{
+                    tmdb_id: item.tmdb_id || item.id,
+                    title: item.title,
+                    poster_path: item.poster_path,
+                    vote_average: item.vote_average,
+                    release_date: item.release_date,
+                   
+                  }} 
+                />
+              ))}
+            </MovieGrid>
 
-        {loading && <Loading>Loading more {contentType}...</Loading>}
+            {loading && <Loading>Loading more {contentType}...</Loading>}
+          </>
+        )}
       </Section>
     </>
   );

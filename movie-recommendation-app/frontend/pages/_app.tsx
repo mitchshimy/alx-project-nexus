@@ -8,6 +8,7 @@ import { theme } from '@/styles/theme';
 import GlobalStyle from '@/styles/GlobalStyle';
 import { fetchTrendingMovies, fetchTopRatedMovies, fetchPopularMovies } from '@/utils/api';
 import { setGlobalErrorHandler } from '@/utils/api';
+import { initializeSettings } from '@/utils/settings';
 
 // Global state for preloaded content
 export const preloadedContent = {
@@ -96,6 +97,9 @@ export default function App({ Component, pageProps }: AppProps) {
   useEffect(() => {
     setIsClient(true);
     
+    // Initialize user settings
+    initializeSettings();
+    
     // Check if we should show splash (only on client)
     const shouldShow = shouldShowSplash();
     console.log('Should show splash:', shouldShow);
@@ -150,8 +154,11 @@ export default function App({ Component, pageProps }: AppProps) {
         setPreloadProgress(95);
 
         // Wait for all API calls to complete with timeout
-        const timeoutPromise = new Promise<never>((_, reject) => 
-          setTimeout(() => reject(new Error('API timeout')), 10000) // 10 second timeout
+        const timeoutPromise = new Promise<[any, any, any]>((resolve) => 
+          setTimeout(() => {
+            console.log('API preload timeout - using fallback data');
+            resolve([[], [], []]); // Return empty arrays on timeout
+          }, 10000) // 10 second timeout
         );
 
         const [trending, topRated, popular] = await Promise.race([

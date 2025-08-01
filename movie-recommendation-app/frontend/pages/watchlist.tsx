@@ -125,8 +125,16 @@ export default function Watchlist() {
     const loadWatchlist = async () => {
       try {
         const data = await movieAPI.getWatchlist();
+        
+        // Check if response has error property
+        if (data && data.error) {
+          console.error('Error fetching watchlist:', data.error);
+          setWatchlist([]);
+          return;
+        }
+        
+        const watchlist = data.results || data || [];
       // Handle nested movie data structure from backend
-      const watchlist = data.results || data || [];
       const movies = watchlist.map((item: any) => {
         // If the item has a nested 'movie' property, extract it
         if (item.movie) {

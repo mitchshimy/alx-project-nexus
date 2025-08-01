@@ -18,9 +18,9 @@ const HeroSection = styled.section<{ $isSidebarOpen?: boolean }>`
   z-index: 1;
   margin-top: -80px;
   padding-top: 30px;
-  left: ${({ $isSidebarOpen }) => ($isSidebarOpen ? '15px' : '-2px')};
+  left: ${({ $isSidebarOpen }) => ($isSidebarOpen ? '15px' : '10px')};
   right: 0;
-  margin-left: -110px;
+  margin-left: -105px;
   
   @media (max-width: 768px) {
     height: 80vh;
@@ -332,10 +332,7 @@ const NavigationButton = styled.button<{ $direction: 'left' | 'right' }>`
   }
 
   @media (max-width: 768px) {
-    width: 45px;
-    height: 45px;
-    ${({ $direction }) => ($direction === 'left' ? 'right: 1rem' : 'right: 1rem')};
-    ${({ $direction }) => ($direction === 'left' ? 'transform: translateY(-50%) translateX(-3rem)' : 'transform: translateY(-50%)')};
+    display: none;
   }
 `;
 
@@ -397,11 +394,18 @@ const Hero = ({ isSidebarOpen = false }: HeroProps) => {
       try {
         setLoading(true);
         const res = await movieAPI.getMovies({ type: 'trending', page: 1 });
-        if (res.results.length > 0) {
+        
+        // Check if response has error property
+        if (res && res.error) {
+          console.error('Error fetching movies:', res.error);
+          return;
+        }
+        
+        if (res?.results?.length > 0) {
           setMovies(res.results.slice(0, 5)); // Get top 5 movies
         }
       } catch (err) {
-        console.error('Error fetching top movies:', err);
+        console.error('Error fetching movies:', err);
       } finally {
         setLoading(false);
       }
@@ -421,15 +425,21 @@ const Hero = ({ isSidebarOpen = false }: HeroProps) => {
     setCurrentIndex(index);
   };
 
-  // Auto-advance carousel every 5 seconds
+  // Auto-advance carousel every 8 seconds (reduced frequency for better performance)
   useEffect(() => {
     if (movies.length === 0) return;
     
-    const interval = setInterval(() => {
-      nextSlide();
-    }, 5000);
+    // Check if user prefers reduced motion
+    const prefersReducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    
+    // Only auto-advance if user doesn't prefer reduced motion
+    if (!prefersReducedMotion) {
+      const interval = setInterval(() => {
+        nextSlide();
+      }, 8000); // Increased from 5000ms to 8000ms
 
-    return () => clearInterval(interval);
+      return () => clearInterval(interval);
+    }
   }, [movies.length]);
 
   if (loading || movies.length === 0) {

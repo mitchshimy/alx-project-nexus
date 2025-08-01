@@ -4,6 +4,7 @@ import styled from 'styled-components';
 import { SkeletonPoster, SkeletonTitle, SkeletonText } from '@/components/Skeleton';
 import { TMDBMovie, TMDBCast } from '@/types/tmdb';
 import { movieAPI } from '@/utils/api';
+import { buildYouTubeEmbedUrl, getOptimalQuality, getQualityDisplayName } from '@/utils/videoPlayer';
 import { FaStar, FaRegStar, FaImdb, FaPlay } from 'react-icons/fa';
 import { MdDateRange, MdAccessTime, MdLanguage, MdMoney, MdPeople } from 'react-icons/md';
 
@@ -332,6 +333,18 @@ const VideoContainer = styled.div`
     height: 100%;
     border: none;
   }
+`;
+
+const VideoQualityInfo = styled.div`
+  position: absolute;
+  bottom: 10px;
+  left: 10px;
+  background: rgba(0, 0, 0, 0.7);
+  color: #FFFFFF;
+  padding: 5px 10px;
+  border-radius: 5px;
+  font-size: 0.8rem;
+  z-index: 10;
 `;
 
 const SectionTitle = styled.h2`
@@ -673,6 +686,7 @@ export default function MovieDetailPage({ isSidebarOpen = false }: { isSidebarOp
   const [showTrailerModal, setShowTrailerModal] = useState(false);
   const [selectedTrailer, setSelectedTrailer] = useState<any>(null);
   const [navigatingToSimilar, setNavigatingToSimilar] = useState(false);
+  const [currentVideoQuality, setCurrentVideoQuality] = useState<string>('720p');
   const navigatingTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
   useEffect(() => {
@@ -797,6 +811,12 @@ export default function MovieDetailPage({ isSidebarOpen = false }: { isSidebarOp
     fetchData();
   }, [id]);
 
+  useEffect(() => {
+    // Get optimal video quality based on user settings and device capabilities
+    const optimalQuality = getOptimalQuality();
+    setCurrentVideoQuality(optimalQuality);
+  }, []);
+
   // Cleanup timeout on unmount
   useEffect(() => {
     return () => {
@@ -859,102 +879,70 @@ export default function MovieDetailPage({ isSidebarOpen = false }: { isSidebarOp
   const handleFavorite = async () => {
     if (!movie) return;
     
-    try {
-      if (isFavoriteMovie) {
-        // Remove from favorites
-        let result;
-        if (movie.favorite_id) {
-          result = await movieAPI.removeFromFavorites(movie.favorite_id);
-        } else {
-          result = await movieAPI.removeFromFavoritesByMovie(movie.tmdb_id);
-        }
-        
-        // Check if API returned an error object
-        if (result && result.error) {
-          const { showError } = await import('@/utils/api');
-          showError('Error', result.error);
-          return;
-        }
-        
-        setIsFavoriteMovie(false);
+    if (isFavoriteMovie) {
+      // Remove from favorites
+      let result;
+      if (movie.favorite_id) {
+        result = await movieAPI.removeFromFavorites(movie.favorite_id);
       } else {
-        // Add to favorites
-        const result = await movieAPI.addToFavorites(movie.tmdb_id);
-        
-        // Check if API returned an error object
-        if (result && result.error) {
-          const { showError } = await import('@/utils/api');
-          showError('Error', result.error);
-          return;
-        }
-        
-        setIsFavoriteMovie(true);
+        result = await movieAPI.removeFromFavoritesByMovie(movie.tmdb_id || movie.id);
       }
-    } catch (error: any) {
-      console.error('Error toggling favorite:', error);
       
-      // Handle unauthenticated user gracefully
-      if (error?.message?.includes('401') || error?.message?.includes('Unauthorized')) {
-        // Use global error handler instead of alert
+      // Check if API returned an error object
+      if (result && result.error) {
         const { showError } = await import('@/utils/api');
-        showError('Authentication Required', 'Please log in to your account to add movies to favorites.');
+        showError('Error', result.error);
         return;
       }
       
-      // Use global error handler for other errors
-      const { showError } = await import('@/utils/api');
-      showError('Error', 'Failed to update favorites. Please try again.');
+      setIsFavoriteMovie(false);
+    } else {
+      // Add to favorites
+      const result = await movieAPI.addToFavorites(movie.tmdb_id || movie.id);
+      
+      // Check if API returned an error object
+      if (result && result.error) {
+        const { showError } = await import('@/utils/api');
+        showError('Error', result.error);
+        return;
+      }
+      
+      setIsFavoriteMovie(true);
     }
   };
 
   const handleWatchlist = async () => {
     if (!movie) return;
     
-    try {
-      if (isWatchlistedMovie) {
-        // Remove from watchlist
-        let result;
-        if (movie.watchlist_id) {
-          result = await movieAPI.removeFromWatchlist(movie.watchlist_id);
-        } else {
-          result = await movieAPI.removeFromWatchlistByMovie(movie.tmdb_id);
-        }
-        
-        // Check if API returned an error object
-        if (result && result.error) {
-          const { showError } = await import('@/utils/api');
-          showError('Error', result.error);
-          return;
-        }
-        
-        setIsWatchlistedMovie(false);
+    if (isWatchlistedMovie) {
+      // Remove from watchlist
+      let result;
+      if (movie.watchlist_id) {
+        result = await movieAPI.removeFromWatchlist(movie.watchlist_id);
       } else {
-        // Add to watchlist
-        const result = await movieAPI.addToWatchlist(movie.tmdb_id);
-        
-        // Check if API returned an error object
-        if (result && result.error) {
-          const { showError } = await import('@/utils/api');
-          showError('Error', result.error);
-          return;
-        }
-        
-        setIsWatchlistedMovie(true);
+        result = await movieAPI.removeFromWatchlistByMovie(movie.tmdb_id || movie.id);
       }
-    } catch (error: any) {
-      console.error('Error toggling watchlist:', error);
       
-      // Handle unauthenticated user gracefully
-      if (error?.message?.includes('401') || error?.message?.includes('Unauthorized')) {
-        // Use global error handler instead of alert
+      // Check if API returned an error object
+      if (result && result.error) {
         const { showError } = await import('@/utils/api');
-        showError('Authentication Required', 'Please log in to your account to add movies to your watchlist.');
+        showError('Error', result.error);
         return;
       }
       
-      // Use global error handler for other errors
-      const { showError } = await import('@/utils/api');
-      showError('Error', 'Failed to update watchlist. Please try again.');
+      setIsWatchlistedMovie(false);
+    } else {
+      // Add to watchlist
+      const result = await movieAPI.addToWatchlist(movie.tmdb_id || movie.id);
+      
+      // Check if API returned an error object
+      if (result && result.error) {
+        const { showError } = await import('@/utils/api');
+        showError('Error', result.error);
+        return;
+      }
+      
+      setIsWatchlistedMovie(true);
     }
   };
 
@@ -1307,22 +1295,28 @@ export default function MovieDetailPage({ isSidebarOpen = false }: { isSidebarOp
         </TabContent>
       </TabContainer>
       {showTrailerModal && selectedTrailer && (
-    <ModalOverlay onClick={closeTrailerModal}>
-      <ModalContent onClick={(e) => e.stopPropagation()}>
-        <CloseButton onClick={closeTrailerModal}>
-          &times;
-        </CloseButton>
-        <VideoContainer>
-          <iframe
-            src={`https://www.youtube.com/embed/${selectedTrailer.key}?autoplay=1&rel=0&modestbranding=1`}
-            allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-            allowFullScreen
-            title={selectedTrailer.name}
-          />
-        </VideoContainer>
-      </ModalContent>
-    </ModalOverlay>
-  )}
+        <ModalOverlay onClick={closeTrailerModal}>
+          <ModalContent onClick={(e) => e.stopPropagation()}>
+            <CloseButton onClick={closeTrailerModal}>
+              &times;
+            </CloseButton>
+            <VideoContainer>
+              <iframe
+                src={buildYouTubeEmbedUrl(selectedTrailer.key, { 
+                  autoPlay: true,
+                  muted: false // Allow sound for manual trailer viewing
+                })}
+                allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                allowFullScreen
+                title={selectedTrailer.name}
+              />
+            </VideoContainer>
+            <VideoQualityInfo>
+              Playing in {getQualityDisplayName(currentVideoQuality)}
+            </VideoQualityInfo>
+          </ModalContent>
+        </ModalOverlay>
+      )}
     </Container>
   );
 }
