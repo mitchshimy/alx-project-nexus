@@ -32,8 +32,11 @@ class TMDBService:
     
     def _make_request(self, endpoint, params=None):
         """Make a request to TMDB API with optimized performance"""
+        print(f"TMDB Service: _make_request called for endpoint: {endpoint}")  # Debug
+        
         # Check if we have a valid API key or read token
         if (self.api_key == 'your-tmdb-api-key' or not self.api_key) and not self.read_token:
+            print("TMDB Service: No valid API credentials, using mock data")  # Debug
             # Return mock data for development
             return self._get_mock_data(endpoint, params)
         
@@ -44,26 +47,35 @@ class TMDBService:
         if self.read_token:
             # Remove api_key from params when using Bearer token
             params.pop('api_key', None)
-            print(f"Using Bearer token for TMDB API call to: {endpoint}")  # Debug
+            print(f"TMDB Service: Using Bearer token for TMDB API call to: {endpoint}")  # Debug
         else:
             params['api_key'] = self.api_key
-            print(f"Using API key for TMDB API call to: {endpoint}")  # Debug
+            print(f"TMDB Service: Using API key for TMDB API call to: {endpoint}")  # Debug
         
         try:
-            print(f"Making request to: {url} with params: {params}")  # Debug
+            print(f"TMDB Service: Making request to: {url} with params: {params}")  # Debug
             # Reduced timeout for faster failure detection
             response = self.session.get(url, params=params, timeout=10)  # Reduced from 30 to 10 seconds
-            print(f"Response status: {response.status_code}")  # Debug
+            print(f"TMDB Service: Response status: {response.status_code}")  # Debug
+            
+            if response.status_code != 200:
+                print(f"TMDB Service: Error response from TMDB API: {response.status_code} - {response.text}")  # Debug
+                # Fall back to mock data if API returns error
+                print(f"TMDB Service: Falling back to mock data for endpoint: {endpoint}")  # Debug
+                return self._get_mock_data(endpoint, params)
+            
             response.raise_for_status()
-            return response.json()
+            data = response.json()
+            print(f"TMDB Service: Successfully parsed JSON response with {len(data.get('results', []))} results")  # Debug
+            return data
         except requests.RequestException as e:
-            print(f"TMDB API error for {endpoint}: {str(e)}")  # Debug
-            print(f"Falling back to mock data for endpoint: {endpoint}")  # Debug
+            print(f"TMDB Service: RequestException for {endpoint}: {str(e)}")  # Debug
+            print(f"TMDB Service: Falling back to mock data for endpoint: {endpoint}")  # Debug
             # Fall back to mock data if API fails
             return self._get_mock_data(endpoint, params)
         except Exception as e:
-            print(f"Unexpected error for {endpoint}: {str(e)}")  # Debug
-            print(f"Falling back to mock data for endpoint: {endpoint}")  # Debug
+            print(f"TMDB Service: Unexpected error for {endpoint}: {str(e)}")  # Debug
+            print(f"TMDB Service: Falling back to mock data for endpoint: {endpoint}")  # Debug
             # Fall back to mock data for any other errors
             return self._get_mock_data(endpoint, params)
     
@@ -292,18 +304,95 @@ class TMDBService:
     
     def search_multi(self, query, page=1):
         """Search movies, TV shows, and people"""
+        print(f"TMDB Service: search_multi called with query: '{query}', page: {page}")  # Debug
+        
         cache_key = self._get_cache_key('/search/multi', {'query': query, 'page': page})
         cached_data = self._get_cached_data(cache_key)
         
         if cached_data:
+            print(f"TMDB Service: Using cached search data for query: '{query}'")  # Debug
             return cached_data
         
-        data = self._make_request('/search/multi', {
-            'query': query,
-            'page': page
-        })
-        self._set_cached_data(cache_key, data)
-        return data
+        try:
+            print(f"TMDB Service: Making search request to TMDB API for query: '{query}'")  # Debug
+            data = self._make_request('/search/multi', {
+                'query': query,
+                'page': page
+            })
+            print(f"TMDB Service: Search request successful, got {len(data.get('results', []))} results")  # Debug
+            self._set_cached_data(cache_key, data)
+            return data
+        except Exception as e:
+            print(f"TMDB Service: Error in search_multi for query '{query}': {str(e)}")  # Debug
+            import traceback
+            print(f"TMDB Service: Full traceback: {traceback.format_exc()}")  # Debug
+            # Return empty results instead of raising exception
+            return {
+                'page': page,
+                'results': [],
+                'total_pages': 0,
+                'total_results': 0
+            }
+
+    def search_movies_and_tv(self, query, page=1):
+        """Search movies and TV shows separately for consistent results"""
+        print(f"TMDB Service: search_movies_and_tv called with query: '{query}', page: {page}")  # Debug
+        
+        try:
+            # Search movies
+            print(f"TMDB Service: Searching movies for query: '{query}', page: {page}")  # Debug
+            movies_data = self._make_request('/search/movie', {
+                'query': query,
+                'page': page
+            })
+            
+            # Search TV shows
+            print(f"TMDB Service: Searching TV shows for query: '{query}', page: {page}")  # Debug
+            tv_data = self._make_request('/search/tv', {
+                'query': query,
+                'page': page
+            })
+            
+            # Combine results
+            combined_results = []
+            
+            # Add movies with media_type
+            for movie in movies_data.get('results', []):
+                movie['media_type'] = 'movie'
+                combined_results.append(movie)
+            
+            # Add TV shows with media_type
+            for tv in tv_data.get('results', []):
+                tv['media_type'] = 'tv'
+                combined_results.append(tv)
+            
+            # Sort by popularity (vote_average * vote_count)
+            combined_results.sort(key=lambda x: (x.get('vote_average', 0) * x.get('vote_count', 0)), reverse=True)
+            
+            # Calculate combined totals
+            total_results = movies_data.get('total_results', 0) + tv_data.get('total_results', 0)
+            total_pages = max(movies_data.get('total_pages', 0), tv_data.get('total_pages', 0))
+            
+            print(f"TMDB Service: Combined search results - {len(combined_results)} items (movies: {len(movies_data.get('results', []))}, TV: {len(tv_data.get('results', []))})")  # Debug
+            
+            return {
+                'page': page,
+                'results': combined_results,
+                'total_pages': total_pages,
+                'total_results': total_results
+            }
+            
+        except Exception as e:
+            print(f"TMDB Service: Error in search_movies_and_tv for query '{query}': {str(e)}")  # Debug
+            import traceback
+            print(f"TMDB Service: Full traceback: {traceback.format_exc()}")  # Debug
+            # Return empty results instead of raising exception
+            return {
+                'page': page,
+                'results': [],
+                'total_pages': 0,
+                'total_results': 0
+            }
     
     def get_movie_details(self, movie_id):
         """Get detailed movie information with credits, videos, reviews, and similar movies"""

@@ -4,7 +4,7 @@ import { movieAPI } from './api';
 export const getFavorites = async () => {
   try {
     const response = await movieAPI.getFavorites();
-    return response.results || [];
+    return response || [];
   } catch (error) {
     console.error('Error fetching favorites:', error);
     return [];

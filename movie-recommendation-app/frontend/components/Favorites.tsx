@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react';
 import styled, { keyframes } from 'styled-components';
 import { getFavorites } from '@/utils/favorites';
 import MovieCard from './MovieCard';
-import { Skeleton } from '@/components/Skeleton';
+import { SkeletonBase } from '@/components/Skeleton';
 import { TMDBMovie } from '@/types/tmdb';
 import useWindowSize from '@/hooks/useWindowSize';
 
@@ -28,7 +28,7 @@ const SkeletonGrid = styled.div`
   margin-top: 16px;
 `;
 
-const SkeletonCard = styled(Skeleton)`
+const SkeletonCard = styled(SkeletonBase)`
   width: 100%;
   height: 320px;
   border-radius: 8px;
@@ -59,27 +59,18 @@ export default function Favorites() {
   const skeletonCount = windowSize.width ? Math.max(4, Math.floor(windowSize.width / 200)) : 4;
 
   useEffect(() => {
-    const favIds = getFavorites();
-    if (favIds.length === 0) {
-      setMovies([]);
-      setLoading(false);
-      return;
-    }
-
     const fetchFavorites = async () => {
       try {
         setLoading(true);
-        const results = await Promise.all(
-          favIds.map(id =>
-            fetch(`/api/movie?id=${id}`)
-              .then(res => {
-                if (!res.ok) throw new Error('Failed to fetch movie');
-                return res.json();
-              })
-              .catch(() => null)
-          )
-        );
-        setMovies(results.filter(Boolean));
+        const favorites = await getFavorites();
+        if (favorites.length === 0) {
+          setMovies([]);
+          setLoading(false);
+          return;
+        }
+
+        // The API returns movie objects directly, so we can use them as is
+        setMovies(favorites);
       } catch (err) {
         setError(err instanceof Error ? err.message : 'Failed to load favorites');
       } finally {
@@ -113,7 +104,13 @@ export default function Favorites() {
         {movies.map(movie => (
           <MovieCard
             key={movie.id}
-            movie={movie}
+            movie={{
+              tmdb_id: movie.tmdb_id || movie.id,
+              title: movie.title,
+              poster_path: movie.poster_path,
+              vote_average: movie.vote_average,
+              release_date: movie.release_date
+            }}
           />
         ))}
       </Grid>

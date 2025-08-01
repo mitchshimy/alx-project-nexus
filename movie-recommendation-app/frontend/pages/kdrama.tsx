@@ -1,13 +1,31 @@
-import { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import styled from 'styled-components';
 import MovieCard from '@/components/MovieCard';
 import { movieAPI } from '@/utils/api';
 import { TMDBMovie, Genre } from '@/types/tmdb';
 
-const Section = styled.section`
+const Section = styled.section<{ isSidebarOpen?: boolean }>`
   padding: 2rem;
-  max-width: 1200px;
+  max-width: ${({ isSidebarOpen }) => 
+    isSidebarOpen ? 'calc(100vw - 320px)' : 'calc(100vw - 120px)'
+  };
   margin: 0 auto;
+  
+  @media (max-width: 1024px) {
+    max-width: ${({ isSidebarOpen }) => 
+      isSidebarOpen ? 'calc(100vw - 300px)' : 'calc(100vw - 100px)'
+    };
+    padding: 1.5rem;
+  }
+  
+  @media (max-width: 768px) {
+    max-width: 100%;
+    padding: 1rem;
+  }
+  
+  @media (max-width: 480px) {
+    padding: 0.5rem;
+  }
 `;
 
 const SectionTitle = styled.h2`
@@ -50,7 +68,7 @@ const Loading = styled.div`
   color: #666;
 `;
 
-export default function KDrama() {
+export default function KDrama({ isSidebarOpen }: { isSidebarOpen?: boolean }) {
   const [shows, setShows] = useState<TMDBMovie[]>([]);
   const [page, setPage] = useState(1);
   const [loading, setLoading] = useState(false);
@@ -64,55 +82,30 @@ export default function KDrama() {
 
     setLoading(true);
     try {
-      let data = await movieAPI.getMovies({ type: 'movie', page });
+      const data = await movieAPI.getMovies({ type: 'tv', page });
+      
       if (data?.results?.length) {
-        // Filter for Korean dramas
-        const kdramaShows = data.results.filter((show: TMDBMovie) => {
-          const title = show.title?.toLowerCase() || '';
-          const overview = show.overview?.toLowerCase() || '';
-          return title.includes('korean') || title.includes('k-drama') || 
-                 overview.includes('korean') || overview.includes('k-drama');
-        });
+        // Filter for Korean dramas (genre ID: 10768 for Korean TV shows)
+        const kdramaShows = data.results.filter((show: any) => 
+          show.genre_ids?.includes(10768) || 
+          show.original_language === 'ko' ||
+          (show.title && show.title.toLowerCase().includes('korean'))
+        );
         
         setShows(prev => {
-          const existingIds = new Set(prev.map((m: TMDBMovie) => m.id));
-          const uniqueNew = kdramaShows.filter((m: TMDBMovie) => !existingIds.has(m.id));
+          const existingIds = new Set(prev.map((s: TMDBMovie) => s.id));
+          const uniqueNew = kdramaShows.filter((s: TMDBMovie) => !existingIds.has(s.id));
           return [...prev, ...uniqueNew];
-        });
-        setPage(prev => prev + 1);
-        setHasMore(data.page < data.total_pages);
-      } else {
-        // Use TV shows API and filter for Korean dramas
-        data = await movieAPI.getMovies({ type: 'tv', page });
-      }
-
-      // Check if response has error property
-      if (data && data.error) {
-        console.error('API error:', data.error);
-        setHasMore(false);
-        return;
-      }
-
-      if (data?.results?.length) {
-        const kdramaShows = data.results.filter((show: TMDBMovie) => {
-          const title = show.title?.toLowerCase() || '';
-          const overview = show.overview?.toLowerCase() || '';
-          return title.includes('korean') || title.includes('k-drama') || 
-                 overview.includes('korean') || overview.includes('k-drama');
         });
         
-        setShows(prev => {
-          const existingIds = new Set(prev.map((m: TMDBMovie) => m.id));
-          const uniqueNew = kdramaShows.filter((m: TMDBMovie) => !existingIds.has(m.id));
-          return [...prev, ...uniqueNew];
-        });
         setPage(prev => prev + 1);
         setHasMore(data.page < data.total_pages);
       } else {
         setHasMore(false);
       }
     } catch (err) {
-      console.error('Error loading K-dramas:', err);
+      console.error('Error loading K-Dramas:', err);
+      setHasMore(false);
     } finally {
       setLoading(false);
       setInitialLoading(false);
@@ -184,7 +177,7 @@ export default function KDrama() {
 
   return (
     <>
-      <Section>
+      <Section isSidebarOpen={isSidebarOpen}>
         <SectionTitle>🇰🇷 K-Drama</SectionTitle>
 
         <FilterContainer>
@@ -204,7 +197,13 @@ export default function KDrama() {
           <>
             <MovieGrid>
               {filteredKDramas.map(item => (
-                <MovieCard key={item.id} movie={item} />
+                <MovieCard key={item.id} movie={{
+                  tmdb_id: item.tmdb_id || item.id,
+                  title: item.title,
+                  poster_path: item.poster_path,
+                  vote_average: item.vote_average,
+                  release_date: item.release_date
+                }} />
               ))}
             </MovieGrid>
 

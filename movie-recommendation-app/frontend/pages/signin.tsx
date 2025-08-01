@@ -1,8 +1,9 @@
-import { useState } from 'react';
+import React, { useState } from 'react';
 import { useRouter } from 'next/router';
-import styled from 'styled-components';
 import Link from 'next/link';
-import { authAPI } from '../utils/api';
+import styled from 'styled-components';
+import { authAPI } from '@/utils/api';
+import { t } from '@/utils/translations';
 
 const Container = styled.div`
   display: flex;
@@ -21,7 +22,7 @@ const Container = styled.div`
   }
 `;
 
-const FormCard = styled.div`
+const FormContainer = styled.div`
   background: rgba(255, 255, 255, 0.05);
   backdrop-filter: blur(10px);
   border-radius: 16px;
@@ -69,7 +70,7 @@ const Form = styled.form`
   }
 `;
 
-const InputGroup = styled.div`
+const FormGroup = styled.div`
   display: flex;
   flex-direction: column;
   gap: 0.5rem;
@@ -306,15 +307,11 @@ export default function SignIn() {
 
   return (
     <Container>
-      <FormCard>
-        <Title>Sign In</Title>
-        
-        {error && <ErrorMessage>{error}</ErrorMessage>}
-        {success && <SuccessMessage>{success}</SuccessMessage>}
-        
+      <FormContainer>
+        <Title>{t('auth.signIn')}</Title>
         <Form onSubmit={handleSubmit}>
-          <InputGroup>
-            <Label htmlFor="email">Email</Label>
+          <FormGroup>
+            <Label htmlFor="email">{t('auth.email')}</Label>
             <Input
               type="email"
               id="email"
@@ -326,10 +323,9 @@ export default function SignIn() {
               disabled={loading}
             />
             {emailError && <InlineError>{emailError}</InlineError>}
-          </InputGroup>
-
-          <InputGroup>
-            <Label htmlFor="password">Password</Label>
+          </FormGroup>
+          <FormGroup>
+            <Label htmlFor="password">{t('auth.password')}</Label>
             <Input
               type="password"
               id="password"
@@ -341,25 +337,22 @@ export default function SignIn() {
               disabled={loading}
             />
             {passwordError && <InlineError>{passwordError}</InlineError>}
-          </InputGroup>
-
+          </FormGroup>
           <Button type="submit" disabled={loading}>
-            {loading ? 'Signing In...' : 'Sign In'}
+            {loading ? t('auth.signingIn') : t('auth.signIn')}
           </Button>
         </Form>
-
         <Divider>
           <span>or</span>
         </Divider>
-
         <SocialButton type="button" disabled={loading}>
           Continue with Google
         </SocialButton>
-
         <Footer>
-          Don't have an account? <Link href="/signup">Sign Up</Link>
+          {t('auth.noAccount')} <Link href="/signup">{t('auth.signUp')}</Link>
         </Footer>
-      </FormCard>
+        {error && <ErrorMessage>{error}</ErrorMessage>}
+      </FormContainer>
     </Container>
   );
 } 

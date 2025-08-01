@@ -3,11 +3,30 @@ import { useRouter } from 'next/router';
 import styled from 'styled-components';
 import { authAPI, getAuthToken } from '@/utils/api';
 import { t } from '@/utils/translations';
+import ConfirmationModal from '@/components/ConfirmationModal';
 
-const Container = styled.div`
+const Container = styled.div<{ isSidebarOpen?: boolean }>`
   padding: 2rem;
-  max-width: 800px;
+  max-width: ${({ isSidebarOpen }) => 
+    isSidebarOpen ? 'calc(100vw - 320px)' : 'calc(100vw - 120px)'
+  };
   margin: 0 auto;
+  
+  @media (max-width: 1024px) {
+    max-width: ${({ isSidebarOpen }) => 
+      isSidebarOpen ? 'calc(100vw - 300px)' : 'calc(100vw - 100px)'
+    };
+    padding: 1.5rem;
+  }
+  
+  @media (max-width: 768px) {
+    max-width: 100%;
+    padding: 1rem;
+  }
+  
+  @media (max-width: 480px) {
+    padding: 0.5rem;
+  }
 `;
 
 const Title = styled.h1`
@@ -387,7 +406,7 @@ const SuccessText = styled.div`
   text-align: center;
 `;
 
-export default function Profile() {
+export default function Profile({ isSidebarOpen }: { isSidebarOpen?: boolean }) {
   const router = useRouter();
   const [user, setUser] = useState<any>(null);
   const [stats, setStats] = useState<any>(null);
@@ -417,6 +436,7 @@ export default function Profile() {
   const [profileError, setProfileError] = useState('');
   const [profileSuccess, setProfileSuccess] = useState('');
   const [isUpdatingProfile, setIsUpdatingProfile] = useState(false);
+  const [showDeleteAccountModal, setShowDeleteAccountModal] = useState(false);
 
   useEffect(() => {
     // Check authentication status
@@ -607,10 +627,13 @@ export default function Profile() {
   };
 
   const handleDeleteAccount = () => {
-    if (confirm('Are you sure you want to delete your account? This action cannot be undone.')) {
-      setMessage('Delete account functionality coming soon!');
-      setTimeout(() => setMessage(null), 3000);
-    }
+    setShowDeleteAccountModal(true);
+  };
+
+  const confirmDeleteAccount = () => {
+    setMessage('Delete account functionality coming soon!');
+    setTimeout(() => setMessage(null), 3000);
+    setShowDeleteAccountModal(false);
   };
 
   const formatDate = (dateString: string) => {
@@ -652,7 +675,7 @@ export default function Profile() {
 
   if (!isAuthenticated) {
     return (
-      <Container>
+      <Container isSidebarOpen={isSidebarOpen}>
         <Title>👤 {t('profile.title')}</Title>
         <AuthPrompt>
           <h2>{t('auth.signIn')} {t('profile.title').toLowerCase()}</h2>
@@ -665,7 +688,7 @@ export default function Profile() {
 
   if (loading) {
     return (
-      <Container>
+      <Container isSidebarOpen={isSidebarOpen}>
         <Title>👤 {t('profile.title')}</Title>
         <LoadingMessage>Loading your profile...</LoadingMessage>
       </Container>
@@ -674,7 +697,7 @@ export default function Profile() {
 
   if (error) {
     return (
-      <Container>
+      <Container isSidebarOpen={isSidebarOpen}>
         <Title>👤 {t('profile.title')}</Title>
         <ErrorMessage>{error}</ErrorMessage>
       </Container>
@@ -682,7 +705,7 @@ export default function Profile() {
   }
 
   return (
-    <Container>
+    <Container isSidebarOpen={isSidebarOpen}>
       <Title>👤 {t('profile.title')}</Title>
 
       {message && <SuccessMessage>{message}</SuccessMessage>}
@@ -863,6 +886,17 @@ export default function Profile() {
           </form>
         </ModalContent>
       </Modal>
+
+      <ConfirmationModal
+        isOpen={showDeleteAccountModal}
+        title="Delete Account"
+        message="Are you sure you want to delete your account? This action cannot be undone and will permanently remove all your data."
+        confirmText="Delete Account"
+        cancelText="Cancel"
+        variant="danger"
+        onConfirm={confirmDeleteAccount}
+        onCancel={() => setShowDeleteAccountModal(false)}
+      />
     </Container>
   );
 } 

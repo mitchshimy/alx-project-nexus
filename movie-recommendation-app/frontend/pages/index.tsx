@@ -1,10 +1,13 @@
-import { useState, useEffect } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useRouter } from 'next/router';
 import styled from 'styled-components';
 import Hero from '@/components/Hero';
 import MovieCard from '@/components/MovieCard';
 import { movieAPI } from '@/utils/api';
 import { TMDBMovie, Genre } from '@/types/tmdb';
+import { SkeletonBase } from '@/components/Skeleton';
+import { t } from '@/utils/translations';
+import Layout from '@/components/Layout';
 
 
 // Modern glassmorphism and neumorphism inspired design
@@ -277,81 +280,117 @@ const ErrorMessage = styled.div`
   }
 `;
 
+const NoResults = styled.div`
+  text-align: center;
+  color: #e0e0e0;
+  font-size: 1.2rem;
+  margin: 2rem 0;
+`;
+
 export default function Home({ isSidebarOpen = false }: { isSidebarOpen?: boolean }) {
-  const [featuredMovies, setFeaturedMovies] = useState<TMDBMovie[]>([]);
-  const [trendingMovies, setTrendingMovies] = useState<TMDBMovie[]>([]);
-  const [topRatedMovies, setTopRatedMovies] = useState<TMDBMovie[]>([]);
+  const [featuredMovies, setFeaturedMovies] = useState<any[]>([]);
+  const [trendingMovies, setTrendingMovies] = useState<any[]>([]);
+  const [topRatedMovies, setTopRatedMovies] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [loadingProgress, setLoadingProgress] = useState(0);
   const router = useRouter();
-
-  const loadSectionData = async (apiCall: () => Promise<any>, retries = 2) => {
-    for (let attempt = 1; attempt <= retries; attempt++) {
-      try {
-        const response = await apiCall();
-        
-        if (response && response.error) {
-          console.error(`API error on attempt ${attempt}:`, response.error);
-          if (attempt === retries) {
-            return [];
-          }
-          await new Promise(resolve => setTimeout(resolve, 500));
-          continue;
-        }
-        
-        return response.results || [];
-      } catch (error) {
-        if (attempt === retries) {
-          console.error(`Failed to load data after ${retries} attempts:`, error);
-          return [];
-        }
-        await new Promise(resolve => setTimeout(resolve, 500));
-      }
-    }
-  };
 
   const loadFeaturedContent = async () => {
     try {
-      setLoading(true);
-      setError(null);
-      setLoadingProgress(0);
-
-      const promises = [
-        loadSectionData(() => movieAPI.getMovies({ type: 'movies', page: 1 })),
-        loadSectionData(() => movieAPI.getMovies({ type: 'trending', page: 1 })),
-        loadSectionData(() => movieAPI.getMovies({ type: 'top_rated', page: 1 }))
-      ];
-
-      const results = await Promise.allSettled(promises);
-      setLoadingProgress(100);
-
-      const [featured, trending, topRated] = results.map(result => 
-        result.status === 'fulfilled' ? result.value : []
-      );
-
-      setFeaturedMovies(featured.slice(0, 22));
-      setTrendingMovies(trending.slice(0, 22));
-      setTopRatedMovies(topRated.slice(0, 22));
-
-      if (results.every(result => result.status === 'rejected')) {
-        setError('Unable to load content. Please check your connection and try again.');
+      console.log('Loading featured content...');
+      const data = await movieAPI.getMovies({ type: 'trending', page: 1 });
+      console.log('Featured content response:', data);
+      if (data?.results?.length) {
+        setFeaturedMovies(data.results.slice(0, 21));
+        console.log('Set featured movies:', data.results.slice(0, 21));
+      } else {
+        console.log('No featured movies data');
       }
+    } catch (err) {
+      console.error('Error loading featured content:', err);
+    }
+  };
 
-    } catch (error) {
-      console.error('Error loading featured content:', error);
-      setError('Failed to load content. Please try again.');
-    } finally {
-      setLoading(false);
+  const loadTrendingContent = async () => {
+    try {
+      console.log('Loading trending content...');
+      const data = await movieAPI.getMovies({ type: 'trending', page: 1 });
+      console.log('Trending content response:', data);
+      if (data?.results?.length) {
+        setTrendingMovies(data.results.slice(0, 21));
+        console.log('Set trending movies:', data.results.slice(0, 21));
+      } else {
+        console.log('No trending movies data');
+      }
+    } catch (err) {
+      console.error('Error loading trending content:', err);
+    }
+  };
+
+  const loadTopRatedContent = async () => {
+    try {
+      console.log('Loading top rated content...');
+      const data = await movieAPI.getMovies({ type: 'top_rated', page: 1 });
+      console.log('Top rated content response:', data);
+      if (data?.results?.length) {
+        setTopRatedMovies(data.results.slice(0, 21));
+        console.log('Set top rated movies:', data.results.slice(0, 21));
+      } else {
+        console.log('No top rated movies data');
+      }
+    } catch (err) {
+      console.error('Error loading top rated content:', err);
     }
   };
 
   useEffect(() => {
-    loadFeaturedContent();
+    const loadAllContent = async () => {
+      try {
+        setLoading(true);
+        setError(null);
+        
+        console.log('Starting to load all content...');
+        
+        // Test API connectivity first
+        try {
+          const testResponse = await fetch('http://localhost:8000/api/v1/movies/?type=trending&page=1');
+          console.log('API test response status:', testResponse.status);
+          if (!testResponse.ok) {
+            throw new Error(`API test failed: ${testResponse.status}`);
+          }
+        } catch (apiTestError) {
+          console.error('API connectivity test failed:', apiTestError);
+          setError('Cannot connect to the server. Please make sure the backend is running.');
+          setLoading(false);
+          return;
+        }
+        
+        // Load all content in parallel
+        await Promise.all([
+          loadFeaturedContent(),
+          loadTrendingContent(),
+          loadTopRatedContent()
+        ]);
+        
+        console.log('All content loaded successfully');
+      } catch (err) {
+        console.error('Error loading content:', err);
+        setError('Failed to load content. Please try again.');
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    loadAllContent();
   }, []);
 
   const handleBrowseMovies = () => {
     router.push('/movies');
+  };
+
+  const handleMovieClick = (movie: { id: number; tmdb_id?: number }) => {
+    const movieId = movie.tmdb_id || movie.id;
+    router.push(`/movies/${movieId}`);
   };
 
   const handleRetry = () => {
@@ -369,11 +408,11 @@ export default function Home({ isSidebarOpen = false }: { isSidebarOpen?: boolea
             <div className="progress-container">
               <div 
                 className="progress-fill" 
-                style={{ width: `${Math.min(loadingProgress + 20, 100)}%` }}
+                style={{ width: '100%' }}
               />
             </div>
             <div className="progress-text">
-              {Math.min(loadingProgress + 20, 100)}% loaded
+              Loading...
             </div>
           </Loading>
         </ContentWrapper>
@@ -440,9 +479,9 @@ export default function Home({ isSidebarOpen = false }: { isSidebarOpen?: boolea
                 </div>
               </>
             ) : (
-              <div style={{ gridColumn: '1 / -1', textAlign: 'center', color: 'rgba(255, 255, 255, 0.5)' }}>
+              <NoResults>
                 No featured movies available
-              </div>
+              </NoResults>
             )}
           </MovieGrid>
         </Section>
@@ -476,9 +515,9 @@ export default function Home({ isSidebarOpen = false }: { isSidebarOpen?: boolea
                 </div>
               </>
             ) : (
-              <div style={{ gridColumn: '1 / -1', textAlign: 'center', color: 'rgba(255, 255, 255, 0.5)' }}>
+              <NoResults>
                 No trending movies available
-              </div>
+              </NoResults>
             )}
           </MovieGrid>
         </Section>
@@ -512,9 +551,9 @@ export default function Home({ isSidebarOpen = false }: { isSidebarOpen?: boolea
                 </div>
               </>
             ) : (
-              <div style={{ gridColumn: '1 / -1', textAlign: 'center', color: 'rgba(255, 255, 255, 0.5)' }}>
+              <NoResults>
                 No top rated movies available
-              </div>
+              </NoResults>
             )}
           </MovieGrid>
         </Section>

@@ -18,6 +18,10 @@ export const getAuthToken = (): string | null => {
 
 export const setAuthToken = (token: string): void => {
   if (typeof window !== 'undefined') {
+    // Clear any existing user data before setting new token
+    clearApiCache();
+    sessionStorage.clear();
+    
     localStorage.setItem('access_token', token);
     // Dispatch custom event to notify components of auth state change
     window.dispatchEvent(new CustomEvent('authStateChanged', { detail: { isAuthenticated: true } }));
@@ -61,6 +65,38 @@ const setCachedResponse = (cacheKey: string, data: any) => {
 // Function to clear the in-memory cache
 export const clearApiCache = () => {
   cache.clear();
+};
+
+// Comprehensive logout function that clears all user data and cache
+export const performComprehensiveLogout = () => {
+  // Clear authentication
+  authAPI.logout();
+  
+  // Clear API cache
+  cache.clear();
+  
+  // Clear all auth-related tokens
+  if (typeof window !== 'undefined') {
+    localStorage.removeItem('authToken');
+    localStorage.removeItem('refreshToken');
+    localStorage.removeItem('access_token');
+    
+    // Clear session storage
+    sessionStorage.clear();
+    
+    // Clear any cached images by reloading them
+    const images = document.querySelectorAll('img');
+    images.forEach(img => {
+      if (img.src) {
+        img.src = img.src + '?t=' + Date.now();
+      }
+    });
+  }
+  
+  // Dispatch custom event to notify other components
+  if (typeof window !== 'undefined') {
+    window.dispatchEvent(new CustomEvent('authStateChanged'));
+  }
 };
 
 // API request helper with authentication, timeout, and caching
@@ -352,7 +388,9 @@ export const movieAPI = {
   // Search movies and TV shows
   searchMovies: async (query: string, page: number = 1) => {
     try {
-      return await apiRequest(`/movies/search/?q=${encodeURIComponent(query)}&page=${page}`);
+      // Add cache-busting parameter to ensure fresh data
+      const timestamp = Date.now();
+      return await apiRequest(`/movies/search/?q=${encodeURIComponent(query)}&page=${page}&_t=${timestamp}`);
     } catch (error) {
       // Handle timeout gracefully for search
       if (error instanceof Error && error.message.includes('timeout')) {

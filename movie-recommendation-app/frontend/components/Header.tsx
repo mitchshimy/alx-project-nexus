@@ -2,7 +2,7 @@ import { useState, useEffect, useCallback, useRef } from 'react';
 import { useRouter } from 'next/router';
 import Link from 'next/link';
 import styled from 'styled-components';
-import { authAPI, getAuthToken, removeAuthToken } from '../utils/api';
+import { authAPI, getAuthToken, removeAuthToken, performComprehensiveLogout } from '../utils/api';
 
 const HeaderContainer = styled.div`
   position: fixed;
@@ -196,6 +196,12 @@ const SearchInput = styled.input`
   padding: 8px 16px;
   font-size: 1rem;
   outline: none;
+  
+  &:focus {
+    outline: none;
+    border: none;
+    box-shadow: none;
+  }
   
   &::placeholder {
     color: rgba(255, 255, 255, 0.6);
@@ -629,10 +635,15 @@ export default function Header({ isSidebarOpen, toggleSidebar }: HeaderProps) {
   }, []);
 
   const handleLogout = () => {
-    authAPI.logout();
+    // Use the comprehensive logout function
+    performComprehensiveLogout();
+    
+    // Update local state
     setIsAuthenticated(false);
     setUser(null);
-    router.push('/');
+    
+    // Force a page reload to clear all cached data and state
+    window.location.href = '/';
   };
 
   return (

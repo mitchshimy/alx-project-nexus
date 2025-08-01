@@ -1,9 +1,10 @@
-import { useState, useEffect } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useRouter } from 'next/router';
 import styled from 'styled-components';
+import { movieAPI, getAuthToken, clearApiCache } from '@/utils/api';
 import MovieCard from '@/components/MovieCard';
-import { movieAPI, getAuthToken } from '@/utils/api';
-import { TMDBMovie } from '@/types/tmdb';
+import { SkeletonBase } from '@/components/Skeleton';
+import { t } from '@/utils/translations';
 import Layout from '@/components/Layout';
 
 const MovieGrid = styled.div`
@@ -115,53 +116,101 @@ const AuthPrompt = styled.div`
   }
 `;
 
+const RefreshButton = styled.button`
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  color: white;
+  border: none;
+  padding: 8px 16px;
+  border-radius: 6px;
+  font-size: 0.9rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: transform 0.2s ease;
+  margin-left: 1rem;
+  
+  &:hover {
+    transform: scale(1.05);
+  }
+  
+  &:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+  }
+`;
+
+const HeaderContainer = styled.div`
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 2rem;
+  
+  @media (max-width: 768px) {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 1rem;
+  }
+`;
+
 export default function Watchlist() {
   const router = useRouter();
-  const [watchlist, setWatchlist] = useState<TMDBMovie[]>([]);
+  const [watchlist, setWatchlist] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [isAuthenticated, setIsAuthenticated] = useState(false);
 
-    const loadWatchlist = async () => {
-      try {
-        const data = await movieAPI.getWatchlist();
-        
-        // Check if response has error property
-        if (data && data.error) {
-          console.error('Error fetching watchlist:', data.error);
-          setWatchlist([]);
-          return;
-        }
-        
-        const watchlist = data.results || data || [];
-      // Handle nested movie data structure from backend
-      const movies = watchlist.map((item: any) => {
-        // If the item has a nested 'movie' property, extract it
-        if (item.movie) {
+  const loadWatchlist = async () => {
+    try {
+      setLoading(true);
+      // Clear any cached data first
+      await clearApiCache();
+      
+      const data = await movieAPI.getWatchlist();
+      
+      // Handle paginated response from Django REST Framework
+      if (data && data.results && Array.isArray(data.results)) {
+        const movies = data.results.map((item: any) => {
+          const movie = item.movie || item;
           return {
-            ...item.movie,
-            // Add the watchlist ID for removal functionality
-            watchlist_id: item.id
+            tmdb_id: movie.tmdb_id || movie.id,
+            title: movie.title,
+            poster_path: movie.poster_path,
+            vote_average: movie.vote_average,
+            release_date: movie.release_date
           };
-        }
-        // If it's already a flat movie object, return as is
-        return item;
-      });
-      setWatchlist(movies);
-    } catch (err: any) {
-        console.error('Error loading watchlist:', err);
-      if (err.message.includes('401')) {
-        setError('Authentication required');
+        });
+        setWatchlist(movies);
+      } else if (data && Array.isArray(data)) {
+        // Fallback for non-paginated response
+        const movies = data.map((item: any) => {
+          const movie = item.movie || item;
+          return {
+            tmdb_id: movie.tmdb_id || movie.id,
+            title: movie.title,
+            poster_path: movie.poster_path,
+            vote_average: movie.vote_average,
+            release_date: movie.release_date
+          };
+        });
+        setWatchlist(movies);
       } else {
-        setError('Failed to load watchlist. Please try again.');
+        setWatchlist([]);
       }
-      } finally {
-        setLoading(false);
-      }
-    };
+    } catch (err: unknown) {
+      console.error('Error loading watchlist:', err);
+      setWatchlist([]);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const handleWatchlistToggle = () => {
-    // Refresh the watchlist when an item is toggled
+    // Immediately refresh the watchlist when an item is toggled
+    setTimeout(() => {
+      loadWatchlist();
+    }, 500); // Increased delay to ensure the API call completes
+  };
+
+  const handleManualRefresh = () => {
     loadWatchlist();
   };
 
@@ -177,6 +226,50 @@ export default function Watchlist() {
 
     loadWatchlist();
   }, []);
+
+  // Refresh watchlist when the page becomes visible or when user navigates to it
+  useEffect(() => {
+    const handleVisibilityChange = () => {
+      if (!document.hidden && isAuthenticated) {
+        loadWatchlist();
+      }
+    };
+
+    const handleFocus = () => {
+      if (isAuthenticated) {
+        loadWatchlist();
+      }
+    };
+
+    const handleRouteChange = (url: string) => {
+      if (url === '/watchlist' && isAuthenticated) {
+        // Force a complete refresh when navigating to watchlist page
+        setTimeout(() => {
+          loadWatchlist();
+        }, 100);
+      }
+    };
+
+    // Listen for visibility changes and focus
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+    window.addEventListener('focus', handleFocus);
+    router.events.on('routeChangeComplete', handleRouteChange);
+    
+    // Initial load with a slight delay to ensure everything is ready
+    if (isAuthenticated) {
+      setTimeout(() => {
+        loadWatchlist();
+      }, 100);
+    }
+
+    return () => {
+      document.removeEventListener('visibilitychange', handleVisibilityChange);
+      window.removeEventListener('focus', handleFocus);
+      router.events.off('routeChangeComplete', handleRouteChange);
+    };
+  }, [isAuthenticated, router]);
+
+  
 
   const handleSignIn = () => {
     router.push('/signin');
@@ -217,7 +310,12 @@ export default function Watchlist() {
 
   return (
     <Layout>
-      <h1>📋 Your Watchlist</h1>
+      <HeaderContainer>
+        <h1>📋 Your Watchlist</h1>
+        <RefreshButton onClick={handleManualRefresh} disabled={loading}>
+          {loading ? 'Refreshing...' : 'Refresh Watchlist'}
+        </RefreshButton>
+      </HeaderContainer>
       {watchlist.length === 0 ? (
         <EmptyState>
           <h3>Your watchlist is empty</h3>
@@ -226,7 +324,7 @@ export default function Watchlist() {
       ) : (
         <MovieGrid>
           {watchlist.map(movie => (
-            <MovieCard key={movie.id} movie={movie} onWatchlistToggle={handleWatchlistToggle} />
+            <MovieCard key={movie.tmdb_id || movie.id} movie={movie} onWatchlistToggle={handleWatchlistToggle} />
           ))}
         </MovieGrid>
       )}

@@ -1,20 +1,67 @@
-import { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect } from 'react';
 import styled from 'styled-components';
-import MovieCard from '@/components/MovieCard';
 import { movieAPI } from '@/utils/api';
-import { TMDBMovie, Genre } from '@/types/tmdb';
+import MovieCard from '@/components/MovieCard';
 
-const Section = styled.section`
+
+const Section = styled.section<{ isSidebarOpen?: boolean }>`
   padding: 2rem;
-  max-width: 1200px;
+  max-width: ${({ isSidebarOpen }) => 
+    isSidebarOpen ? 'calc(100vw - 320px)' : 'calc(100vw - 120px)'
+  };
   margin: 0 auto;
+  
+  @media (max-width: 1024px) {
+    max-width: ${({ isSidebarOpen }) => 
+      isSidebarOpen ? 'calc(100vw - 300px)' : 'calc(100vw - 100px)'
+    };
+    padding: 1.5rem;
+  }
+  
+  @media (max-width: 768px) {
+    max-width: 100%;
+    padding: 1rem;
+  }
+  
+  @media (max-width: 480px) {
+    padding: 0.5rem;
+  }
 `;
 
 const SectionTitle = styled.h2`
-  font-size: 2rem;
-  margin-bottom: 1rem;
+  font-size: 2.5rem;
+  margin-bottom: 0.5rem;
   color: #f0f0f0;
+  font-weight: 700;
+  
+  @media (max-width: 768px) {
+    font-size: 2rem;
+  }
 `;
+
+const Description = styled.div`
+  margin-bottom: 2rem;
+  padding: 1.5rem;
+  background: linear-gradient(135deg, rgba(0, 212, 255, 0.1), rgba(0, 212, 255, 0.05));
+  border-radius: 12px;
+  border: 1px solid rgba(0, 212, 255, 0.2);
+`;
+
+const DescriptionTitle = styled.h3`
+  font-size: 1.3rem;
+  margin-bottom: 1rem;
+  color: #00D4FF;
+  font-weight: 600;
+`;
+
+const DescriptionText = styled.p`
+  font-size: 1rem;
+  line-height: 1.6;
+  color: #cccccc;
+  margin-bottom: 1rem;
+`;
+
+
 
 const MovieGrid = styled.div`
   display: grid;
@@ -50,37 +97,51 @@ const Loading = styled.div`
   color: #666;
 `;
 
-export default function Movies() {
-  const [movies, setMovies] = useState<TMDBMovie[]>([]);
+const TipsContainer = styled.div`
+  margin-top: 2rem;
+  padding: 1rem;
+  background: rgba(255, 255, 255, 0.03);
+  border-radius: 8px;
+  border-left: 4px solid #00D4FF;
+`;
+
+const TipsTitle = styled.h4`
+  color: #00D4FF;
+  margin-bottom: 0.5rem;
+  font-size: 1rem;
+`;
+
+const TipsList = styled.ul`
+  color: #cccccc;
+  font-size: 0.9rem;
+  line-height: 1.5;
+  padding-left: 1rem;
+`;
+
+export default function Movies({ isSidebarOpen }: { isSidebarOpen?: boolean }) {
+  const [movies, setMovies] = useState<any[]>([]);
   const [page, setPage] = useState(1);
   const [loading, setLoading] = useState(false);
   const [initialLoading, setInitialLoading] = useState(true);
   const [hasMore, setHasMore] = useState(true);
   const [filter, setFilter] = useState('all');
-  const [genres, setGenres] = useState<Genre[]>([]);
+  const [genres, setGenres] = useState<any[]>([]);
 
-  const loadMoreMovies = useCallback(async () => {
+
+  const loadMoreMovies = async () => {
     if (loading || !hasMore) return;
 
     setLoading(true);
     try {
-      let data = await movieAPI.getMovies({ type: 'movies', page });
-      
-      // Check if response has error property
-      if (data && data.error) {
-        console.error('API error:', data.error);
-        setHasMore(false);
-        return;
-      }
-      
+      const data = await movieAPI.getMovies({ type: 'movies', page });
       if (data?.results?.length) {
         setMovies(prev => {
-          const existingIds = new Set(prev.map((m: TMDBMovie) => m.id));
-          const uniqueNew = data.results.filter((m: TMDBMovie) => !existingIds.has(m.id));
+          const existingIds = new Set(prev.map((m: any) => m.id));
+          const uniqueNew = data.results.filter((m: any) => !existingIds.has(m.id));
           return [...prev, ...uniqueNew];
         });
-        setHasMore(page < (data.total_pages || 1));
-        setPage(page + 1);
+        setPage(prev => prev + 1);
+        setHasMore(data.page < data.total_pages);
       } else {
         setHasMore(false);
       }
@@ -90,7 +151,7 @@ export default function Movies() {
       setLoading(false);
       setInitialLoading(false);
     }
-  }, [loading, hasMore, page]);
+  };
 
   useEffect(() => {
     loadMoreMovies();
@@ -156,10 +217,22 @@ export default function Movies() {
     return matchesGenre;
   });
 
+
+
   return (
     <>
-      <Section>
+      <Section isSidebarOpen={isSidebarOpen}>
         <SectionTitle>🎬 Movies</SectionTitle>
+        
+        <Description>
+          <DescriptionTitle>Discover the Latest & Greatest Films</DescriptionTitle>
+          <DescriptionText>
+            Explore our curated collection of movies from around the world. From blockbuster hits to indie gems, 
+            we bring you the best of cinema with detailed information, ratings, and recommendations. 
+            Use the genre filter to find your perfect movie match!
+          </DescriptionText>
+        </Description>
+
 
         <FilterContainer>
           <GenreSelect value={filter} onChange={e => setFilter(e.target.value)}>
@@ -190,6 +263,19 @@ export default function Movies() {
 
             {loading && <Loading>Loading more movies...</Loading>}
           </>
+        )}
+
+        {!initialLoading && movies.length > 0 && (
+          <TipsContainer>
+            <TipsTitle>💡 Movie Discovery Tips</TipsTitle>
+            <TipsList>
+              <li>Use the genre filter to explore specific types of movies</li>
+              <li>Click on any movie card to see detailed information and trailers</li>
+              <li>Add movies to your favorites or watchlist for later viewing</li>
+              <li>Scroll down to automatically load more movies</li>
+              <li>Check out the Trending page for what&apos;s popular right now</li>
+            </TipsList>
+          </TipsContainer>
         )}
       </Section>
     </>

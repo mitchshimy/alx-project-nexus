@@ -259,13 +259,31 @@ class SearchView(generics.ListAPIView):
     
     def get_queryset(self):
         query = self.request.query_params.get('q', '')
+        page = int(self.request.query_params.get('page', 1))
+        print(f"SearchView: Received search query: '{query}', page: {page}")  # Debug
+        
         if not query:
+            print("SearchView: No query provided, returning empty queryset")  # Debug
             return Movie.objects.none()
         
         tmdb_service = TMDBService()
         
         try:
-            data = tmdb_service.search_multi(query)
+            print(f"SearchView: Calling TMDB search_movies_and_tv with query: '{query}', page: {page}")  # Debug
+            data = tmdb_service.search_movies_and_tv(query, page=page)
+            print(f"SearchView: TMDB search returned {len(data.get('results', []))} results for page {page}")  # Debug
+            
+            # Debug: Show breakdown of media types
+            all_results = data.get('results', [])
+            media_types = {}
+            for item in all_results:
+                media_type = item.get('media_type', 'unknown')
+                media_types[media_type] = media_types.get(media_type, 0) + 1
+            print(f"SearchView: Media type breakdown for page {page}: {media_types}")  # Debug
+            
+            # Debug: Show first few movie titles
+            first_movies = data.get('results', [])[:3]
+            print(f"SearchView: First 3 movies for page {page}: {[m.get('title', m.get('name', 'Unknown')) for m in first_movies]}")  # Debug
             
             # Store the TMDB data for pagination info
             self.tmdb_data = data
@@ -275,7 +293,10 @@ class SearchView(generics.ListAPIView):
             
             # Return movies from database that match the TMDB IDs for immediate display
             tmdb_ids = [item.get('id') for item in data.get('results', []) if item.get('media_type') in ['movie', 'tv']]
+            print(f"SearchView: Found {len(tmdb_ids)} movie/TV IDs from TMDB results")  # Debug
+            
             existing_movies = Movie.objects.filter(tmdb_id__in=tmdb_ids)
+            print(f"SearchView: Found {existing_movies.count()} existing movies in database")  # Debug
             
             # Create a mapping of tmdb_id to movie for quick lookup
             existing_movie_map = {movie.tmdb_id: movie for movie in existing_movies}
@@ -304,11 +325,22 @@ class SearchView(generics.ListAPIView):
                         )
                         ordered_movies.append(temp_movie)
             
+            print(f"SearchView: Returning {len(ordered_movies)} movies for display")  # Debug
             return ordered_movies
             
         except Exception as e:
+            print(f"SearchView: Error in search_multi: {str(e)}")  # Debug
+            import traceback
+            print(f"SearchView: Full traceback: {traceback.format_exc()}")  # Debug
+            
             # Fallback to database search
-            return Movie.objects.filter(title__icontains=query)
+            try:
+                fallback_results = Movie.objects.filter(title__icontains=query)
+                print(f"SearchView: Fallback search returned {fallback_results.count()} results")  # Debug
+                return fallback_results
+            except Exception as fallback_error:
+                print(f"SearchView: Fallback search also failed: {str(fallback_error)}")  # Debug
+                return Movie.objects.none()
     
     def _start_background_sync_search(self, tmdb_results, tmdb_service):
         """Start background sync process for search results"""
@@ -376,9 +408,15 @@ class FavoriteListView(generics.ListCreateAPIView):
     permission_classes = [permissions.IsAuthenticated]
     
     def get_queryset(self):
-        return Favorite.objects.filter(user=self.request.user)
+        print(f"FavoriteListView: User {self.request.user.email} requesting favorites")
+        favorites = Favorite.objects.filter(user=self.request.user)
+        print(f"FavoriteListView: Found {favorites.count()} favorites for user")
+        for fav in favorites:
+            print(f"FavoriteListView: Favorite - {fav.movie.title} (ID: {fav.movie.tmdb_id})")
+        return favorites
     
     def perform_create(self, serializer):
+        print(f"FavoriteListView: Creating favorite for user {self.request.user.email}")
         serializer.save(user=self.request.user)
 
 
@@ -407,9 +445,15 @@ class WatchlistListView(generics.ListCreateAPIView):
     permission_classes = [permissions.IsAuthenticated]
     
     def get_queryset(self):
-        return Watchlist.objects.filter(user=self.request.user)
+        print(f"WatchlistListView: User {self.request.user.email} requesting watchlist")
+        watchlist = Watchlist.objects.filter(user=self.request.user)
+        print(f"WatchlistListView: Found {watchlist.count()} items in watchlist for user")
+        for item in watchlist:
+            print(f"WatchlistListView: Watchlist Item - {item.movie.title} (ID: {item.movie.tmdb_id})")
+        return watchlist
     
     def perform_create(self, serializer):
+        print(f"WatchlistListView: Creating watchlist item for user {self.request.user.email}")
         serializer.save(user=self.request.user)
 
 

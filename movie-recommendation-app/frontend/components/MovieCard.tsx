@@ -305,9 +305,20 @@ const MovieCard = ({ movie, onFavoriteToggle, onWatchlistToggle }: MovieCardProp
     const checkFavorites = async () => {
       try {
         const favorites = await movieAPI.getFavorites();
-        // Ensure favorites is an array before using .some()
-        const favoritesArray = Array.isArray(favorites) ? favorites : [];
-        const isInFavorites = favoritesArray.some((fav: any) => fav.tmdb_id === movie.tmdb_id);
+        
+        // Handle paginated response from Django REST Framework
+        let favoritesArray: any[] = [];
+        if (favorites && favorites.results && Array.isArray(favorites.results)) {
+          favoritesArray = favorites.results;
+        } else if (Array.isArray(favorites)) {
+          favoritesArray = favorites;
+        }
+        
+        // Check if movie is in favorites by looking at the nested movie object
+        const isInFavorites = favoritesArray.some((fav: any) => {
+          const favMovie = fav.movie || fav;
+          return favMovie.tmdb_id === movie.tmdb_id;
+        });
         setIsFavorite(isInFavorites);
       } catch (error) {
         console.error('Error checking favorites:', error);
@@ -319,9 +330,20 @@ const MovieCard = ({ movie, onFavoriteToggle, onWatchlistToggle }: MovieCardProp
     const checkWatchlist = async () => {
       try {
         const watchlist = await movieAPI.getWatchlist();
-        // Ensure watchlist is an array before using .some()
-        const watchlistArray = Array.isArray(watchlist) ? watchlist : [];
-        const isInWatchlist = watchlistArray.some((item: any) => item.tmdb_id === movie.tmdb_id);
+        
+        // Handle paginated response from Django REST Framework
+        let watchlistArray: any[] = [];
+        if (watchlist && watchlist.results && Array.isArray(watchlist.results)) {
+          watchlistArray = watchlist.results;
+        } else if (Array.isArray(watchlist)) {
+          watchlistArray = watchlist;
+        }
+        
+        // Check if movie is in watchlist by looking at the nested movie object
+        const isInWatchlist = watchlistArray.some((item: any) => {
+          const watchlistMovie = item.movie || item;
+          return watchlistMovie.tmdb_id === movie.tmdb_id;
+        });
         setIsInWatchlist(isInWatchlist);
       } catch (error) {
         console.error('Error checking watchlist:', error);

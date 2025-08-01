@@ -1,9 +1,8 @@
-import { useState, useEffect } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useRouter } from 'next/router';
 import styled from 'styled-components';
+import { movieAPI, getAuthToken, clearApiCache } from '@/utils/api';
 import MovieCard from '@/components/MovieCard';
-import { movieAPI, getAuthToken } from '@/utils/api';
-import { TMDBMovie } from '@/types/tmdb';
 import Layout from '@/components/Layout';
 
 const MovieGrid = styled.div`
@@ -115,54 +114,97 @@ const AuthPrompt = styled.div`
   }
 `;
 
+const RefreshButton = styled.button`
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  color: white;
+  border: none;
+  padding: 8px 16px;
+  border-radius: 6px;
+  font-size: 0.9rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: transform 0.2s ease;
+  margin-left: 1rem;
+  
+  &:hover {
+    transform: scale(1.05);
+  }
+  
+  &:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+  }
+`;
+
+const HeaderContainer = styled.div`
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 2rem;
+  
+  @media (max-width: 768px) {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 1rem;
+  }
+`;
+
 export default function Favorites() {
   const router = useRouter();
-  const [favorites, setFavorites] = useState<TMDBMovie[]>([]);
+  const [favorites, setFavorites] = useState<Array<{
+    tmdb_id?: number;
+    title?: string;
+    poster_path?: string | null;
+    vote_average?: number;
+    release_date?: string;
+  }>>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [isAuthenticated, setIsAuthenticated] = useState(false);
 
-    const loadFavorites = async () => {
-      try {
-        const data = await movieAPI.getFavorites();
-        
-        // Check if response has error property
-        if (data && data.error) {
-          console.error('Error fetching favorites:', data.error);
-          setFavorites([]);
-          return;
-        }
-        
-        const favorites = data.results || data || [];
-      // Handle nested movie data structure from backend
-      const movies = favorites.map((item: any) => {
-        // If the item has a nested 'movie' property, extract it
-        if (item.movie) {
+  const loadFavorites = async () => {
+    try {
+      setLoading(true);
+      // Clear any cached data first
+      await clearApiCache();
+      
+      const data = await movieAPI.getFavorites();
+      
+      // Handle paginated response from Django REST Framework
+      if (data && data.results && Array.isArray(data.results)) {
+        const movies = data.results.map((item: any) => {
+          const movie = item.movie || item;
           return {
-            ...item.movie,
-            // Add the favorite ID for removal functionality
-            favorite_id: item.id
+            tmdb_id: movie.tmdb_id || movie.id,
+            title: movie.title,
+            poster_path: movie.poster_path,
+            vote_average: movie.vote_average,
+            release_date: movie.release_date
           };
-        }
-        // If it's already a flat movie object, return as is
-        return item;
-      });
-      setFavorites(movies);
-    } catch (err: any) {
-        console.error('Error loading favorites:', err);
-      if (err.message.includes('401')) {
-        setError('Authentication required');
+        });
+        setFavorites(movies);
+      } else if (data && Array.isArray(data)) {
+        // Fallback for non-paginated response
+        const movies = data.map((item: any) => {
+          const movie = item.movie || item;
+          return {
+            tmdb_id: movie.tmdb_id || movie.id,
+            title: movie.title,
+            poster_path: movie.poster_path,
+            vote_average: movie.vote_average,
+            release_date: movie.release_date
+          };
+        });
+        setFavorites(movies);
       } else {
-        setError('Failed to load favorites. Please try again.');
+        setFavorites([]);
       }
-      } finally {
-        setLoading(false);
-      }
-    };
-
-  const handleFavoriteToggle = () => {
-    // Refresh the favorites list when an item is toggled
-    loadFavorites();
+    } catch (err: unknown) {
+      console.error('Error loading favorites:', err);
+      setFavorites([]);
+    } finally {
+      setLoading(false);
+    }
   };
 
   useEffect(() => {
@@ -177,6 +219,61 @@ export default function Favorites() {
 
     loadFavorites();
   }, []);
+
+  // Refresh favorites when the page becomes visible or when user navigates to it
+  useEffect(() => {
+    const handleVisibilityChange = () => {
+      if (!document.hidden && isAuthenticated) {
+        loadFavorites();
+      }
+    };
+
+    const handleFocus = () => {
+      if (isAuthenticated) {
+        loadFavorites();
+      }
+    };
+
+    const handleRouteChange = (url: string) => {
+      if (url === '/favorites' && isAuthenticated) {
+        // Force a complete refresh when navigating to favorites page
+        setTimeout(() => {
+          loadFavorites();
+        }, 100);
+      }
+    };
+
+    // Listen for visibility changes and focus
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+    window.addEventListener('focus', handleFocus);
+    router.events.on('routeChangeComplete', handleRouteChange);
+    
+    // Initial load with a slight delay to ensure everything is ready
+    if (isAuthenticated) {
+      setTimeout(() => {
+        loadFavorites();
+      }, 100);
+    }
+
+    return () => {
+      document.removeEventListener('visibilitychange', handleVisibilityChange);
+      window.removeEventListener('focus', handleFocus);
+      router.events.off('routeChangeComplete', handleRouteChange);
+    };
+  }, [isAuthenticated, router]);
+
+
+
+  const handleFavoriteToggle = () => {
+    // Immediately refresh the favorites list when an item is toggled
+    setTimeout(() => {
+      loadFavorites();
+    }, 500); // Increased delay to ensure the API call completes
+  };
+
+  const handleManualRefresh = () => {
+    loadFavorites();
+  };
 
   const handleSignIn = () => {
     router.push('/signin');
@@ -217,7 +314,12 @@ export default function Favorites() {
 
   return (
     <Layout>
-      <h1>Your Favorites</h1>
+      <HeaderContainer>
+        <h1>Your Favorites</h1>
+        <RefreshButton onClick={handleManualRefresh} disabled={loading}>
+          {loading ? 'Refreshing...' : 'Refresh Favorites'}
+        </RefreshButton>
+      </HeaderContainer>
       {favorites.length === 0 ? (
         <EmptyState>
           <h3>No favorites yet</h3>
@@ -227,8 +329,14 @@ export default function Favorites() {
         <MovieGrid>
           {favorites.map(movie => (
             <MovieCard 
-              key={movie.id} 
-              movie={movie} 
+              key={movie.tmdb_id || 'unknown'} 
+              movie={{
+                tmdb_id: movie.tmdb_id || 0,
+                title: movie.title,
+                poster_path: movie.poster_path,
+                vote_average: movie.vote_average,
+                release_date: movie.release_date
+              }} 
               onFavoriteToggle={handleFavoriteToggle}
             />
           ))}

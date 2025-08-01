@@ -1,19 +1,38 @@
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/router';
 import styled from 'styled-components';
-import { getAuthToken, clearApiCache } from '@/utils/api';
+import { getAuthToken, clearApiCache, authAPI, performComprehensiveLogout } from '@/utils/api';
 import { getSettings, saveSettings, applyTheme, UserSettings } from '@/utils/settings';
 import { t, getTranslation } from '@/utils/translations';
+import ConfirmationModal from '@/components/ConfirmationModal';
 import { 
   YOUTUBE_QUALITY_OPTIONS, 
   getAvailableQualityOptions, 
   getQualityDescription 
 } from '@/utils/videoPlayer';
 
-const Container = styled.div`
+const Container = styled.div<{ isSidebarOpen?: boolean }>`
   padding: 2rem;
-  max-width: 800px;
+  max-width: ${({ isSidebarOpen }) => 
+    isSidebarOpen ? 'calc(100vw - 320px)' : 'calc(100vw - 120px)'
+  };
   margin: 0 auto;
+  
+  @media (max-width: 1024px) {
+    max-width: ${({ isSidebarOpen }) => 
+      isSidebarOpen ? 'calc(100vw - 300px)' : 'calc(100vw - 100px)'
+    };
+    padding: 1.5rem;
+  }
+  
+  @media (max-width: 768px) {
+    max-width: 100%;
+    padding: 1rem;
+  }
+  
+  @media (max-width: 480px) {
+    padding: 0.5rem;
+  }
 `;
 
 const Title = styled.h1`
@@ -233,13 +252,15 @@ const QualityInfoDetails = styled.div`
   gap: 0.25rem;
 `;
 
-export default function Settings() {
+export default function Settings({ isSidebarOpen }: { isSidebarOpen?: boolean }) {
   const router = useRouter();
   const [settings, setSettings] = useState<UserSettings>(getSettings());
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [saveMessage, setSaveMessage] = useState<string | null>(null);
   const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
   const [availableQualityOptions, setAvailableQualityOptions] = useState(YOUTUBE_QUALITY_OPTIONS);
+  const [showClearCacheModal, setShowClearCacheModal] = useState(false);
+  const [showLogoutModal, setShowLogoutModal] = useState(false);
 
   useEffect(() => {
     // Check authentication status
@@ -320,51 +341,59 @@ export default function Settings() {
   };
 
   const handleLogout = () => {
-    if (confirm('Are you sure you want to logout?')) {
-      localStorage.removeItem('authToken');
-      localStorage.removeItem('refreshToken');
-      router.push('/signin');
-    }
+    setShowLogoutModal(true);
+  };
+
+  const confirmLogout = () => {
+    // Use the comprehensive logout function
+    performComprehensiveLogout();
+    
+    // Force a page reload to clear all cached data and state
+    window.location.href = '/';
   };
 
   const handleClearCache = () => {
-    if (confirm('Are you sure you want to clear the cache? This will remove all stored data and cached API responses.')) {
-      // Clear in-memory API cache
-      clearApiCache();
+    setShowClearCacheModal(true);
+  };
+
+  const confirmClearCache = () => {
+    // Clear in-memory API cache
+    clearApiCache();
+    
+    // Clear localStorage except for settings and auth tokens
+    const settings = localStorage.getItem('userSettings');
+    const authToken = localStorage.getItem('authToken');
+    const refreshToken = localStorage.getItem('refreshToken');
+    const accessToken = localStorage.getItem('access_token');
+    
+    localStorage.clear();
+    
+    // Restore important items
+    if (settings) localStorage.setItem('userSettings', settings);
+    if (authToken) localStorage.setItem('authToken', authToken);
+    if (refreshToken) localStorage.setItem('refreshToken', refreshToken);
+    if (accessToken) localStorage.setItem('access_token', accessToken);
+    
+    // Clear any other potential cache items
+    if (typeof window !== 'undefined') {
+      // Clear sessionStorage as well
+      sessionStorage.clear();
       
-      // Clear localStorage except for settings and auth tokens
-      const settings = localStorage.getItem('userSettings');
-      const authToken = localStorage.getItem('authToken');
-      const refreshToken = localStorage.getItem('refreshToken');
-      const accessToken = localStorage.getItem('access_token');
-      
-      localStorage.clear();
-      
-      // Restore important items
-      if (settings) localStorage.setItem('userSettings', settings);
-      if (authToken) localStorage.setItem('authToken', authToken);
-      if (refreshToken) localStorage.setItem('refreshToken', refreshToken);
-      if (accessToken) localStorage.setItem('access_token', accessToken);
-      
-      // Clear any other potential cache items
-      if (typeof window !== 'undefined') {
-        // Clear sessionStorage as well
-        sessionStorage.clear();
-        
-        // Clear any cached images by reloading them
-        const images = document.querySelectorAll('img');
-        images.forEach(img => {
-          if (img.src) {
-            img.src = img.src + '?t=' + Date.now();
-          }
-        });
-      }
-      
-      setSaveMessage('Cache cleared successfully! All cached data has been removed.');
-      setTimeout(() => {
-        setSaveMessage(null);
-      }, 3000);
+      // Clear any cached images by reloading them
+      const images = document.querySelectorAll('img');
+      images.forEach(img => {
+        if (img.src) {
+          img.src = img.src + '?t=' + Date.now();
+        }
+      });
     }
+    
+    setSaveMessage('Cache cleared successfully! All cached data has been removed.');
+    setTimeout(() => {
+      setSaveMessage(null);
+    }, 3000);
+    
+    setShowClearCacheModal(false);
   };
 
   const handleExportData = () => {
@@ -399,19 +428,19 @@ export default function Settings() {
 
   if (!isAuthenticated) {
     return (
-      <>
+      <Container isSidebarOpen={isSidebarOpen}>
         <h1>⚙️ {t('settings.title')}</h1>
         <AuthPrompt>
           <h2>{t('auth.signIn')}</h2>
           <p>You need to be signed in to manage your account settings and preferences.</p>
           <button onClick={handleSignIn}>{t('auth.signIn')}</button>
         </AuthPrompt>
-      </>
+      </Container>
     );
   }
 
   return (
-    <>
+    <Container isSidebarOpen={isSidebarOpen}>
       <h1>⚙️ {t('settings.title')}</h1>
 
       {saveMessage && <SuccessMessage>{saveMessage}</SuccessMessage>}
@@ -561,6 +590,28 @@ export default function Settings() {
           <SaveButton onClick={handleSaveSettings}>{t('settings.save')}</SaveButton>
         </SettingsCard>
       )}
-    </>
+
+      <ConfirmationModal
+        isOpen={showClearCacheModal}
+        title="Clear Cache"
+        message="Are you sure you want to clear the cache? This will remove all stored data and cached API responses."
+        confirmText="Clear Cache"
+        cancelText="Cancel"
+        variant="danger"
+        onConfirm={confirmClearCache}
+        onCancel={() => setShowClearCacheModal(false)}
+      />
+
+      <ConfirmationModal
+        isOpen={showLogoutModal}
+        title="Logout"
+        message="Are you sure you want to logout? You will be signed out of your account."
+        confirmText="Logout"
+        cancelText="Cancel"
+        variant="danger"
+        onConfirm={confirmLogout}
+        onCancel={() => setShowLogoutModal(false)}
+      />
+    </Container>
   );
 } 

@@ -1025,7 +1025,7 @@ export default function MovieDetailPage({ isSidebarOpen = false }: { isSidebarOp
         </PosterContainer>
         <MovieInfo>
           <Title>{movie.title}</Title>
-          {movie.tagline && <Tagline>"{movie.tagline}"</Tagline>}
+          {movie.tagline && <Tagline>&ldquo;{movie.tagline}&rdquo;</Tagline>}
           
           <RatingContainer>
             <RatingStars>

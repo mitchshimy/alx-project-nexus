@@ -1,21 +1,26 @@
-import { useState, useEffect, useCallback } from 'react';
-import styled from 'styled-components';
+import React, { useState, useEffect, useCallback } from 'react';
 import { useRouter } from 'next/router';
-import MovieCard from '@/components/MovieCard';
+import styled from 'styled-components';
 import { movieAPI } from '@/utils/api';
-import { TMDBMovie, Genre, TMDBSearchResult } from '@/types/tmdb';
+import MovieCard from '@/components/MovieCard';
 
-const Section = styled.section`
+
+const Section = styled.section<{ isSidebarOpen?: boolean }>`
   padding: 2rem;
-  max-width: 1200px;
+  max-width: ${({ isSidebarOpen }) => 
+    isSidebarOpen ? 'calc(100vw - 320px)' : 'calc(100vw - 120px)'
+  };
   margin: 0 auto;
   
   @media (max-width: 1024px) {
+    max-width: ${({ isSidebarOpen }) => 
+      isSidebarOpen ? 'calc(100vw - 300px)' : 'calc(100vw - 100px)'
+    };
     padding: 1.5rem;
-    max-width: 100%;
   }
   
   @media (max-width: 768px) {
+    max-width: 100%;
     padding: 1rem;
   }
   
@@ -25,20 +30,39 @@ const Section = styled.section`
 `;
 
 const SectionTitle = styled.h2`
-  font-size: 2rem;
-  margin-bottom: 1rem;
+  font-size: 2.5rem;
+  margin-bottom: 0.5rem;
   color: #f0f0f0;
+  font-weight: 700;
   
   @media (max-width: 768px) {
-    font-size: 1.5rem;
-    margin-bottom: 0.8rem;
-  }
-  
-  @media (max-width: 480px) {
-    font-size: 1.3rem;
-    margin-bottom: 0.6rem;
+    font-size: 2rem;
   }
 `;
+
+const Description = styled.div`
+  margin-bottom: 2rem;
+  padding: 1.5rem;
+  background: linear-gradient(135deg, rgba(255, 69, 0, 0.1), rgba(255, 69, 0, 0.05));
+  border-radius: 12px;
+  border: 1px solid rgba(255, 69, 0, 0.2);
+`;
+
+const DescriptionTitle = styled.h3`
+  font-size: 1.3rem;
+  margin-bottom: 1rem;
+  color: #FF4500;
+  font-weight: 600;
+`;
+
+const DescriptionText = styled.p`
+  font-size: 1rem;
+  line-height: 1.6;
+  color: #cccccc;
+  margin-bottom: 1rem;
+`;
+
+
 
 const MovieGrid = styled.div`
   display: grid;
@@ -95,11 +119,6 @@ const GenreSelect = styled.select`
     padding: 0.6rem;
     font-size: 0.9rem;
   }
-  
-  @media (max-width: 480px) {
-    padding: 0.5rem;
-    font-size: 0.8rem;
-  }
 `;
 
 const Loading = styled.div`
@@ -107,16 +126,38 @@ const Loading = styled.div`
   padding: 2rem;
   font-size: 1.2rem;
   color: #666;
-  
-  @media (max-width: 768px) {
-    padding: 1.5rem;
-    font-size: 1rem;
-  }
-  
-  @media (max-width: 480px) {
-    padding: 1rem;
-    font-size: 0.9rem;
-  }
+`;
+
+const TipsContainer = styled.div`
+  margin-top: 2rem;
+  padding: 1rem;
+  background: rgba(255, 255, 255, 0.03);
+  border-radius: 8px;
+  border-left: 4px solid #FF4500;
+`;
+
+const TipsTitle = styled.h4`
+  color: #FF4500;
+  margin-bottom: 0.5rem;
+  font-size: 1rem;
+`;
+
+const TipsList = styled.ul`
+  color: #cccccc;
+  font-size: 0.9rem;
+  line-height: 1.5;
+  padding-left: 1rem;
+`;
+
+const TrendingBadge = styled.span`
+  background: linear-gradient(45deg, #FF4500, #FF6347);
+  color: white;
+  padding: 0.3rem 0.8rem;
+  border-radius: 20px;
+  font-size: 0.8rem;
+  font-weight: 600;
+  margin-left: 1rem;
+  display: inline-block;
 `;
 
 const SearchResultsHeader = styled.div`
@@ -140,18 +181,11 @@ const SearchResultsHeader = styled.div`
   }
 `;
 
-const SearchTerm = styled.span`
-  font-size: 1.1rem;
-  color: #e50914;
-  font-weight: 600;
-  
-  @media (max-width: 768px) {
-    font-size: 1rem;
-  }
-  
-  @media (max-width: 480px) {
-    font-size: 0.9rem;
-  }
+const SearchTerm = styled.div`
+  font-size: 1.2rem;
+  color: #e0e0e0;
+  margin-bottom: 2rem;
+  text-align: center;
 `;
 
 const ResultsCount = styled.span`
@@ -192,17 +226,19 @@ const ClearSearchButton = styled.button`
   }
 `;
 
-export default function Trending() {
+export default function Trending({ isSidebarOpen }: { isSidebarOpen?: boolean }) {
   const router = useRouter();
-  const [movies, setMovies] = useState<TMDBMovie[]>([]);
+  const [movies, setMovies] = useState<any[]>([]); // Changed type to any[] as TMDBMovie is removed
   const [page, setPage] = useState(1);
   const [loading, setLoading] = useState(false);
   const [initialLoading, setInitialLoading] = useState(true);
   const [hasMore, setHasMore] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
   const [filter, setFilter] = useState('all');
-  const [genres, setGenres] = useState<Genre[]>([]);
+  const [genres, setGenres] = useState<any[]>([]); // Changed type to any[]
   const [isSearchMode, setIsSearchMode] = useState(false);
+
+
 
   // Initialize search term from URL query parameter
   useEffect(() => {
@@ -231,12 +267,12 @@ export default function Trending() {
         const searchData = await movieAPI.searchMovies(searchTerm.trim(), page);
         
         const filteredResults = searchData.results
-          .filter((item: TMDBSearchResult) => item.media_type === 'movie' || item.media_type === 'tv')
-          .map((item: TMDBSearchResult) => ({
+          .filter((item: any) => item.media_type === 'movie' || item.media_type === 'tv')
+          .map((item: any) => ({
             ...item,
             title: item.title || item.name || 'Unknown Title',
             release_date: item.release_date || item.first_air_date || '',
-          })) as TMDBMovie[];
+          })) as any[]; // Changed type to any[]
         data = {
           ...searchData,
           results: filteredResults,
@@ -255,8 +291,8 @@ export default function Trending() {
       
       if (data?.results?.length) {
         setMovies(prev => {
-          const existingIds = new Set(prev.map((m: TMDBMovie) => m.id));
-          const uniqueNew = data.results.filter((m: TMDBMovie) => !existingIds.has(m.id));
+          const existingIds = new Set(prev.map((m: any) => m.id));
+          const uniqueNew = data.results.filter((m: any) => !existingIds.has(m.id));
           return [...prev, ...uniqueNew];
         });
         setPage(prev => prev + 1);
@@ -343,6 +379,8 @@ export default function Trending() {
     router.push('/trending');
   };
 
+
+
   const filteredMovies = filter === 'all' 
     ? movies 
     : movies.filter(movie => 
@@ -350,11 +388,13 @@ export default function Trending() {
       );
 
   return (
-    <Section>
+    <Section isSidebarOpen={isSidebarOpen}>
       {isSearchMode ? (
         <SearchResultsHeader>
           <div>
-            <SearchTerm>Search results for: "{searchTerm}"</SearchTerm>
+            <SearchTerm>
+              Search Results: &ldquo;{searchTerm}&rdquo;
+            </SearchTerm>
             <ResultsCount>{filteredMovies.length} results found</ResultsCount>
           </div>
           <ClearSearchButton onClick={handleClearSearch}>
@@ -363,7 +403,22 @@ export default function Trending() {
         </SearchResultsHeader>
       ) : (
         <>
-          <SectionTitle>Trending Now</SectionTitle>
+          <SectionTitle>
+            🔥 Trending Now
+            <TrendingBadge>LIVE</TrendingBadge>
+          </SectionTitle>
+          
+          <Description>
+            <DescriptionTitle>What&apos;s Hot Right Now</DescriptionTitle>
+            <DescriptionText>
+              Stay up-to-date with the most popular movies and TV shows that everyone is talking about. 
+              These trending titles are based on real-time popularity data and social media buzz. 
+              From viral sensations to critically acclaimed masterpieces - discover what&apos;s capturing the world&apos;s attention!
+            </DescriptionText>
+          </Description>
+
+
+
           <FilterContainer>
             <GenreSelect value={filter} onChange={(e) => setFilter(e.target.value)}>
               <option value="all">All Genres</option>
@@ -390,6 +445,20 @@ export default function Trending() {
       </MovieGrid>
 
       {loading && <Loading>Loading more movies...</Loading>}
+
+      {!initialLoading && movies.length > 0 && !isSearchMode && (
+        <TipsContainer>
+          <TipsTitle>💡 Trending Discovery Tips</TipsTitle>
+          <TipsList>
+            <li>Trending content updates in real-time based on popularity and social media buzz</li>
+            <li>Use the genre filter to focus on specific types of trending content</li>
+            <li>Click on any item to see detailed information and trailers</li>
+            <li>Add trending items to your favorites or watchlist for later</li>
+            <li>Scroll down to see more trending content automatically</li>
+            <li>Check back regularly as trending content changes frequently</li>
+          </TipsList>
+        </TipsContainer>
+      )}
     </Section>
   );
 } 

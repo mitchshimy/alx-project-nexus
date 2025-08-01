@@ -1,13 +1,32 @@
-import { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import styled from 'styled-components';
-import MovieCard from '@/components/MovieCard';
 import { movieAPI } from '@/utils/api';
-import { TMDBMovie, Genre } from '@/types/tmdb';
+import MovieCard from '@/components/MovieCard';
+import { SkeletonBase } from '@/components/Skeleton';
+import { t } from '@/utils/translations';
 
-const Section = styled.section`
+const Section = styled.section<{ isSidebarOpen?: boolean }>`
   padding: 2rem;
-  max-width: 1200px;
+  max-width: ${({ isSidebarOpen }) => 
+    isSidebarOpen ? 'calc(100vw - 320px)' : 'calc(100vw - 120px)'
+  };
   margin: 0 auto;
+  
+  @media (max-width: 1024px) {
+    max-width: ${({ isSidebarOpen }) => 
+      isSidebarOpen ? 'calc(100vw - 300px)' : 'calc(100vw - 100px)'
+    };
+    padding: 1.5rem;
+  }
+  
+  @media (max-width: 768px) {
+    max-width: 100%;
+    padding: 1rem;
+  }
+  
+  @media (max-width: 480px) {
+    padding: 0.5rem;
+  }
 `;
 
 const SectionTitle = styled.h2`
@@ -50,40 +69,48 @@ const Loading = styled.div`
   color: #666;
 `;
 
-export default function Anime() {
-  const [movies, setMovies] = useState<TMDBMovie[]>([]);
+export default function Anime({ isSidebarOpen }: { isSidebarOpen?: boolean }) {
+  const [movies, setMovies] = useState<Array<{
+    id: number;
+    tmdb_id?: number;
+    title?: string;
+    poster_path?: string | null;
+    vote_average?: number;
+    release_date?: string;
+    genre_ids?: number[];
+  }>>([]);
   const [page, setPage] = useState(1);
   const [loading, setLoading] = useState(false);
   const [initialLoading, setInitialLoading] = useState(true);
   const [hasMore, setHasMore] = useState(true);
   const [filter, setFilter] = useState('all');
-  const [genres, setGenres] = useState<Genre[]>([]);
+  const [genres, setGenres] = useState<Array<{
+    id: number;
+    name: string;
+  }>>([]);
 
   const loadMoreMovies = useCallback(async () => {
     if (loading || !hasMore) return;
 
     setLoading(true);
     try {
-      let data = await movieAPI.getMovies({ type: 'movies', page });
-      
-      // Check if response has error property
-      if (data && data.error) {
-        console.error('API error:', data.error);
-        setHasMore(false);
-        return;
-      }
+      const data = await movieAPI.getMovies({ type: 'movies', page });
       
       if (data?.results?.length) {
         // Filter for animation genre (ID: 16)
-        const animeMovies = data.results.filter((movie: TMDBMovie) => 
+        const animeMovies = data.results.filter((movie: {
+          id: number;
+          genre_ids?: number[];
+        }) => 
           movie.genre_ids?.includes(16)
         );
         
         setMovies(prev => {
-          const existingIds = new Set(prev.map((m: TMDBMovie) => m.id));
-          const uniqueNew = animeMovies.filter((m: TMDBMovie) => !existingIds.has(m.id));
+          const existingIds = new Set(prev.map((m: { id: number }) => m.id));
+          const uniqueNew = animeMovies.filter((m: { id: number }) => !existingIds.has(m.id));
           return [...prev, ...uniqueNew];
         });
+        
         setPage(prev => prev + 1);
         setHasMore(data.page < data.total_pages);
       } else {
@@ -91,6 +118,7 @@ export default function Anime() {
       }
     } catch (err) {
       console.error('Error loading anime movies:', err);
+      setHasMore(false);
     } finally {
       setLoading(false);
       setInitialLoading(false);
@@ -99,7 +127,7 @@ export default function Anime() {
 
   useEffect(() => {
     loadMoreMovies();
-  }, []); // Only on first load
+  }, [loadMoreMovies]);
 
   useEffect(() => {
     const onScroll = () => {
@@ -162,7 +190,7 @@ export default function Anime() {
 
   return (
     <>
-      <Section>
+      <Section isSidebarOpen={isSidebarOpen}>
         <SectionTitle>🎌 Anime</SectionTitle>
 
         <FilterContainer>
@@ -182,7 +210,13 @@ export default function Anime() {
           <>
             <MovieGrid>
               {filteredMovies.map(item => (
-                <MovieCard key={item.id} movie={item} />
+                <MovieCard key={item.id} movie={{
+                  tmdb_id: item.tmdb_id || item.id,
+                  title: item.title,
+                  poster_path: item.poster_path,
+                  vote_average: item.vote_average,
+                  release_date: item.release_date
+                }} />
               ))}
             </MovieGrid>
 

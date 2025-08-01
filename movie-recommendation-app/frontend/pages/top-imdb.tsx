@@ -1,20 +1,68 @@
-import { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect } from 'react';
 import styled from 'styled-components';
-import MovieCard from '@/components/MovieCard';
 import { movieAPI } from '@/utils/api';
-import { TMDBMovie, Genre } from '@/types/tmdb';
+import MovieCard from '@/components/MovieCard';
 
-const Section = styled.section`
+
+
+const Section = styled.section<{ isSidebarOpen?: boolean }>`
   padding: 2rem;
-  max-width: 1200px;
+  max-width: ${({ isSidebarOpen }) => 
+    isSidebarOpen ? 'calc(100vw - 320px)' : 'calc(100vw - 120px)'
+  };
   margin: 0 auto;
+  
+  @media (max-width: 1024px) {
+    max-width: ${({ isSidebarOpen }) => 
+      isSidebarOpen ? 'calc(100vw - 300px)' : 'calc(100vw - 100px)'
+    };
+    padding: 1.5rem;
+  }
+  
+  @media (max-width: 768px) {
+    max-width: 100%;
+    padding: 1rem;
+  }
+  
+  @media (max-width: 480px) {
+    padding: 0.5rem;
+  }
 `;
 
 const SectionTitle = styled.h2`
-  font-size: 2rem;
-  margin-bottom: 1rem;
+  font-size: 2.5rem;
+  margin-bottom: 0.5rem;
   color: #f0f0f0;
+  font-weight: 700;
+  
+  @media (max-width: 768px) {
+    font-size: 2rem;
+  }
 `;
+
+const Description = styled.div`
+  margin-bottom: 2rem;
+  padding: 1.5rem;
+  background: linear-gradient(135deg, rgba(255, 215, 0, 0.1), rgba(255, 215, 0, 0.05));
+  border-radius: 12px;
+  border: 1px solid rgba(255, 215, 0, 0.2);
+`;
+
+const DescriptionTitle = styled.h3`
+  font-size: 1.3rem;
+  margin-bottom: 1rem;
+  color: #FFD700;
+  font-weight: 600;
+`;
+
+const DescriptionText = styled.p`
+  font-size: 1rem;
+  line-height: 1.6;
+  color: #cccccc;
+  margin-bottom: 1rem;
+`;
+
+
 
 const MovieGrid = styled.div`
   display: grid;
@@ -50,21 +98,54 @@ const Loading = styled.div`
   color: #666;
 `;
 
-export default function TopIMDB() {
-  const [movies, setMovies] = useState<TMDBMovie[]>([]);
+const TipsContainer = styled.div`
+  margin-top: 2rem;
+  padding: 1rem;
+  background: rgba(255, 255, 255, 0.03);
+  border-radius: 8px;
+  border-left: 4px solid #FFD700;
+`;
+
+const TipsTitle = styled.h4`
+  color: #FFD700;
+  margin-bottom: 0.5rem;
+  font-size: 1rem;
+`;
+
+const TipsList = styled.ul`
+  color: #cccccc;
+  font-size: 0.9rem;
+  line-height: 1.5;
+  padding-left: 1rem;
+`;
+
+const TopRatedBadge = styled.span`
+  background: linear-gradient(45deg, #FFD700, #FFA500);
+  color: #1a1a2e;
+  padding: 0.3rem 0.8rem;
+  border-radius: 20px;
+  font-size: 0.8rem;
+  font-weight: 600;
+  margin-left: 1rem;
+  display: inline-block;
+`;
+
+export default function TopIMDB({ isSidebarOpen }: { isSidebarOpen?: boolean }) {
+  const [movies, setMovies] = useState<any[]>([]);
   const [page, setPage] = useState(1);
   const [loading, setLoading] = useState(false);
   const [initialLoading, setInitialLoading] = useState(true);
   const [hasMore, setHasMore] = useState(true);
   const [filter, setFilter] = useState('all');
-  const [genres, setGenres] = useState<Genre[]>([]);
+  const [genres, setGenres] = useState<any[]>([]);
 
-  const loadMoreMovies = useCallback(async () => {
+
+  const loadMoreMovies = async () => {
     if (loading || !hasMore) return;
 
     setLoading(true);
     try {
-      let data = await movieAPI.getMovies({ type: 'top_rated', page });
+      const data = await movieAPI.getMovies({ type: 'top_rated', page });
       
       // Check if response has error property
       if (data && data.error) {
@@ -74,23 +155,23 @@ export default function TopIMDB() {
       }
       
       if (data?.results?.length) {
-        setMovies(prev => {
-          const existingIds = new Set(prev.map((m: TMDBMovie) => m.id));
-          const uniqueNew = data.results.filter((m: TMDBMovie) => !existingIds.has(m.id));
-          return [...prev, ...uniqueNew];
-        });
+                  setMovies(prev => {
+            const existingIds = new Set(prev.map((m: any) => m.id));
+            const uniqueNew = data.results.filter((m: any) => !existingIds.has(m.id));
+            return [...prev, ...uniqueNew];
+          });
         setPage(prev => prev + 1);
         setHasMore(data.page < data.total_pages);
       } else {
         setHasMore(false);
       }
     } catch (err) {
-      console.error('Error loading top-rated movies:', err);
+      console.error('Error loading movies:', err);
     } finally {
       setLoading(false);
       setInitialLoading(false);
     }
-  }, [loading, hasMore, page]);
+  };
 
   useEffect(() => {
     loadMoreMovies();
@@ -150,6 +231,7 @@ export default function TopIMDB() {
     fetchGenres();
   }, []);
 
+
   const filteredMovies = movies.filter(movie => {
     const matchesGenre = filter === 'all' || movie.genre_ids?.includes(Number(filter));
     return matchesGenre;
@@ -157,8 +239,23 @@ export default function TopIMDB() {
 
   return (
     <>
-      <Section>
-        <SectionTitle>⭐ Top IMDb Movies</SectionTitle>
+      <Section isSidebarOpen={isSidebarOpen}>
+        <SectionTitle>
+          ⭐ Top IMDb Movies
+          <TopRatedBadge>CRITICALLY ACCLAIMED</TopRatedBadge>
+        </SectionTitle>
+        
+        <Description>
+          <DescriptionTitle>Critically Acclaimed Masterpieces</DescriptionTitle>
+          <DescriptionText>
+            Discover the highest-rated movies according to IMDb&apos;s comprehensive rating system. 
+            These films represent the pinnacle of cinematic excellence, chosen by millions of viewers 
+            and critics worldwide. From timeless classics to modern masterpieces, these top-rated 
+            movies have earned their place in cinematic history.
+          </DescriptionText>
+        </Description>
+
+
 
         <FilterContainer>
           <GenreSelect value={filter} onChange={e => setFilter(e.target.value)}>
@@ -177,12 +274,32 @@ export default function TopIMDB() {
           <>
             <MovieGrid>
               {filteredMovies.map(movie => (
-                <MovieCard key={movie.id} movie={movie} />
+                <MovieCard key={movie.id} movie={{
+                  tmdb_id: movie.tmdb_id || movie.id,
+                  title: movie.title,
+                  poster_path: movie.poster_path,
+                  vote_average: movie.vote_average,
+                  release_date: movie.release_date
+                }} />
               ))}
             </MovieGrid>
 
             {loading && <Loading>Loading more top-rated movies...</Loading>}
           </>
+        )}
+
+        {!initialLoading && movies.length > 0 && (
+          <TipsContainer>
+            <TipsTitle>💡 Top-Rated Discovery Tips</TipsTitle>
+            <TipsList>
+              <li>These movies are ranked by IMDb&apos;s comprehensive rating system</li>
+              <li>Use the genre filter to explore top-rated movies in specific categories</li>
+              <li>Click on any movie to see detailed information and trailers</li>
+              <li>Add top-rated movies to your favorites or watchlist</li>
+              <li>Scroll down to automatically load more top-rated movies</li>
+              <li>These ratings are based on millions of user votes and reviews</li>
+            </TipsList>
+          </TipsContainer>
         )}
       </Section>
     </>
