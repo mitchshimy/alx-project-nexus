@@ -13,7 +13,7 @@ djangorestframework-simplejwt==5.3.0
 drf-yasg==1.21.7
 
 # Database
-psycopg[binary]==3.2.9
+psycopg2-binary==2.9.9
 
 # Caching
 redis==5.0.1
@@ -29,11 +29,10 @@ gunicorn==21.2.0
 whitenoise==6.6.0
 
 # Development and Build Tools
-setuptools>=65.0.0
+setuptools==68.2.2
 
 # Filtering and Search
 django-filter==23.5
 
 # Additional Utilities
-Pillow==10.1.0  # For image handling
-python-dateutil==2.8.2  # For date parsing 
+Pillow==10.1.0 
