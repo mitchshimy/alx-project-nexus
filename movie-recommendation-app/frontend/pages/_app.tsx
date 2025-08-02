@@ -7,7 +7,7 @@ import ErrorModal from '@/components/ErrorModal';
 import { theme } from '@/styles/theme';
 import GlobalStyle from '@/styles/GlobalStyle';
 import { fetchTrendingMovies, fetchTopRatedMovies, fetchPopularMovies } from '@/utils/api';
-import { setGlobalErrorHandler } from '@/utils/api';
+import { setGlobalErrorHandler, checkTokenExpiration } from '@/utils/api';
 import { initializeSettings } from '@/utils/settings';
 
 // Global state for preloaded content
@@ -93,9 +93,26 @@ export default function App({ Component, pageProps }: AppProps) {
     });
   }, []);
 
+  // Set up periodic token expiration check
+  useEffect(() => {
+    if (!isClient) return;
+    
+    // Check token expiration every 10 minutes
+    const tokenCheckInterval = setInterval(() => {
+      checkTokenExpiration();
+    }, 10 * 60 * 1000); // 10 minutes
+    
+    return () => {
+      clearInterval(tokenCheckInterval);
+    };
+  }, [isClient]);
+
   // Handle client-side initialization
   useEffect(() => {
     setIsClient(true);
+    
+    // Check for token expiration first
+    checkTokenExpiration();
     
     // Initialize user settings
     initializeSettings();

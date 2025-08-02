@@ -19,6 +19,7 @@ class TMDBService:
         # Debug: Check if credentials are loaded
         print(f"TMDB Service: API Key loaded: {'Yes' if self.api_key and self.api_key != 'your-tmdb-api-key' else 'No'}")
         print(f"TMDB Service: Read Token loaded: {'Yes' if self.read_token else 'No'}")
+        print(f"TMDB Service: API Key value: {self.api_key[:10]}..." if self.api_key and len(self.api_key) > 10 else f"TMDB Service: API Key value: {self.api_key}")
         
         # Set up authentication headers
         if self.read_token:
@@ -35,7 +36,7 @@ class TMDBService:
         print(f"TMDB Service: _make_request called for endpoint: {endpoint}")  # Debug
         
         # Check if we have a valid API key or read token
-        if (self.api_key == 'your-tmdb-api-key' or not self.api_key) and not self.read_token:
+        if (self.api_key == 'your-tmdb-api-key' or not self.api_key or self.api_key == 'your-tmdb-api-key-here') and not self.read_token:
             print("TMDB Service: No valid API credentials, using mock data")  # Debug
             # Return mock data for development
             return self._get_mock_data(endpoint, params)
@@ -54,20 +55,28 @@ class TMDBService:
         
         try:
             print(f"TMDB Service: Making request to: {url} with params: {params}")  # Debug
-            # Reduced timeout for faster failure detection
-            response = self.session.get(url, params=params, timeout=10)  # Reduced from 30 to 10 seconds
+            # Increased timeout for better reliability
+            response = self.session.get(url, params=params, timeout=15)  # Increased from 10 to 15 seconds
             print(f"TMDB Service: Response status: {response.status_code}")  # Debug
             
             if response.status_code != 200:
                 print(f"TMDB Service: Error response from TMDB API: {response.status_code} - {response.text}")  # Debug
-                # Fall back to mock data if API returns error
-                print(f"TMDB Service: Falling back to mock data for endpoint: {endpoint}")  # Debug
-                return self._get_mock_data(endpoint, params)
+                # Only fall back to mock data for 4xx and 5xx errors, not for rate limits
+                if response.status_code >= 400:
+                    print(f"TMDB Service: Falling back to mock data for endpoint: {endpoint}")  # Debug
+                    return self._get_mock_data(endpoint, params)
+                else:
+                    # For other status codes, try to parse the response anyway
+                    print(f"TMDB Service: Attempting to parse non-200 response")  # Debug
             
             response.raise_for_status()
             data = response.json()
             print(f"TMDB Service: Successfully parsed JSON response with {len(data.get('results', []))} results")  # Debug
             return data
+        except requests.Timeout:
+            print(f"TMDB Service: Timeout for {endpoint}")  # Debug
+            print(f"TMDB Service: Falling back to mock data for endpoint: {endpoint}")  # Debug
+            return self._get_mock_data(endpoint, params)
         except requests.RequestException as e:
             print(f"TMDB Service: RequestException for {endpoint}: {str(e)}")  # Debug
             print(f"TMDB Service: Falling back to mock data for endpoint: {endpoint}")  # Debug
@@ -83,59 +92,93 @@ class TMDBService:
         """Return mock data for development when API key is not configured"""
         print(f"TMDB Service: Using mock data for endpoint: {endpoint}")  # Debug
         
+        # Get page number for consistent pagination
+        page = params.get('page', 1) if params else 1
+        
+        # Generate 20 items per page for consistent pagination
+        base_id = (page - 1) * 20
+        
         # Different mock data based on endpoint
         if '/trending' in endpoint:
             mock_movies = [
                 {
-                    'id': 1, 'tmdb_id': 550, 'title': 'Fight Club', 'overview': 'A nameless first-person narrator attends support groups in attempt to subdue his emotional state and relieve his insomniac state.',
+                    'id': base_id + 1, 'tmdb_id': 550 + base_id, 'title': f'Trending Movie {base_id + 1}', 'overview': f'This is trending movie number {base_id + 1}.',
                     'poster_path': '/pB8BM7pdSp6B6Ih7QZ4DrQ3PmJK.jpg', 'backdrop_path': '/fCayJrkfRaCRCTh8GqN30f8oyQF.jpg',
                     'vote_average': 8.8, 'vote_count': 3439, 'release_date': '1999-10-15', 'genre_ids': [18], 'media_type': 'movie'
                 },
                 {
-                    'id': 2, 'tmdb_id': 13, 'title': 'Forrest Gump', 'overview': 'A man with a low IQ has accomplished great things in his life and been present during significant historic events.',
+                    'id': base_id + 2, 'tmdb_id': 13 + base_id, 'title': f'Trending Movie {base_id + 2}', 'overview': f'This is trending movie number {base_id + 2}.',
                     'poster_path': '/arw2vcBveWOVZr6pxd9TDd1TdQa.jpg', 'backdrop_path': '/yE5d3BUhE8hCnkMUJOc1Unv402Y.jpg',
                     'vote_average': 8.8, 'vote_count': 2453, 'release_date': '1994-06-23', 'genre_ids': [35, 18], 'media_type': 'movie'
                 }
             ]
+            # Add more items to reach 20
+            for i in range(3, 21):
+                mock_movies.append({
+                    'id': base_id + i, 'tmdb_id': 1000 + base_id + i, 'title': f'Trending Movie {base_id + i}', 'overview': f'This is trending movie number {base_id + i}.',
+                    'poster_path': '/pB8BM7pdSp6B6Ih7QZ4DrQ3PmJK.jpg', 'backdrop_path': '/fCayJrkfRaCRCTh8GqN30f8oyQF.jpg',
+                    'vote_average': 8.0 + (i % 10) * 0.1, 'vote_count': 1000 + i * 100, 'release_date': '1999-10-15', 'genre_ids': [18], 'media_type': 'movie'
+                })
         elif '/discover/movie' in endpoint:
             mock_movies = [
                 {
-                    'id': 3, 'tmdb_id': 238, 'title': 'The Godfather', 'overview': 'Spanning the years 1945 to 1955, a chronicle of the fictional Italian-American Corleone crime family.',
+                    'id': base_id + 1, 'tmdb_id': 238 + base_id, 'title': f'Movie {base_id + 1}', 'overview': f'This is movie number {base_id + 1}.',
                     'poster_path': '/3bhkrj58Vtu7enYsRolD1fZdja1.jpg', 'backdrop_path': '/tmU7GeKVybMWFButWEGl2M4GeiP.jpg',
                     'vote_average': 9.2, 'vote_count': 1564, 'release_date': '1972-03-14', 'genre_ids': [18, 80], 'media_type': 'movie'
                 },
                 {
-                    'id': 4, 'tmdb_id': 278, 'title': 'The Shawshank Redemption', 'overview': 'Two imprisoned men bond over a number of years, finding solace and eventual redemption through acts of common decency.',
+                    'id': base_id + 2, 'tmdb_id': 278 + base_id, 'title': f'Movie {base_id + 2}', 'overview': f'This is movie number {base_id + 2}.',
                     'poster_path': '/q6y0Go1tsGEsmtFryDOJo3dEmqu.jpg', 'backdrop_path': '/kXfqcdQKsToO0OUXHcrrNCHDBzO.jpg',
                     'vote_average': 8.7, 'vote_count': 23420, 'release_date': '1994-09-23', 'genre_ids': [18, 80], 'media_type': 'movie'
                 }
             ]
+            # Add more items to reach 20
+            for i in range(3, 21):
+                mock_movies.append({
+                    'id': base_id + i, 'tmdb_id': 2000 + base_id + i, 'title': f'Movie {base_id + i}', 'overview': f'This is movie number {base_id + i}.',
+                    'poster_path': '/3bhkrj58Vtu7enYsRolD1fZdja1.jpg', 'backdrop_path': '/tmU7GeKVybMWFButWEGl2M4GeiP.jpg',
+                    'vote_average': 8.0 + (i % 10) * 0.1, 'vote_count': 1000 + i * 100, 'release_date': '1972-03-14', 'genre_ids': [18, 80], 'media_type': 'movie'
+                })
         elif '/discover/tv' in endpoint:
             mock_movies = [
                 {
-                    'id': 5, 'tmdb_id': 1399, 'title': 'Game of Thrones', 'overview': 'Seven noble families fight for control of the mythical land of Westeros.',
+                    'id': base_id + 1, 'tmdb_id': 1399 + base_id, 'title': f'TV Show {base_id + 1}', 'overview': f'This is TV show number {base_id + 1}.',
                     'poster_path': '/u3bZgnGQ9T01sWNhyveQz0wH0Hl.jpg', 'backdrop_path': '/suopoADq0k8YZX4AGW1M9cdDqQd.jpg',
                     'vote_average': 9.3, 'vote_count': 4502, 'release_date': '2011-04-17', 'genre_ids': [10765, 18, 10759], 'media_type': 'tv'
                 },
                 {
-                    'id': 6, 'tmdb_id': 1396, 'title': 'Breaking Bad', 'overview': 'When an unassuming high school chemistry teacher discovers he has a rare form of lung cancer.',
+                    'id': base_id + 2, 'tmdb_id': 1396 + base_id, 'title': f'TV Show {base_id + 2}', 'overview': f'This is TV show number {base_id + 2}.',
                     'poster_path': '/ggFHVNu6YYI5L9pCfOacjizRGt.jpg', 'backdrop_path': '/tsRy63Q5W3D0FM2Wp9oRcFpngxK.jpg',
                     'vote_average': 9.5, 'vote_count': 3123, 'release_date': '2008-01-20', 'genre_ids': [18, 80], 'media_type': 'tv'
                 }
             ]
+            # Add more items to reach 20
+            for i in range(3, 21):
+                mock_movies.append({
+                    'id': base_id + i, 'tmdb_id': 3000 + base_id + i, 'title': f'TV Show {base_id + i}', 'overview': f'This is TV show number {base_id + i}.',
+                    'poster_path': '/u3bZgnGQ9T01sWNhyveQz0wH0Hl.jpg', 'backdrop_path': '/suopoADq0k8YZX4AGW1M9cdDqQd.jpg',
+                    'vote_average': 8.0 + (i % 10) * 0.1, 'vote_count': 1000 + i * 100, 'release_date': '2011-04-17', 'genre_ids': [10765, 18, 10759], 'media_type': 'tv'
+                })
         elif '/movie/top_rated' in endpoint:
             mock_movies = [
                 {
-                    'id': 7, 'tmdb_id': 278, 'title': 'The Shawshank Redemption', 'overview': 'Two imprisoned men bond over a number of years, finding solace and eventual redemption through acts of common decency.',
+                    'id': base_id + 1, 'tmdb_id': 278 + base_id, 'title': f'Top Rated Movie {base_id + 1}', 'overview': f'This is top rated movie number {base_id + 1}.',
                     'poster_path': '/q6y0Go1tsGEsmtFryDOJo3dEmqu.jpg', 'backdrop_path': '/kXfqcdQKsToO0OUXHcrrNCHDBzO.jpg',
                     'vote_average': 8.7, 'vote_count': 23420, 'release_date': '1994-09-23', 'genre_ids': [18, 80], 'media_type': 'movie'
                 },
                 {
-                    'id': 8, 'tmdb_id': 238, 'title': 'The Godfather', 'overview': 'Spanning the years 1945 to 1955, a chronicle of the fictional Italian-American Corleone crime family.',
+                    'id': base_id + 2, 'tmdb_id': 238 + base_id, 'title': f'Top Rated Movie {base_id + 2}', 'overview': f'This is top rated movie number {base_id + 2}.',
                     'poster_path': '/3bhkrj58Vtu7enYsRolD1fZdja1.jpg', 'backdrop_path': '/tmU7GeKVybMWFButWEGl2M4GeiP.jpg',
                     'vote_average': 9.2, 'vote_count': 1564, 'release_date': '1972-03-14', 'genre_ids': [18, 80], 'media_type': 'movie'
                 }
             ]
+            # Add more items to reach 20
+            for i in range(3, 21):
+                mock_movies.append({
+                    'id': base_id + i, 'tmdb_id': 4000 + base_id + i, 'title': f'Top Rated Movie {base_id + i}', 'overview': f'This is top rated movie number {base_id + i}.',
+                    'poster_path': '/q6y0Go1tsGEsmtFryDOJo3dEmqu.jpg', 'backdrop_path': '/kXfqcdQKsToO0OUXHcrrNCHDBzO.jpg',
+                    'vote_average': 8.0 + (i % 10) * 0.1, 'vote_count': 1000 + i * 100, 'release_date': '1994-09-23', 'genre_ids': [18, 80], 'media_type': 'movie'
+                })
         elif '/search/multi' in endpoint:
             # Mock search results - return different results based on query
             query = params.get('query', '').lower() if params else ''
@@ -143,84 +186,119 @@ class TMDBService:
             if 'action' in query or 'fight' in query:
                 mock_movies = [
                     {
-                        'id': 1, 'tmdb_id': 550, 'title': 'Fight Club', 'overview': 'A nameless first-person narrator attends support groups in attempt to subdue his emotional state and relieve his insomniac state.',
+                        'id': base_id + 1, 'tmdb_id': 550 + base_id, 'title': f'Action Movie {base_id + 1}', 'overview': f'This is action movie number {base_id + 1}.',
                         'poster_path': '/pB8BM7pdSp6B6Ih7QZ4DrQ3PmJK.jpg', 'backdrop_path': '/fCayJrkfRaCRCTh8GqN30f8oyQF.jpg',
                         'vote_average': 8.8, 'vote_count': 3439, 'release_date': '1999-10-15', 'genre_ids': [18], 'media_type': 'movie'
                     },
                     {
-                        'id': 9, 'tmdb_id': 49524, 'title': 'The Dark Knight Rises', 'overview': 'Following the death of District Attorney Harvey Dent, Batman assumes responsibility for Dent\'s crimes to protect the late attorney\'s reputation.',
+                        'id': base_id + 2, 'tmdb_id': 49524 + base_id, 'title': f'Action Movie {base_id + 2}', 'overview': f'This is action movie number {base_id + 2}.',
                         'poster_path': '/85YzDqg6ZJhoP4Vku8ze5K5Px5h.jpg', 'backdrop_path': '/fCayJrkfRaCRCTh8GqN30f8oyQF.jpg',
                         'vote_average': 8.4, 'vote_count': 12345, 'release_date': '2012-07-20', 'genre_ids': [28, 80, 18], 'media_type': 'movie'
                     }
                 ]
+                # Add more items to reach 20
+                for i in range(3, 21):
+                    mock_movies.append({
+                        'id': base_id + i, 'tmdb_id': 50000 + base_id + i, 'title': f'Action Movie {base_id + i}', 'overview': f'This is action movie number {base_id + i}.',
+                        'poster_path': '/pB8BM7pdSp6B6Ih7QZ4DrQ3PmJK.jpg', 'backdrop_path': '/fCayJrkfRaCRCTh8GqN30f8oyQF.jpg',
+                        'vote_average': 8.0 + (i % 10) * 0.1, 'vote_count': 1000 + i * 100, 'release_date': '1999-10-15', 'genre_ids': [18], 'media_type': 'movie'
+                    })
             elif 'drama' in query or 'godfather' in query:
                 mock_movies = [
                     {
-                        'id': 3, 'tmdb_id': 238, 'title': 'The Godfather', 'overview': 'Spanning the years 1945 to 1955, a chronicle of the fictional Italian-American Corleone crime family.',
+                        'id': base_id + 1, 'tmdb_id': 238 + base_id, 'title': f'Drama Movie {base_id + 1}', 'overview': f'This is drama movie number {base_id + 1}.',
                         'poster_path': '/3bhkrj58Vtu7enYsRolD1fZdja1.jpg', 'backdrop_path': '/tmU7GeKVybMWFButWEGl2M4GeiP.jpg',
                         'vote_average': 9.2, 'vote_count': 1564, 'release_date': '1972-03-14', 'genre_ids': [18, 80], 'media_type': 'movie'
                     },
                     {
-                        'id': 4, 'tmdb_id': 278, 'title': 'The Shawshank Redemption', 'overview': 'Two imprisoned men bond over a number of years, finding solace and eventual redemption through acts of common decency.',
+                        'id': base_id + 2, 'tmdb_id': 278 + base_id, 'title': f'Drama Movie {base_id + 2}', 'overview': f'This is drama movie number {base_id + 2}.',
                         'poster_path': '/q6y0Go1tsGEsmtFryDOJo3dEmqu.jpg', 'backdrop_path': '/kXfqcdQKsToO0OUXHcrrNCHDBzO.jpg',
                         'vote_average': 8.7, 'vote_count': 23420, 'release_date': '1994-09-23', 'genre_ids': [18, 80], 'media_type': 'movie'
                     }
                 ]
+                # Add more items to reach 20
+                for i in range(3, 21):
+                    mock_movies.append({
+                        'id': base_id + i, 'tmdb_id': 60000 + base_id + i, 'title': f'Drama Movie {base_id + i}', 'overview': f'This is drama movie number {base_id + i}.',
+                        'poster_path': '/3bhkrj58Vtu7enYsRolD1fZdja1.jpg', 'backdrop_path': '/tmU7GeKVybMWFButWEGl2M4GeiP.jpg',
+                        'vote_average': 8.0 + (i % 10) * 0.1, 'vote_count': 1000 + i * 100, 'release_date': '1972-03-14', 'genre_ids': [18, 80], 'media_type': 'movie'
+                    })
             elif 'comedy' in query or 'forrest' in query:
                 mock_movies = [
                     {
-                        'id': 2, 'tmdb_id': 13, 'title': 'Forrest Gump', 'overview': 'A man with a low IQ has accomplished great things in his life and been present during significant historic events.',
+                        'id': base_id + 1, 'tmdb_id': 13 + base_id, 'title': f'Comedy Movie {base_id + 1}', 'overview': f'This is comedy movie number {base_id + 1}.',
                         'poster_path': '/arw2vcBveWOVZr6pxd9TDd1TdQa.jpg', 'backdrop_path': '/yE5d3BUhE8hCnkMUJOc1Unv402Y.jpg',
                         'vote_average': 8.8, 'vote_count': 2453, 'release_date': '1994-06-23', 'genre_ids': [35, 18], 'media_type': 'movie'
                     }
                 ]
+                # Add more items to reach 20
+                for i in range(2, 21):
+                    mock_movies.append({
+                        'id': base_id + i, 'tmdb_id': 70000 + base_id + i, 'title': f'Comedy Movie {base_id + i}', 'overview': f'This is comedy movie number {base_id + i}.',
+                        'poster_path': '/arw2vcBveWOVZr6pxd9TDd1TdQa.jpg', 'backdrop_path': '/yE5d3BUhE8hCnkMUJOc1Unv402Y.jpg',
+                        'vote_average': 8.0 + (i % 10) * 0.1, 'vote_count': 1000 + i * 100, 'release_date': '1994-06-23', 'genre_ids': [35, 18], 'media_type': 'movie'
+                    })
             elif 'tv' in query or 'show' in query or 'series' in query:
                 mock_movies = [
                     {
-                        'id': 5, 'tmdb_id': 1399, 'title': 'Game of Thrones', 'overview': 'Seven noble families fight for control of the mythical land of Westeros.',
+                        'id': base_id + 1, 'tmdb_id': 1399 + base_id, 'title': f'TV Show {base_id + 1}', 'overview': f'This is TV show number {base_id + 1}.',
                         'poster_path': '/u3bZgnGQ9T01sWNhyveQz0wH0Hl.jpg', 'backdrop_path': '/suopoADq0k8YZX4AGW1M9cdDqQd.jpg',
                         'vote_average': 9.3, 'vote_count': 4502, 'release_date': '2011-04-17', 'genre_ids': [10765, 18, 10759], 'media_type': 'tv'
                     },
                     {
-                        'id': 6, 'tmdb_id': 1396, 'title': 'Breaking Bad', 'overview': 'When an unassuming high school chemistry teacher discovers he has a rare form of lung cancer.',
+                        'id': base_id + 2, 'tmdb_id': 1396 + base_id, 'title': f'TV Show {base_id + 2}', 'overview': f'This is TV show number {base_id + 2}.',
                         'poster_path': '/ggFHVNu6YYI5L9pCfOacjizRGt.jpg', 'backdrop_path': '/tsRy63Q5W3D0FM2Wp9oRcFpngxK.jpg',
                         'vote_average': 9.5, 'vote_count': 3123, 'release_date': '2008-01-20', 'genre_ids': [18, 80], 'media_type': 'tv'
                     }
                 ]
+                # Add more items to reach 20
+                for i in range(3, 21):
+                    mock_movies.append({
+                        'id': base_id + i, 'tmdb_id': 80000 + base_id + i, 'title': f'TV Show {base_id + i}', 'overview': f'This is TV show number {base_id + i}.',
+                        'poster_path': '/u3bZgnGQ9T01sWNhyveQz0wH0Hl.jpg', 'backdrop_path': '/suopoADq0k8YZX4AGW1M9cdDqQd.jpg',
+                        'vote_average': 8.0 + (i % 10) * 0.1, 'vote_count': 1000 + i * 100, 'release_date': '2011-04-17', 'genre_ids': [10765, 18, 10759], 'media_type': 'tv'
+                    })
             else:
                 # Default search results - return all movies
                 mock_movies = [
                     {
-                        'id': 1, 'tmdb_id': 550, 'title': 'Fight Club', 'overview': 'A nameless first-person narrator attends support groups in attempt to subdue his emotional state and relieve his insomniac state.',
+                        'id': base_id + 1, 'tmdb_id': 550 + base_id, 'title': f'Search Result {base_id + 1}', 'overview': f'This is search result number {base_id + 1}.',
                         'poster_path': '/pB8BM7pdSp6B6Ih7QZ4DrQ3PmJK.jpg', 'backdrop_path': '/fCayJrkfRaCRCTh8GqN30f8oyQF.jpg',
                         'vote_average': 8.8, 'vote_count': 3439, 'release_date': '1999-10-15', 'genre_ids': [18], 'media_type': 'movie'
                     },
                     {
-                        'id': 2, 'tmdb_id': 13, 'title': 'Forrest Gump', 'overview': 'A man with a low IQ has accomplished great things in his life and been present during significant historic events.',
+                        'id': base_id + 2, 'tmdb_id': 13 + base_id, 'title': f'Search Result {base_id + 2}', 'overview': f'This is search result number {base_id + 2}.',
                         'poster_path': '/arw2vcBveWOVZr6pxd9TDd1TdQa.jpg', 'backdrop_path': '/yE5d3BUhE8hCnkMUJOc1Unv402Y.jpg',
                         'vote_average': 8.8, 'vote_count': 2453, 'release_date': '1994-06-23', 'genre_ids': [35, 18], 'media_type': 'movie'
                     },
                     {
-                        'id': 3, 'tmdb_id': 238, 'title': 'The Godfather', 'overview': 'Spanning the years 1945 to 1955, a chronicle of the fictional Italian-American Corleone crime family.',
-                    'poster_path': '/3bhkrj58Vtu7enYsRolD1fZdja1.jpg', 'backdrop_path': '/tmU7GeKVybMWFButWEGl2M4GeiP.jpg',
-                    'vote_average': 9.2, 'vote_count': 1564, 'release_date': '1972-03-14', 'genre_ids': [18, 80], 'media_type': 'movie'
-                }
-            ]
+                        'id': base_id + 3, 'tmdb_id': 238 + base_id, 'title': f'Search Result {base_id + 3}', 'overview': f'This is search result number {base_id + 3}.',
+                        'poster_path': '/3bhkrj58Vtu7enYsRolD1fZdja1.jpg', 'backdrop_path': '/tmU7GeKVybMWFButWEGl2M4GeiP.jpg',
+                        'vote_average': 9.2, 'vote_count': 1564, 'release_date': '1972-03-14', 'genre_ids': [18, 80], 'media_type': 'movie'
+                    }
+                ]
+                # Add more items to reach 20
+                for i in range(4, 21):
+                    mock_movies.append({
+                        'id': base_id + i, 'tmdb_id': 90000 + base_id + i, 'title': f'Search Result {base_id + i}', 'overview': f'This is search result number {base_id + i}.',
+                        'poster_path': '/pB8BM7pdSp6B6Ih7QZ4DrQ3PmJK.jpg', 'backdrop_path': '/fCayJrkfRaCRCTh8GqN30f8oyQF.jpg',
+                        'vote_average': 8.0 + (i % 10) * 0.1, 'vote_count': 1000 + i * 100, 'release_date': '1999-10-15', 'genre_ids': [18], 'media_type': 'movie'
+                    })
         else:
-            # Default mock data
-            mock_movies = [
-                {
-                    'id': 1, 'tmdb_id': 550, 'title': 'Fight Club', 'overview': 'A nameless first-person narrator attends support groups in attempt to subdue his emotional state and relieve his insomniac state.',
+            # Default mock data - return 20 items
+            mock_movies = []
+            for i in range(1, 21):
+                mock_movies.append({
+                    'id': base_id + i, 'tmdb_id': 10000 + base_id + i, 'title': f'Default Movie {base_id + i}', 'overview': f'This is default movie number {base_id + i}.',
                     'poster_path': '/pB8BM7pdSp6B6Ih7QZ4DrQ3PmJK.jpg', 'backdrop_path': '/fCayJrkfRaCRCTh8GqN30f8oyQF.jpg',
-                    'vote_average': 8.8, 'vote_count': 3439, 'release_date': '1999-10-15', 'genre_ids': [18], 'media_type': 'movie'
-                }
-            ]
+                    'vote_average': 8.0 + (i % 10) * 0.1, 'vote_count': 1000 + i * 100, 'release_date': '1999-10-15', 'genre_ids': [18], 'media_type': 'movie'
+                })
         
         return {
-            'page': 1,
+            'page': page,
             'results': mock_movies,
-            'total_pages': 1,
-            'total_results': len(mock_movies)
+            'total_pages': 10,  # Always return 10 pages for consistent pagination
+            'total_results': 200  # Always return 200 total results
         }
     
     def _get_cache_key(self, endpoint, params=None):

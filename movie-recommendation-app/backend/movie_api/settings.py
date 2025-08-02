@@ -207,7 +207,7 @@ CACHES = {
     }
 }
 
-# Session Configuration (using database for now to avoid Redis issues)
+# Session Configuration
 SESSION_ENGINE = 'django.contrib.sessions.backends.db'
 
 # TMDB API Configuration

@@ -1,9 +1,10 @@
-import { useState, ReactNode } from 'react';
+import { useState, ReactNode, useEffect } from 'react';
 import styled from 'styled-components';
 import Head from 'next/head';
 import Header from './Header';
 import Sidebar from './Sidebar';
 import React from 'react';
+import { getAuthToken } from '@/utils/api';
 
 const LayoutWrapper = styled.div`
   display: flex;
@@ -287,10 +288,38 @@ interface LayoutProps {
 
 export default function Layout({ children }: LayoutProps) {
   const [isSidebarOpen, setSidebarOpen] = useState(false);
+  const [isAuthenticated, setIsAuthenticated] = useState(false);
   
   // Check if user prefers reduced motion
   const prefersReducedMotion = typeof window !== 'undefined' && 
     window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+  // Handle authentication state changes
+  useEffect(() => {
+    // Check initial auth state
+    const token = getAuthToken();
+    setIsAuthenticated(!!token);
+
+    // Listen for auth state changes
+    const handleAuthStateChange = (event: CustomEvent) => {
+      const { isAuthenticated: authState, reason } = event.detail || {};
+      setIsAuthenticated(authState);
+      
+      // If token expired, we might want to redirect to login
+      if (reason === 'token_expired') {
+        console.log('Token expired, user should be redirected to login');
+        // You can add redirect logic here if needed
+      }
+    };
+
+    // Add event listener
+    window.addEventListener('authStateChanged', handleAuthStateChange as EventListener);
+
+    // Cleanup
+    return () => {
+      window.removeEventListener('authStateChanged', handleAuthStateChange as EventListener);
+    };
+  }, []);
 
   const toggleSidebar = () => {
     setSidebarOpen(!isSidebarOpen);

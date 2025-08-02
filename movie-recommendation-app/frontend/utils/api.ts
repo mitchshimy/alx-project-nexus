@@ -2,7 +2,7 @@
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000/api/v1';
 
 // Increased timeout for preloading (30 seconds)
-const API_TIMEOUT = 15000; // Reduced from 30000ms to 15000ms for faster loading
+const API_TIMEOUT = 25000; // Increased from 15000ms to 25000ms for more patience
 
 // Simple in-memory cache for API responses
 const cache = new Map<string, { data: any; timestamp: number }>();
@@ -31,6 +31,37 @@ export const setAuthToken = (token: string): void => {
 export const removeAuthToken = (): void => {
   if (typeof window !== 'undefined') {
     localStorage.removeItem('access_token');
+  }
+};
+
+// Automatic logout function for expired tokens
+export const handleTokenExpiration = () => {
+  console.log('Token expired, performing automatic logout...');
+  
+  // Clear all auth data
+  removeAuthToken();
+  clearApiCache();
+  
+  if (typeof window !== 'undefined') {
+    // Clear all storage
+    localStorage.removeItem('authToken');
+    localStorage.removeItem('refreshToken');
+    sessionStorage.clear();
+    
+    // Dispatch logout event to notify all components
+    window.dispatchEvent(new CustomEvent('authStateChanged', { 
+      detail: { 
+        isAuthenticated: false,
+        reason: 'token_expired'
+      } 
+    }));
+    
+    // Show a user-friendly notification
+    showError(
+      'Session Expired', 
+      'Your session has expired. Please log in again to continue.',
+      'warning'
+    );
   }
 };
 
@@ -139,8 +170,9 @@ const apiRequest = async (endpoint: string, options: RequestInit = {}) => {
 
     if (!response.ok) {
       if (response.status === 401) {
-        // Token expired or invalid - don't redirect, just return error object
-        return { error: 'Please log in to your account to perform this action.', errorTitle: 'Authentication Required' };
+        // Token expired or invalid - automatically logout the user
+        handleTokenExpiration();
+        return { error: 'Your session has expired. Please log in again.', errorTitle: 'Session Expired' };
       }
       
       // Try to get error details from response
@@ -242,9 +274,21 @@ const apiRequest = async (endpoint: string, options: RequestInit = {}) => {
       return { error: timeoutMessage, errorTitle: 'Connection Error' };
     }
     if (error instanceof Error && error.message === 'Request timeout') {
-      const timeoutMessage = 'The server is taking too long to respond. Please try again in a moment.';
-      showError('Timeout Error', timeoutMessage, 'warning');
-      return { error: timeoutMessage, errorTitle: 'Timeout Error' };
+      // Only show timeout errors for critical operations (not for movie listings)
+      const isCriticalOperation = endpoint.includes('/users/') || 
+                                 endpoint.includes('/movies/favorites/') || 
+                                 endpoint.includes('/movies/watchlist/') ||
+                                 endpoint.includes('/movies/rate/');
+      
+      if (isCriticalOperation) {
+        const timeoutMessage = 'The server is taking longer than expected. Please try again in a moment.';
+        showError('Slow Response', timeoutMessage, 'warning');
+        return { error: timeoutMessage, errorTitle: 'Slow Response' };
+      } else {
+        // For non-critical operations (like movie listings), just return empty data silently
+        console.log('Timeout for non-critical operation, returning empty data silently');
+        return { results: [], total_pages: 0, total_results: 0 };
+      }
     }
     // For any other unexpected errors, show a generic message
     const genericMessage = 'An unexpected error occurred. Please try again.';
@@ -377,8 +421,9 @@ export const movieAPI = {
       const queryString = searchParams.toString();
       return await apiRequest(`/movies/${queryString ? `?${queryString}` : ''}`);
     } catch (error) {
-      // Handle timeout gracefully for movies
+      // Handle timeout gracefully for movies - return empty data instead of throwing
       if (error instanceof Error && error.message.includes('timeout')) {
+        console.log('Movie API timeout, returning empty results');
         return { results: [], total_pages: 0, total_results: 0 };
       }
       throw error;
@@ -392,8 +437,9 @@ export const movieAPI = {
       const timestamp = Date.now();
       return await apiRequest(`/movies/search/?q=${encodeURIComponent(query)}&page=${page}&_t=${timestamp}`);
     } catch (error) {
-      // Handle timeout gracefully for search
+      // Handle timeout gracefully for search - return empty data instead of throwing
       if (error instanceof Error && error.message.includes('timeout')) {
+        console.log('Search API timeout, returning empty results');
         return { results: [], total_pages: 0, total_results: 0 };
       }
       throw error;
@@ -670,29 +716,88 @@ export const searchMulti = async (query: string, page: number = 1) => {
 
 // Preloading functions for splash screen
 export const fetchTrendingMovies = async () => {
-  return movieAPI.getMovies({ type: 'trending', page: 1 });
+  try {
+    return await movieAPI.getMovies({ type: 'trending', page: 1 });
+  } catch (error) {
+    console.log('Trending movies preload timeout, returning empty results');
+    return { results: [], total_pages: 0, total_results: 0 };
+  }
 };
 
 export const fetchTopRatedMovies = async () => {
-  return movieAPI.getMovies({ type: 'top_rated', page: 1 });
+  try {
+    return await movieAPI.getMovies({ type: 'top_rated', page: 1 });
+  } catch (error) {
+    console.log('Top rated movies preload timeout, returning empty results');
+    return { results: [], total_pages: 0, total_results: 0 };
+  }
 };
 
 export const fetchPopularMovies = async () => {
-  return movieAPI.getMovies({ type: 'movies', page: 1 });
+  try {
+    return await movieAPI.getMovies({ type: 'movies', page: 1 });
+  } catch (error) {
+    console.log('Popular movies preload timeout, returning empty results');
+    return { results: [], total_pages: 0, total_results: 0 };
+  }
 };
 
 // Global error handler
 let globalErrorHandler: ((title: string, message: string, type?: 'error' | 'warning' | 'info') => void) | null = null;
+
+// Debounce mechanism for timeout errors
+let lastTimeoutError = 0;
+const TIMEOUT_ERROR_DEBOUNCE = 30000; // 30 seconds between timeout error messages
 
 export const setGlobalErrorHandler = (handler: (title: string, message: string, type?: 'error' | 'warning' | 'info') => void) => {
   globalErrorHandler = handler;
 };
 
 export const showError = (title: string, message: string, type: 'error' | 'warning' | 'info' = 'error') => {
+  // Debounce timeout errors to prevent spam
+  if (title === 'Slow Response' || title === 'Timeout Error') {
+    const now = Date.now();
+    if (now - lastTimeoutError < TIMEOUT_ERROR_DEBOUNCE) {
+      console.log('Suppressing timeout error due to debounce');
+      return;
+    }
+    lastTimeoutError = now;
+  }
+  
   if (globalErrorHandler) {
     globalErrorHandler(title, message, type);
   } else {
     // Fallback to console error if no handler is set
     console.error(`${title}: ${message}`);
   }
+};
+
+// Check if token is expired (JWT tokens have expiration)
+export const isTokenExpired = (token: string): boolean => {
+  try {
+    // JWT tokens are in format: header.payload.signature
+    const payload = token.split('.')[1];
+    if (!payload) return true;
+    
+    // Decode the payload
+    const decodedPayload = JSON.parse(atob(payload));
+    const currentTime = Math.floor(Date.now() / 1000);
+    
+    // Check if token is expired
+    return decodedPayload.exp < currentTime;
+  } catch (error) {
+    console.error('Error checking token expiration:', error);
+    return true; // If we can't decode, assume expired
+  }
+};
+
+// Check and handle expired tokens proactively
+export const checkTokenExpiration = () => {
+  const token = getAuthToken();
+  if (token && isTokenExpired(token)) {
+    console.log('Token is expired, performing automatic logout...');
+    handleTokenExpiration();
+    return true;
+  }
+  return false;
 };

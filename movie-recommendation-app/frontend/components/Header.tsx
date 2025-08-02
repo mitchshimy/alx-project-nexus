@@ -2,7 +2,7 @@ import { useState, useEffect, useCallback, useRef } from 'react';
 import { useRouter } from 'next/router';
 import Link from 'next/link';
 import styled from 'styled-components';
-import { authAPI, getAuthToken, removeAuthToken, performComprehensiveLogout } from '../utils/api';
+import { authAPI, getAuthToken, removeAuthToken, performComprehensiveLogout, checkTokenExpiration } from '../utils/api';
 
 const HeaderContainer = styled.div`
   position: fixed;
@@ -463,6 +463,11 @@ export default function Header({ isSidebarOpen, toggleSidebar }: HeaderProps) {
 
   // Check authentication status
   const checkAuthStatus = () => {
+    // First check if token is expired
+    if (checkTokenExpiration()) {
+      return; // Token was expired and handled
+    }
+    
     const token = getAuthToken();
     if (token) {
       setIsAuthenticated(true);
@@ -477,18 +482,34 @@ export default function Header({ isSidebarOpen, toggleSidebar }: HeaderProps) {
     // Check authentication status on component mount
     checkAuthStatus();
     
+    // Set up periodic token expiration check (every 5 minutes)
+    const tokenCheckInterval = setInterval(() => {
+      checkTokenExpiration();
+    }, 5 * 60 * 1000); // 5 minutes
+    
     // Listen for storage changes (when token is set/removed)
     const handleStorageChange = () => {
       checkAuthStatus();
     };
     
     // Listen for custom auth state change event
-    const handleAuthStateChange = () => {
-      checkAuthStatus();
+    const handleAuthStateChange = (event: Event) => {
+      const customEvent = event as CustomEvent;
+      const { isAuthenticated: authState, reason } = customEvent.detail || {};
+      
+      if (reason === 'token_expired') {
+        // Token expired - clear user state immediately
+        setIsAuthenticated(false);
+        setUser(null);
+        console.log('Token expired, cleared user state');
+      } else {
+        // Normal auth state change
+        checkAuthStatus();
+      }
     };
     
     window.addEventListener('storage', handleStorageChange);
-    window.addEventListener('authStateChanged', handleAuthStateChange);
+    window.addEventListener('authStateChanged', handleAuthStateChange as EventListener);
     
     // Also check on route changes
     const handleRouteChange = () => {
@@ -507,9 +528,10 @@ export default function Header({ isSidebarOpen, toggleSidebar }: HeaderProps) {
     
     return () => {
       window.removeEventListener('storage', handleStorageChange);
-      window.removeEventListener('authStateChanged', handleAuthStateChange);
+      window.removeEventListener('authStateChanged', handleAuthStateChange as EventListener);
       router.events.off('routeChangeComplete', handleRouteChange);
       clearTimeout(timeoutId);
+      clearInterval(tokenCheckInterval);
     };
   }, [router]);
 

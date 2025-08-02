@@ -128,12 +128,49 @@ const Loading = styled.div`
   color: #666;
 `;
 
+const LoadMoreButton = styled.button`
+  display: block;
+  margin: 2rem auto;
+  padding: 1rem 2rem;
+  background: linear-gradient(135deg, #00D4FF, #0099CC);
+  color: white;
+  border: none;
+  border-radius: 8px;
+  font-size: 1rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  box-shadow: 0 4px 15px rgba(0, 212, 255, 0.3);
+
+  &:hover {
+    background: linear-gradient(135deg, #0099CC, #007799);
+    transform: translateY(-2px);
+    box-shadow: 0 6px 20px rgba(0, 212, 255, 0.4);
+  }
+
+  &:active {
+    transform: translateY(0);
+  }
+
+  &:disabled {
+    background: #666;
+    cursor: not-allowed;
+    transform: none;
+    box-shadow: none;
+  }
+
+  @media (max-width: 768px) {
+    padding: 0.8rem 1.5rem;
+    font-size: 0.9rem;
+  }
+`;
+
 const TipsContainer = styled.div`
   margin-top: 2rem;
   padding: 1rem;
   background: rgba(255, 255, 255, 0.03);
   border-radius: 8px;
-  border-left: 4px solid #FF4500;
+  border-left: 4px solid #00D4FF;
 `;
 
 const TipsTitle = styled.h4`
@@ -311,22 +348,22 @@ export default function Trending({ isSidebarOpen }: { isSidebarOpen?: boolean })
   // Infinite scroll effect
   useEffect(() => {
     const onScroll = () => {
-      // Find the footer element
-      const footer = document.querySelector('footer');
+      // Find the tips container element (near the end of content)
+      const tipsContainer = document.querySelector('[data-tips-container]');
       
-      if (footer) {
-        const footerRect = footer.getBoundingClientRect();
+      if (tipsContainer) {
+        const tipsRect = tipsContainer.getBoundingClientRect();
         const windowHeight = window.innerHeight;
         
-        // Trigger when the beginning of the footer is visible (top of footer reaches bottom of viewport)
-        const footerReached = footerRect.top <= windowHeight;
+        // Trigger when the tips container is visible (within 300px of viewport)
+        const tipsReached = tipsRect.top <= windowHeight + 300;
         
-        if (footerReached && !loading && hasMore) {
+        if (tipsReached && !loading && hasMore) {
           loadMoreMovies();
         }
       } else {
-        // Fallback to original logic if footer is not found
-        if (window.innerHeight + window.scrollY >= document.documentElement.scrollHeight - 200) {
+        // Fallback to original logic if tips container is not found
+        if (window.innerHeight + window.scrollY >= document.documentElement.scrollHeight - 300) {
           loadMoreMovies();
         }
       }
@@ -445,9 +482,15 @@ export default function Trending({ isSidebarOpen }: { isSidebarOpen?: boolean })
       </MovieGrid>
 
       {loading && <Loading>Loading more movies...</Loading>}
+      
+      {!loading && hasMore && (
+        <LoadMoreButton onClick={loadMoreMovies}>
+          Load More Trending
+        </LoadMoreButton>
+      )}
 
       {!initialLoading && movies.length > 0 && !isSearchMode && (
-        <TipsContainer>
+        <TipsContainer data-tips-container>
           <TipsTitle>💡 Trending Discovery Tips</TipsTitle>
           <TipsList>
             <li>Trending content updates in real-time based on popularity and social media buzz</li>
