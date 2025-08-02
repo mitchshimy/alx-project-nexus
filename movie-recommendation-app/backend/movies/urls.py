@@ -25,4 +25,5 @@ urlpatterns = [
     
     # Ratings
     path('<int:movie_id>/rate/', views.MovieRatingView.as_view(), name='movie_rating'),
+    path('health/', views.health_check, name='health_check'),
 ] 

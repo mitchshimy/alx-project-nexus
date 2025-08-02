@@ -862,3 +862,13 @@ def test_api(request):
         'status': 'success',
         'timestamp': timezone.now().isoformat()
     })
+
+
+@api_view(['GET'])
+def health_check(request):
+    """Health check endpoint for monitoring"""
+    return Response({
+        'status': 'healthy',
+        'timestamp': timezone.now().isoformat(),
+        'service': 'movie-recommendation-api'
+    }, status=status.HTTP_200_OK)
