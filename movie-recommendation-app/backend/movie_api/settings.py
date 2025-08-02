@@ -197,13 +197,18 @@ REDIS_HOST = config('REDIS_HOST', default='localhost')
 REDIS_PORT = config('REDIS_PORT', default=6379, cast=int)
 REDIS_DB = config('REDIS_DB', default=0, cast=int)
 
-# Cache Configuration - Using local memory cache instead of Redis
+# Redis Cache Configuration
 CACHES = {
     'default': {
-        'BACKEND': 'django.core.cache.backends.locmem.LocMemCache',
-        'LOCATION': 'unique-snowflake',
+        'BACKEND': 'django.core.cache.backends.redis.RedisCache',
+        'LOCATION': f'redis://{REDIS_HOST}:{REDIS_PORT}/{REDIS_DB}',
+        'KEY_PREFIX': 'movie_api',
+        'TIMEOUT': 300,  # 5 minutes default
     }
 }
+
+# Session Configuration (using database for now to avoid Redis issues)
+SESSION_ENGINE = 'django.contrib.sessions.backends.db'
 
 # TMDB API Configuration
 TMDB_API_KEY = config('TMDB_API_KEY', default='your-tmdb-api-key')

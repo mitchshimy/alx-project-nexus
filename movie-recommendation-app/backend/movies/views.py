@@ -4,6 +4,9 @@ from rest_framework.response import Response
 from django_filters.rest_framework import DjangoFilterBackend
 from drf_yasg.utils import swagger_auto_schema
 from drf_yasg import openapi
+from django.views.decorators.cache import cache_page
+from django.utils.decorators import method_decorator
+from django.core.cache import cache
 from .serializers import (
     MovieSerializer, 
     MovieDetailSerializer,
@@ -13,12 +16,13 @@ from .serializers import (
 )
 from .models import Movie, Favorite, Watchlist, MovieRating
 from .services import TMDBService
+from .cache_service import MovieCacheService
 from django.utils import timezone
 import asyncio
 from concurrent.futures import ThreadPoolExecutor
-from django.core.cache import cache
 
 
+@method_decorator(cache_page(60 * 60), name='dispatch')  # Cache for 1 hour
 class MovieListView(generics.ListAPIView):
     """
     List movies with TMDB integration
@@ -211,6 +215,7 @@ class MovieListView(generics.ListAPIView):
             })
 
 
+@method_decorator(cache_page(60 * 60 * 24), name='dispatch')  # Cache for 24 hours
 class MovieDetailView(generics.RetrieveAPIView):
     """
     Retrieve detailed movie information
@@ -335,6 +340,7 @@ class MovieDetailView(generics.RetrieveAPIView):
         return context
 
 
+@method_decorator(cache_page(60 * 30), name='dispatch')  # Cache for 30 minutes
 class SearchView(generics.ListAPIView):
     """
     Search movies and TV shows
@@ -594,6 +600,8 @@ class FavoriteListView(generics.ListCreateAPIView):
     def perform_create(self, serializer):
         print(f"FavoriteListView: Creating favorite for user {self.request.user.email}")
         serializer.save(user=self.request.user)
+        # Clear user cache when favorites change
+        MovieCacheService.clear_user_cache(self.request.user.id)
 
 
 class FavoriteDetailView(generics.DestroyAPIView):
@@ -678,6 +686,8 @@ class WatchlistListView(generics.ListCreateAPIView):
     def perform_create(self, serializer):
         print(f"WatchlistListView: Creating watchlist item for user {self.request.user.email}")
         serializer.save(user=self.request.user)
+        # Clear user cache when watchlist changes
+        MovieCacheService.clear_user_cache(self.request.user.id)
 
 
 class WatchlistDetailView(generics.DestroyAPIView):
@@ -783,6 +793,8 @@ class MovieRatingView(generics.CreateAPIView, generics.UpdateAPIView):
         movie_id = self.kwargs.get('movie_id')
         movie = Movie.objects.get(tmdb_id=movie_id)
         serializer.save(user=self.request.user, movie=movie)
+        # Clear movie cache when ratings change
+        MovieCacheService.clear_movie_cache(movie_id)
 
 
 @swagger_auto_schema(
@@ -810,6 +822,7 @@ class MovieRatingView(generics.CreateAPIView, generics.UpdateAPIView):
         500: 'Internal Server Error'
     }
 )
+@cache_page(60 * 60 * 24)  # Cache for 24 hours
 @api_view(['GET'])
 @permission_classes([permissions.AllowAny])
 def genres_list(request):
