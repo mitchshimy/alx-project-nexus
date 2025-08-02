@@ -15,10 +15,27 @@ Including another URLconf
 """
 from django.contrib import admin
 from django.urls import path, include
+from django.http import JsonResponse
 from rest_framework_simplejwt.views import TokenRefreshView
 from drf_yasg.views import get_schema_view
 from drf_yasg import openapi
 from rest_framework import permissions
+from movies.views import health_check
+
+def root_view(request):
+    """Root endpoint that redirects to API documentation"""
+    return JsonResponse({
+        'message': 'Movie Recommendation API',
+        'version': '1.0.0',
+        'status': 'running',
+        'endpoints': {
+            'api_docs': '/swagger/',
+            'health_check': '/api/v1/health/',
+            'movies': '/api/v1/movies/',
+            'users': '/api/v1/users/',
+            'admin': '/admin/'
+        }
+    })
 
 schema_view = get_schema_view(
     openapi.Info(
@@ -73,6 +90,12 @@ schema_view = get_schema_view(
 )
 
 urlpatterns = [
+    # Root endpoint
+    path('', root_view, name='root'),
+    
+    # Health check
+    path('health/', health_check, name='health_check'),
+    
     path('admin/', admin.site.urls),
     
     # API URLs
