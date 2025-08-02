@@ -1,5 +1,9 @@
 // API base URL for Django backend
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000/api/v1';
+const API_BASE_URL = 'https://movie-recommendation-api-6kmu.onrender.com/api/v1';
+
+// Debug: Log the API URL being used
+console.log('🔍 API_BASE_URL:', API_BASE_URL);
+console.log('🔍 NEXT_PUBLIC_API_URL env var:', process.env.NEXT_PUBLIC_API_URL);
 
 // Increased timeout for preloading (30 seconds)
 const API_TIMEOUT = 25000; // Increased from 15000ms to 25000ms for more patience
