@@ -37,7 +37,13 @@ SECRET_KEY = config('SECRET_KEY', default='django-insecure-your-secret-key-here'
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = config('DEBUG', default=True, cast=bool)
 
-ALLOWED_HOSTS = ['localhost', '127.0.0.1', '0.0.0.0']
+# ALLOWED_HOSTS configuration
+ALLOWED_HOSTS = config('ALLOWED_HOSTS', default='localhost,127.0.0.1,0.0.0.0').split(',')
+ALLOWED_HOSTS.extend([
+    'movie-recommendation-api-6kmu.onrender.com',
+    'movie-recommendation-api-bftu.onrender.com',
+    '.onrender.com',  # Allow all Render subdomains
+])
 
 
 # Application definition
@@ -204,12 +210,18 @@ SIMPLE_JWT = {
 }
 
 # CORS Settings
-CORS_ALLOWED_ORIGINS = [
-    "http://localhost:3000",
-    "http://127.0.0.1:3000",
-]
+CORS_ALLOWED_ORIGINS = config('CORS_ALLOWED_ORIGINS', default='http://localhost:3000,http://127.0.0.1:3000').split(',')
+
+# Add common production domains
+CORS_ALLOWED_ORIGINS.extend([
+    'https://shimymovies.vercel.app',
+    'https://your-frontend-domain.com',
+])
 
 CORS_ALLOW_CREDENTIALS = True
+
+# Allow all headers and methods for development
+CORS_ALLOW_ALL_ORIGINS = config('CORS_ALLOW_ALL_ORIGINS', default=False, cast=bool)
 
 # Redis Configuration
 REDIS_HOST = config('REDIS_HOST', default='localhost')
@@ -237,6 +249,9 @@ TMDB_BASE_URL = 'https://api.themoviedb.org/3'
 # Debug: Check if TMDB credentials are loaded
 print(f"Django Settings: TMDB_API_KEY loaded: {'Yes' if TMDB_API_KEY and TMDB_API_KEY != 'your-tmdb-api-key' else 'No'}")
 print(f"Django Settings: TMDB_READ_TOKEN loaded: {'Yes' if TMDB_READ_TOKEN else 'No'}")
+print(f"Django Settings: DEBUG = {DEBUG}")
+print(f"Django Settings: ALLOWED_HOSTS = {ALLOWED_HOSTS}")
+print(f"Django Settings: CORS_ALLOWED_ORIGINS = {CORS_ALLOWED_ORIGINS}")
 
 # Swagger Settings
 SWAGGER_SETTINGS = {
