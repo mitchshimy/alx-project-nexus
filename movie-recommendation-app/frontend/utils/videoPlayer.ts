@@ -110,8 +110,8 @@ export const buildYouTubeEmbedUrl = (videoKey: string, config?: Partial<VideoPla
     v: getQualityParameter(finalConfig.quality), // Alternative quality parameter
     // Performance optimizations
     enablejsapi: '1', // Enable JavaScript API
-    origin: window.location.origin, // Set origin for security
-    widget_referrer: window.location.href // Set referrer
+    origin: typeof window !== 'undefined' ? window.location.origin : '', // Set origin for security
+    widget_referrer: typeof window !== 'undefined' ? window.location.href : '' // Set referrer
   });
   
   return `https://www.youtube.com/embed/${videoKey}?${params.toString()}`;
@@ -158,6 +158,10 @@ export const getQualityDescription = (quality: string): string => {
 
 // Enhanced function to check if user's device supports the selected quality
 export const isQualitySupported = (quality: string): boolean => {
+  if (typeof window === 'undefined') {
+    return true; // Default to supported on server-side
+  }
+  
   // Enhanced quality support check with network consideration
   const screenWidth = window.screen.width;
   const screenHeight = window.screen.height;
@@ -190,6 +194,10 @@ export const isQualitySupported = (quality: string): boolean => {
 
 // Enhanced function to get optimal quality based on device capabilities and network
 export const getOptimalQuality = (): string => {
+  if (typeof window === 'undefined') {
+    return '720p'; // Default quality on server-side
+  }
+  
   const preferredQuality = getPreferredVideoQuality();
   const connection = (navigator as any).connection;
   

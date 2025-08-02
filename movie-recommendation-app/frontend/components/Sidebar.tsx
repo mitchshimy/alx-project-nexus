@@ -321,13 +321,11 @@ export default function Sidebar({ isOpen, onClose }: SidebarProps) {
 
     if (typeof window !== 'undefined') {
       window.addEventListener('languageChanged', handleLanguageChange as EventListener);
-    }
 
-    return () => {
-      if (typeof window !== 'undefined') {
+      return () => {
         window.removeEventListener('languageChanged', handleLanguageChange as EventListener);
-      }
-    };
+      };
+    }
   }, []);
 
   const navItems = [

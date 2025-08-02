@@ -8,23 +8,11 @@
   ],
   "routes": [
     {
-      "src": "/_next/static/(.*)",
-      "dest": "/_next/static/$1",
-      "headers": {
-        "Cache-Control": "public, max-age=31536000, immutable"
-      }
-    },
-    {
       "src": "/(.*)",
       "dest": "/"
     }
   ],
   "env": {
-    "NEXT_PUBLIC_API_URL": "https://movie-recommendation-api-6kmu.onrender.com/api/v1"
-  },
-  "functions": {
-    "app/**/*.ts": {
-      "maxDuration": 30
-    }
+    "NEXT_PUBLIC_API_URL": "https://your-render-app-name.onrender.com/api/v1"
   }
 } 

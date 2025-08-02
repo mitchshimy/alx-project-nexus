@@ -17,7 +17,6 @@ export const defaultSettings: UserSettings = {
 };
 
 export const getSettings = (): UserSettings => {
-  // Check if we're on the client side
   if (typeof window === 'undefined') {
     return defaultSettings;
   }
@@ -55,7 +54,6 @@ export const getTheme = (): string => {
 };
 
 export const saveSettings = (settings: UserSettings): void => {
-  // Check if we're on the client side
   if (typeof window === 'undefined') {
     return;
   }
@@ -68,8 +66,7 @@ export const saveSettings = (settings: UserSettings): void => {
 };
 
 export const applyTheme = (theme: string): void => {
-  // Check if we're on the client side
-  if (typeof window === 'undefined' || typeof document === 'undefined') {
+  if (typeof window === 'undefined') {
     return;
   }
   
@@ -85,7 +82,6 @@ export const applyTheme = (theme: string): void => {
 };
 
 export const initializeSettings = (): void => {
-  // Check if we're on the client side
   if (typeof window === 'undefined') {
     return;
   }

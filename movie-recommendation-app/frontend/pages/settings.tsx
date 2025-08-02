@@ -323,10 +323,10 @@ export default function Settings({ isSidebarOpen }: { isSidebarOpen?: boolean })
   };
 
   const applySettings = (newSettings: UserSettings) => {
-    // Save settings to localStorage
-    saveSettings(newSettings);
-    
-    // Apply theme immediately
+    // Apply language setting
+    applyLanguageChange(newSettings.language);
+
+    // Apply theme setting
     applyTheme(newSettings.theme);
 
     // Store video quality preference for use in video components
@@ -351,9 +351,7 @@ export default function Settings({ isSidebarOpen }: { isSidebarOpen?: boolean })
     performComprehensiveLogout();
     
     // Force a page reload to clear all cached data and state
-    if (typeof window !== 'undefined') {
-      window.location.href = '/';
-    }
+    window.location.href = '/';
   };
 
   const handleClearCache = () => {
@@ -364,8 +362,8 @@ export default function Settings({ isSidebarOpen }: { isSidebarOpen?: boolean })
     // Clear in-memory API cache
     clearApiCache();
     
+    // Clear localStorage except for settings and auth tokens
     if (typeof window !== 'undefined') {
-      // Clear localStorage except for settings and auth tokens
       const settings = localStorage.getItem('userSettings');
       const authToken = localStorage.getItem('authToken');
       const refreshToken = localStorage.getItem('refreshToken');
@@ -378,7 +376,10 @@ export default function Settings({ isSidebarOpen }: { isSidebarOpen?: boolean })
       if (authToken) localStorage.setItem('authToken', authToken);
       if (refreshToken) localStorage.setItem('refreshToken', refreshToken);
       if (accessToken) localStorage.setItem('access_token', accessToken);
-      
+    }
+    
+    // Clear any other potential cache items
+    if (typeof window !== 'undefined') {
       // Clear sessionStorage as well
       sessionStorage.clear();
       
@@ -400,10 +401,6 @@ export default function Settings({ isSidebarOpen }: { isSidebarOpen?: boolean })
   };
 
   const handleExportData = () => {
-    if (typeof window === 'undefined') {
-      return;
-    }
-    
     try {
       const dataToExport = {
         settings: settings,

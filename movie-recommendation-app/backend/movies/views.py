@@ -105,16 +105,31 @@ class MovieListView(generics.ListAPIView):
                 data = tmdb_service.get_movies(page=page)
             
             print(f"TMDB Data received: {len(data.get('results', []))} items")  # Debug
+            print(f"First few items: {data.get('results', [])[:3]}")  # Debug
             
             # Store the TMDB data for pagination info
             self.tmdb_data = data  # Store for use in list() method
             
-            # Create temporary movie objects without database operations
+            # Start background sync process
+            self._start_background_sync(data.get('results', []), tmdb_service)
+            
+            # Return movies from database that match the TMDB IDs for immediate display
+            tmdb_ids = [item.get('id') for item in data.get('results', [])]
+            existing_movies = Movie.objects.filter(tmdb_id__in=tmdb_ids)
+            
+            # Create a mapping of tmdb_id to movie for quick lookup
+            existing_movie_map = {movie.tmdb_id: movie for movie in existing_movies}
+            
+            # Create a list of movies in the same order as TMDB results
             ordered_movies = []
             for item in data.get('results', []):
-                try:
+                tmdb_id = item.get('id')
+                if tmdb_id in existing_movie_map:
+                    ordered_movies.append(existing_movie_map[tmdb_id])
+                else:
+                    # Create a temporary movie object for display if not in database yet
                     temp_movie = Movie(
-                        tmdb_id=item.get('id'),
+                        tmdb_id=tmdb_id,
                         title=item.get('title') or item.get('name', ''),
                         overview=item.get('overview', ''),
                         poster_path=item.get('poster_path'),
@@ -124,20 +139,17 @@ class MovieListView(generics.ListAPIView):
                         popularity=item.get('popularity', 0.0),
                         genre_ids=item.get('genre_ids', []),
                         media_type=item.get('media_type', 'movie'),
-                        release_date=None
+                        release_date=None  # Will be set during background sync
                     )
                     ordered_movies.append(temp_movie)
-                except Exception as temp_error:
-                    print(f"Error creating temp movie for tmdb_id {item.get('id')}: {temp_error}")  # Debug
-                    continue
             
             print(f"Returning {len(ordered_movies)} movies for immediate display")  # Debug
             return ordered_movies
             
         except Exception as e:
             print(f"Error in get_queryset: {e}")  # Debug
-            # Return empty list if everything fails
-            return []
+            # Fallback to database if TMDB fails
+            return Movie.objects.all()
     
     def _start_background_sync(self, tmdb_results, tmdb_service):
         """Start background sync process for movies"""
@@ -853,7 +865,6 @@ def test_api(request):
 
 
 @api_view(['GET'])
-@permission_classes([permissions.AllowAny])
 def health_check(request):
     """Health check endpoint for monitoring"""
     return Response({
@@ -861,89 +872,3 @@ def health_check(request):
         'timestamp': timezone.now().isoformat(),
         'service': 'movie-recommendation-api'
     }, status=status.HTTP_200_OK)
-
-
-@api_view(['GET'])
-@permission_classes([permissions.AllowAny])
-def mock_movies(request):
-    """Simple mock movies endpoint that doesn't use database"""
-    movie_type = request.query_params.get('type', 'movies')
-    page = int(request.query_params.get('page', 1))
-    
-    # Return mock data based on type
-    if movie_type == 'trending':
-        mock_data = {
-            'page': page,
-            'results': [
-                {
-                    'id': 550,
-                    'tmdb_id': 550,
-                    'title': 'Fight Club',
-                    'overview': 'A movie about fighting clubs',
-                    'poster_path': '/pB8BM7pdSp6B6Ih7QZ4DrQ3PmJK.jpg',
-                    'vote_average': 8.8,
-                    'vote_count': 3439,
-                    'media_type': 'movie'
-                },
-                {
-                    'id': 13,
-                    'tmdb_id': 13,
-                    'title': 'Forrest Gump',
-                    'overview': 'A movie about running',
-                    'poster_path': '/arw2vcBveWOVZr6pxd9TDd1TdQa.jpg',
-                    'vote_average': 8.8,
-                    'vote_count': 2453,
-                    'media_type': 'movie'
-                }
-            ],
-            'total_pages': 1,
-            'total_results': 2
-        }
-    elif movie_type == 'movies':
-        mock_data = {
-            'page': page,
-            'results': [
-                {
-                    'id': 238,
-                    'tmdb_id': 238,
-                    'title': 'The Godfather',
-                    'overview': 'A movie about family',
-                    'poster_path': '/3bhkrj58Vtu7enYsRolD1fZdja1.jpg',
-                    'vote_average': 9.2,
-                    'vote_count': 1564,
-                    'media_type': 'movie'
-                },
-                {
-                    'id': 278,
-                    'tmdb_id': 278,
-                    'title': 'The Shawshank Redemption',
-                    'overview': 'A movie about hope',
-                    'poster_path': '/q6y0Go1tsGEsmtFryDOJo3dEmqu.jpg',
-                    'vote_average': 8.7,
-                    'vote_count': 23420,
-                    'media_type': 'movie'
-                }
-            ],
-            'total_pages': 1,
-            'total_results': 2
-        }
-    else:
-        mock_data = {
-            'page': page,
-            'results': [
-                {
-                    'id': 550,
-                    'tmdb_id': 550,
-                    'title': 'Default Movie',
-                    'overview': 'A default movie',
-                    'poster_path': '/pB8BM7pdSp6B6Ih7QZ4DrQ3PmJK.jpg',
-                    'vote_average': 8.0,
-                    'vote_count': 1000,
-                    'media_type': 'movie'
-                }
-            ],
-            'total_pages': 1,
-            'total_results': 1
-        }
-    
-    return Response(mock_data)

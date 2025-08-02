@@ -342,18 +342,16 @@ export const getTranslation = (key: string, language: string = 'en'): string => 
 };
 
 export const getCurrentLanguage = (): string => {
-  if (typeof window === 'undefined') {
-    return 'en';
-  }
+  if (typeof window === 'undefined') return 'en';
   
   try {
     const savedSettings = localStorage.getItem('userSettings');
     if (savedSettings) {
-      const settings = JSON.parse(savedSettings);
-      return settings.language || 'en';
+      const parsedSettings = JSON.parse(savedSettings);
+      return parsedSettings.language || 'en';
     }
   } catch (error) {
-    console.error('Error getting language from settings:', error);
+    console.error('Error loading language setting:', error);
   }
   
   return 'en';

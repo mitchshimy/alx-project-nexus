@@ -37,12 +37,13 @@ SECRET_KEY = config('SECRET_KEY', default='django-insecure-your-secret-key-here'
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = config('DEBUG', default=True, cast=bool)
 
-# ALLOWED_HOSTS configuration
-ALLOWED_HOSTS = config('ALLOWED_HOSTS', default='localhost,127.0.0.1,0.0.0.0').split(',')
-ALLOWED_HOSTS.extend([
+ALLOWED_HOSTS = [
+    'localhost', 
+    '127.0.0.1', 
+    '0.0.0.0',
     'movie-recommendation-api-6kmu.onrender.com',
-    '.onrender.com',
-])
+    '.onrender.com'
+]
 
 
 # Application definition
@@ -101,28 +102,16 @@ WSGI_APPLICATION = 'movie_api.wsgi.application'
 # Database
 # https://docs.djangoproject.com/en/4.2/ref/settings/#databases
 
-import dj_database_url
-
-# Try to get DATABASE_URL first (for Render), fall back to individual components
-DATABASE_URL = config('DATABASE_URL', default=None)
-
-if DATABASE_URL:
-    # Use DATABASE_URL (Render style)
-    DATABASES = {
-        'default': dj_database_url.parse(DATABASE_URL)
+DATABASES = {
+    'default': {
+        'ENGINE': config('DB_ENGINE', default='django.db.backends.postgresql'),
+        'NAME': config('DB_NAME', default='movie_db'),
+        'USER': config('DB_USER', default='postgres'),
+        'PASSWORD': config('DB_PASSWORD', default='password'),
+        'HOST': config('DB_HOST', default='localhost'),
+        'PORT': config('DB_PORT', default='5432'),
     }
-else:
-    # Use individual components (local development)
-    DATABASES = {
-        'default': {
-            'ENGINE': config('DB_ENGINE', default='django.db.backends.postgresql'),
-            'NAME': config('DB_NAME', default='movie_db'),
-            'USER': config('DB_USER', default='postgres'),
-            'PASSWORD': config('DB_PASSWORD', default='password'),
-            'HOST': config('DB_HOST', default='localhost'),
-            'PORT': config('DB_PORT', default='5432'),
-        }
-    }
+}
 
 
 # Password validation
@@ -160,7 +149,6 @@ USE_TZ = True
 # https://docs.djangoproject.com/en/4.2/howto/static-files/
 
 STATIC_URL = 'static/'
-STATIC_ROOT = BASE_DIR / 'staticfiles'
 
 # Default primary key field type
 # https://docs.djangoproject.com/en/4.2/ref/settings/#default-auto-field
@@ -209,43 +197,25 @@ SIMPLE_JWT = {
 }
 
 # CORS Settings
-CORS_ALLOWED_ORIGINS = config('CORS_ALLOWED_ORIGINS', default='http://localhost:3000,http://127.0.0.1:3000').split(',')
+CORS_ALLOWED_ORIGINS = [
+    "http://localhost:3000",
+    "http://127.0.0.1:3000",
+    "http://localhost:3001",
+    "http://127.0.0.1:3001",
+    "http://localhost:3002",
+    "http://127.0.0.1:3002",
+    "http://localhost:3003",
+    "http://127.0.0.1:3003",
+    "http://localhost:3004",
+    "http://127.0.0.1:3004",
+    "http://localhost:3005",
+    "http://127.0.0.1:3005",
+]
 
-# Add common production domains and ensure localhost is included
-CORS_ALLOWED_ORIGINS.extend([
-    'https://shimymovies.vercel.app',
-    'http://localhost:3000',
-    'http://127.0.0.1:3000',
-    'http://localhost:3001',
-    'http://127.0.0.1:3001'
-])
+# For development, allow all origins (remove this in production)
+CORS_ALLOW_ALL_ORIGINS = True
 
 CORS_ALLOW_CREDENTIALS = True
-
-# Allow all headers and methods for development
-CORS_ALLOW_ALL_ORIGINS = config('CORS_ALLOW_ALL_ORIGINS', default=False, cast=bool)
-
-# Additional CORS settings for better compatibility
-CORS_ALLOW_METHODS = [
-    'DELETE',
-    'GET',
-    'OPTIONS',
-    'PATCH',
-    'POST',
-    'PUT',
-]
-
-CORS_ALLOW_HEADERS = [
-    'accept',
-    'accept-encoding',
-    'authorization',
-    'content-type',
-    'dnt',
-    'origin',
-    'user-agent',
-    'x-csrftoken',
-    'x-requested-with',
-]
 
 # Redis Configuration
 REDIS_HOST = config('REDIS_HOST', default='localhost')
@@ -273,9 +243,6 @@ TMDB_BASE_URL = 'https://api.themoviedb.org/3'
 # Debug: Check if TMDB credentials are loaded
 print(f"Django Settings: TMDB_API_KEY loaded: {'Yes' if TMDB_API_KEY and TMDB_API_KEY != 'your-tmdb-api-key' else 'No'}")
 print(f"Django Settings: TMDB_READ_TOKEN loaded: {'Yes' if TMDB_READ_TOKEN else 'No'}")
-print(f"Django Settings: DEBUG = {DEBUG}")
-print(f"Django Settings: ALLOWED_HOSTS = {ALLOWED_HOSTS}")
-print(f"Django Settings: CORS_ALLOWED_ORIGINS = {CORS_ALLOWED_ORIGINS}")
 
 # Swagger Settings
 SWAGGER_SETTINGS = {

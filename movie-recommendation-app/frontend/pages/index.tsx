@@ -353,10 +353,10 @@ export default function Home({ isSidebarOpen = false }: { isSidebarOpen?: boolea
         
         // Test API connectivity first
         try {
-          const testResponse = await fetch('http://localhost:8000/api/v1/movies/?type=trending&page=1');
-          console.log('API test response status:', testResponse.status);
-          if (!testResponse.ok) {
-            throw new Error(`API test failed: ${testResponse.status}`);
+          const testResponse = await movieAPI.getMovies({ type: 'trending', page: 1 });
+          console.log('API test response received');
+          if (testResponse.error) {
+            throw new Error(`API test failed: ${testResponse.error}`);
           }
         } catch (apiTestError) {
           console.error('API connectivity test failed:', apiTestError);

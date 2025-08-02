@@ -13,10 +13,7 @@ const nextConfig: NextConfig = {
   compiler: {
     styledComponents: true,
   },
-  // Ensure proper static file serving
-  trailingSlash: false,
-  // Add proper MIME types
-  async headers() {
+  headers: async () => {
     return [
       {
         source: '/images/:path*',
