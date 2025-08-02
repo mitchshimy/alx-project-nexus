@@ -24,7 +24,8 @@ const nextConfig: NextConfig = {
         ],
       },
       {
-        source: '/(.*)',
+        // Exclude _next/ from custom headers
+        source: '/((?!_next/).*)',
         headers: [
           {
             key: 'X-Content-Type-Options',
