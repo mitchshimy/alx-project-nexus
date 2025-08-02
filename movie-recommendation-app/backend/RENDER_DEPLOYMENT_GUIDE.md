@@ -59,16 +59,16 @@
 2. **Configure the Service**
    - **Name**: `movie-recommendation-api`
    - **Environment**: `Python 3`
-   - **Build Command**: `./build.sh`
-   - **Start Command**: `gunicorn movie_api.wsgi:application`
-   - **Root Directory**: `movie-recommendation-app/backend`
+   - **Build Command**: `chmod +x build.sh && ./build.sh`
+   - **Start Command**: `cd movie-recommendation-app/backend && gunicorn movie_api.wsgi:application`
+   - **Root Directory**: Leave empty (use repository root)
 
 3. **Set Environment Variables**
    Click "Environment" tab and add these variables:
 
    ```bash
    # Django Settings
-   SECRET_KEY=your-super-secret-production-key-here
+   SECRET_KEY=X5%BUZoW+Q94)eYZ(M-fGJ!YfJRC8FzF+RvLV1G@JmhXc_oQqlNtdwNtblP54MQd
    DEBUG=False
    
    # Database Settings (from Step 2)
@@ -85,11 +85,11 @@
    REDIS_DB=0
    
    # TMDB API Settings
-   TMDB_READ_TOKEN=your-tmdb-read-token
-   TMDB_API_KEY=your-tmdb-api-key
+   TMDB_READ_TOKEN=eyJhbGciOiJIUzI1NiJ9.eyJhdWQiOiI1Y2QyNDAyMDJlNzEwNWM5ZmJlYmFhNzU1OTNmZDAwZSIsIm5iZiI6MTc1MzY5NjA2Ny45NTIsInN1YiI6IjY4ODc0NzQzNTBlYWY2NjI1MjI0NzBiZSIsInNjb3BlcyI6WyJhcGlfcmVhZCJdLCJ2ZXJzaW9uIjoxfQ.-DSG0t2dpq-Hhv-IdYclsEq7vSIYyBd5LIPCnruii_Y
+   TMDB_API_KEY=5cd240202e7105c9fbebaa75593fd00e
    
    # JWT Settings
-   JWT_SECRET_KEY=your-jwt-secret-key
+   JWT_SECRET_KEY=piaYDAztqJziFMwmm!ZiM-2ZE_9fe0eKYR8L%7!s&to*)Fx(1hZ@bHQn%grYa8o8
    JWT_ACCESS_TOKEN_LIFETIME=5
    JWT_REFRESH_TOKEN_LIFETIME=1
    
