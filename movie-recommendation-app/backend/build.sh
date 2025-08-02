@@ -17,6 +17,10 @@ echo "Detected Python version: $PYTHON_VERSION"
 if [[ "$PYTHON_VERSION" == "3.13" ]]; then
     echo "Using Python 3.13 specific requirements..."
     pip install -r requirements-python313.txt
+    
+    # Set Django settings for Python 3.13
+    export DJANGO_SETTINGS_MODULE=movie_api.settings_python313
+    echo "✅ Using Python 3.13 specific Django settings"
 else
     echo "Using standard requirements..."
     # Try to install requirements with psycopg2-binary first
