@@ -105,31 +105,16 @@ class MovieListView(generics.ListAPIView):
                 data = tmdb_service.get_movies(page=page)
             
             print(f"TMDB Data received: {len(data.get('results', []))} items")  # Debug
-            print(f"First few items: {data.get('results', [])[:3]}")  # Debug
             
             # Store the TMDB data for pagination info
             self.tmdb_data = data  # Store for use in list() method
             
-            # Start background sync process
-            self._start_background_sync(data.get('results', []), tmdb_service)
-            
-            # Return movies from database that match the TMDB IDs for immediate display
-            tmdb_ids = [item.get('id') for item in data.get('results', [])]
-            existing_movies = Movie.objects.filter(tmdb_id__in=tmdb_ids)
-            
-            # Create a mapping of tmdb_id to movie for quick lookup
-            existing_movie_map = {movie.tmdb_id: movie for movie in existing_movies}
-            
-            # Create a list of movies in the same order as TMDB results
+            # Create temporary movie objects without database operations
             ordered_movies = []
             for item in data.get('results', []):
-                tmdb_id = item.get('id')
-                if tmdb_id in existing_movie_map:
-                    ordered_movies.append(existing_movie_map[tmdb_id])
-                else:
-                    # Create a temporary movie object for display if not in database yet
+                try:
                     temp_movie = Movie(
-                        tmdb_id=tmdb_id,
+                        tmdb_id=item.get('id'),
                         title=item.get('title') or item.get('name', ''),
                         overview=item.get('overview', ''),
                         poster_path=item.get('poster_path'),
@@ -139,17 +124,20 @@ class MovieListView(generics.ListAPIView):
                         popularity=item.get('popularity', 0.0),
                         genre_ids=item.get('genre_ids', []),
                         media_type=item.get('media_type', 'movie'),
-                        release_date=None  # Will be set during background sync
+                        release_date=None
                     )
                     ordered_movies.append(temp_movie)
+                except Exception as temp_error:
+                    print(f"Error creating temp movie for tmdb_id {item.get('id')}: {temp_error}")  # Debug
+                    continue
             
             print(f"Returning {len(ordered_movies)} movies for immediate display")  # Debug
             return ordered_movies
             
         except Exception as e:
             print(f"Error in get_queryset: {e}")  # Debug
-            # Fallback to database if TMDB fails
-            return Movie.objects.all()
+            # Return empty list if everything fails
+            return []
     
     def _start_background_sync(self, tmdb_results, tmdb_service):
         """Start background sync process for movies"""
