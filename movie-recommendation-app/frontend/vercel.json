@@ -20,7 +20,7 @@
     }
   ],
   "env": {
-    "NEXT_PUBLIC_API_URL": "https://movie-recommendation-api-bftu.onrender.com/api/v1"
+    "NEXT_PUBLIC_API_URL": "https://movie-recommendation-api-6kmu.onrender.com/api/v1"
   },
   "functions": {
     "app/**/*.ts": {

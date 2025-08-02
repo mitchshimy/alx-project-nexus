@@ -296,6 +296,10 @@ export default function Sidebar({ isOpen, onClose }: SidebarProps) {
   useEffect(() => {
     // Get current language from settings
     const getLanguage = () => {
+      if (typeof window === 'undefined') {
+        return 'en';
+      }
+      
       try {
         const savedSettings = localStorage.getItem('userSettings');
         if (savedSettings) {
@@ -315,10 +319,14 @@ export default function Sidebar({ isOpen, onClose }: SidebarProps) {
       setCurrentLanguage(event.detail.language);
     };
 
-    window.addEventListener('languageChanged', handleLanguageChange as EventListener);
+    if (typeof window !== 'undefined') {
+      window.addEventListener('languageChanged', handleLanguageChange as EventListener);
+    }
 
     return () => {
-      window.removeEventListener('languageChanged', handleLanguageChange as EventListener);
+      if (typeof window !== 'undefined') {
+        window.removeEventListener('languageChanged', handleLanguageChange as EventListener);
+      }
     };
   }, []);
 

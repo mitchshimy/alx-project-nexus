@@ -213,8 +213,7 @@ CORS_ALLOWED_ORIGINS = config('CORS_ALLOWED_ORIGINS', default='http://localhost:
 
 # Add common production domains
 CORS_ALLOWED_ORIGINS.extend([
-    'https://shimymovies.vercel.app',
-    'https://your-frontend-domain.com',
+    'https://shimymovies.vercel.app'
 ])
 
 CORS_ALLOW_CREDENTIALS = True

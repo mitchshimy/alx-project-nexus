@@ -323,17 +323,19 @@ export default function Settings({ isSidebarOpen }: { isSidebarOpen?: boolean })
   };
 
   const applySettings = (newSettings: UserSettings) => {
-    // Apply language setting
-    applyLanguageChange(newSettings.language);
-
-    // Apply theme setting
+    // Save settings to localStorage
+    saveSettings(newSettings);
+    
+    // Apply theme immediately
     applyTheme(newSettings.theme);
 
     // Store video quality preference for use in video components
-    localStorage.setItem('preferredVideoQuality', newSettings.quality);
-    
-    // Store auto-play preference for use in video components
-    localStorage.setItem('autoPlayTrailers', newSettings.autoPlay.toString());
+    if (typeof window !== 'undefined') {
+      localStorage.setItem('preferredVideoQuality', newSettings.quality);
+      
+      // Store auto-play preference for use in video components
+      localStorage.setItem('autoPlayTrailers', newSettings.autoPlay.toString());
+    }
   };
 
   const handleSignIn = () => {
@@ -349,7 +351,9 @@ export default function Settings({ isSidebarOpen }: { isSidebarOpen?: boolean })
     performComprehensiveLogout();
     
     // Force a page reload to clear all cached data and state
-    window.location.href = '/';
+    if (typeof window !== 'undefined') {
+      window.location.href = '/';
+    }
   };
 
   const handleClearCache = () => {
@@ -360,22 +364,21 @@ export default function Settings({ isSidebarOpen }: { isSidebarOpen?: boolean })
     // Clear in-memory API cache
     clearApiCache();
     
-    // Clear localStorage except for settings and auth tokens
-    const settings = localStorage.getItem('userSettings');
-    const authToken = localStorage.getItem('authToken');
-    const refreshToken = localStorage.getItem('refreshToken');
-    const accessToken = localStorage.getItem('access_token');
-    
-    localStorage.clear();
-    
-    // Restore important items
-    if (settings) localStorage.setItem('userSettings', settings);
-    if (authToken) localStorage.setItem('authToken', authToken);
-    if (refreshToken) localStorage.setItem('refreshToken', refreshToken);
-    if (accessToken) localStorage.setItem('access_token', accessToken);
-    
-    // Clear any other potential cache items
     if (typeof window !== 'undefined') {
+      // Clear localStorage except for settings and auth tokens
+      const settings = localStorage.getItem('userSettings');
+      const authToken = localStorage.getItem('authToken');
+      const refreshToken = localStorage.getItem('refreshToken');
+      const accessToken = localStorage.getItem('access_token');
+      
+      localStorage.clear();
+      
+      // Restore important items
+      if (settings) localStorage.setItem('userSettings', settings);
+      if (authToken) localStorage.setItem('authToken', authToken);
+      if (refreshToken) localStorage.setItem('refreshToken', refreshToken);
+      if (accessToken) localStorage.setItem('access_token', accessToken);
+      
       // Clear sessionStorage as well
       sessionStorage.clear();
       
@@ -397,6 +400,10 @@ export default function Settings({ isSidebarOpen }: { isSidebarOpen?: boolean })
   };
 
   const handleExportData = () => {
+    if (typeof window === 'undefined') {
+      return;
+    }
+    
     try {
       const dataToExport = {
         settings: settings,

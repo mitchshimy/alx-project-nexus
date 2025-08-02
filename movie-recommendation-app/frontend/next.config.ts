@@ -15,10 +15,6 @@ const nextConfig: NextConfig = {
   },
   // Ensure proper static file serving
   trailingSlash: false,
-  // Disable strict MIME type checking for development
-  experimental: {
-    esmExternals: false,
-  },
   // Add proper MIME types
   async headers() {
     return [
@@ -50,8 +46,6 @@ const nextConfig: NextConfig = {
       },
     ];
   },
-  // Ensure proper output
-  output: 'standalone',
 };
 
 export default nextConfig;

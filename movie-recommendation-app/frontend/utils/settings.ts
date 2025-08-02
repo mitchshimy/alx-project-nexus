@@ -17,6 +17,11 @@ export const defaultSettings: UserSettings = {
 };
 
 export const getSettings = (): UserSettings => {
+  // Check if we're on the client side
+  if (typeof window === 'undefined') {
+    return defaultSettings;
+  }
+  
   try {
     const savedSettings = localStorage.getItem('userSettings');
     if (savedSettings) {
@@ -50,6 +55,11 @@ export const getTheme = (): string => {
 };
 
 export const saveSettings = (settings: UserSettings): void => {
+  // Check if we're on the client side
+  if (typeof window === 'undefined') {
+    return;
+  }
+  
   try {
     localStorage.setItem('userSettings', JSON.stringify(settings));
   } catch (error) {
@@ -58,6 +68,11 @@ export const saveSettings = (settings: UserSettings): void => {
 };
 
 export const applyTheme = (theme: string): void => {
+  // Check if we're on the client side
+  if (typeof window === 'undefined' || typeof document === 'undefined') {
+    return;
+  }
+  
   if (theme === 'light') {
     document.documentElement.setAttribute('data-theme', 'light');
   } else if (theme === 'dark') {
@@ -70,6 +85,11 @@ export const applyTheme = (theme: string): void => {
 };
 
 export const initializeSettings = (): void => {
+  // Check if we're on the client side
+  if (typeof window === 'undefined') {
+    return;
+  }
+  
   const settings = getSettings();
   applyTheme(settings.theme);
 }; 

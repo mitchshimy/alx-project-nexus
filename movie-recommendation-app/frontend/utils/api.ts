@@ -10,28 +10,30 @@ const CACHE_DURATION = 5 * 60 * 1000; // 5 minutes
 
 // Authentication token management
 export const getAuthToken = (): string | null => {
-  if (typeof window !== 'undefined') {
-    return localStorage.getItem('access_token');
+  if (typeof window === 'undefined') {
+    return null;
   }
-  return null;
+  return localStorage.getItem('access_token');
 };
 
 export const setAuthToken = (token: string): void => {
-  if (typeof window !== 'undefined') {
-    // Clear any existing user data before setting new token
-    clearApiCache();
-    sessionStorage.clear();
-    
-    localStorage.setItem('access_token', token);
-    // Dispatch custom event to notify components of auth state change
-    window.dispatchEvent(new CustomEvent('authStateChanged', { detail: { isAuthenticated: true } }));
+  if (typeof window === 'undefined') {
+    return;
   }
+  // Clear any existing user data before setting new token
+  clearApiCache();
+  sessionStorage.clear();
+  
+  localStorage.setItem('access_token', token);
+  // Dispatch custom event to notify components of auth state change
+  window.dispatchEvent(new CustomEvent('authStateChanged', { detail: { isAuthenticated: true } }));
 };
 
 export const removeAuthToken = (): void => {
-  if (typeof window !== 'undefined') {
-    localStorage.removeItem('access_token');
+  if (typeof window === 'undefined') {
+    return;
   }
+  localStorage.removeItem('access_token');
 };
 
 // Automatic logout function for expired tokens
@@ -42,27 +44,28 @@ export const handleTokenExpiration = () => {
   removeAuthToken();
   clearApiCache();
   
-  if (typeof window !== 'undefined') {
-    // Clear all storage
-    localStorage.removeItem('authToken');
-    localStorage.removeItem('refreshToken');
-    sessionStorage.clear();
-    
-    // Dispatch logout event to notify all components
-    window.dispatchEvent(new CustomEvent('authStateChanged', { 
-      detail: { 
-        isAuthenticated: false,
-        reason: 'token_expired'
-      } 
-    }));
-    
-    // Show a user-friendly notification
-    showError(
-      'Session Expired', 
-      'Your session has expired. Please log in again to continue.',
-      'warning'
-    );
+  if (typeof window === 'undefined') {
+    return;
   }
+  // Clear all storage
+  localStorage.removeItem('authToken');
+  localStorage.removeItem('refreshToken');
+  sessionStorage.clear();
+  
+  // Dispatch logout event to notify all components
+  window.dispatchEvent(new CustomEvent('authStateChanged', { 
+    detail: { 
+      isAuthenticated: false,
+      reason: 'token_expired'
+    } 
+  }));
+  
+  // Show a user-friendly notification
+  showError(
+    'Session Expired', 
+    'Your session has expired. Please log in again to continue.',
+    'warning'
+  );
 };
 
 // Create a timeout promise
@@ -94,40 +97,39 @@ const setCachedResponse = (cacheKey: string, data: any) => {
 };
 
 // Function to clear the in-memory cache
-export const clearApiCache = () => {
+export const clearApiCache = (): void => {
+  if (typeof window === 'undefined') {
+    return;
+  }
   cache.clear();
 };
 
 // Comprehensive logout function that clears all user data and cache
-export const performComprehensiveLogout = () => {
+export const performComprehensiveLogout = (): void => {
+  if (typeof window === 'undefined') {
+    return;
+  }
   // Clear authentication
   authAPI.logout();
   
   // Clear API cache
-  cache.clear();
+  clearApiCache();
   
   // Clear all auth-related tokens
-  if (typeof window !== 'undefined') {
-    localStorage.removeItem('authToken');
-    localStorage.removeItem('refreshToken');
-    localStorage.removeItem('access_token');
-    
-    // Clear session storage
-    sessionStorage.clear();
-    
-    // Clear any cached images by reloading them
-    const images = document.querySelectorAll('img');
-    images.forEach(img => {
-      if (img.src) {
-        img.src = img.src + '?t=' + Date.now();
-      }
-    });
-  }
+  localStorage.removeItem('authToken');
+  localStorage.removeItem('refreshToken');
+  localStorage.removeItem('access_token');
   
-  // Dispatch custom event to notify other components
-  if (typeof window !== 'undefined') {
-    window.dispatchEvent(new CustomEvent('authStateChanged'));
-  }
+  // Clear session storage
+  sessionStorage.clear();
+  
+  // Clear any cached images by reloading them
+  const images = document.querySelectorAll('img');
+  images.forEach(img => {
+    if (img.src) {
+      img.src = img.src + '?t=' + Date.now();
+    }
+  });
 };
 
 // API request helper with authentication, timeout, and caching
