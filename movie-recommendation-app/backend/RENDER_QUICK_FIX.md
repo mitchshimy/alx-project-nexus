@@ -2,7 +2,7 @@
 
 ## **Current Issue:**
 ```
-bash: line 1: build.sh: command not found
+chmod: cannot access 'build.sh': No such file or directory
 ==> Build failed 😞
 ```
 
