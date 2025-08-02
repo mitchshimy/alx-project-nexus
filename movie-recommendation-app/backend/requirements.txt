@@ -1,3 +1,7 @@
+# Core Python Dependencies
+setuptools>=65.5.1
+wheel>=0.38.4
+
 # Django and Core Framework
 Django==4.2.7
 djangorestframework==3.14.0
@@ -47,4 +51,16 @@ whitenoise==6.6.0
 # sentry-sdk==1.38.0  # For error tracking (if needed)
 
 # Note: All packages are tested with Python 3.8+ and Django 4.2+
-# For production deployment, consider using exact versions for stability 
+# For production deployment, consider using exact versions for stability
+
+# Deployment-specific dependencies
+# These ensure compatibility with various deployment platforms
+certifi>=2023.7.22
+charset-normalizer>=3.2.0
+idna>=3.4
+urllib3>=1.26.16
+
+# Additional deployment dependencies
+# These help resolve common deployment issues
+packaging>=21.3
+pyparsing>=3.0.9 
