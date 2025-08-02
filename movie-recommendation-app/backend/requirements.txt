@@ -12,7 +12,8 @@ djangorestframework-simplejwt==5.3.0
 drf-yasg==1.21.7
 
 # Database
-psycopg2-binary==2.9.9
+# PostgreSQL adapter - using a more compatible version
+psycopg2-binary==2.9.7
 
 # Caching and Redis
 redis==5.0.1
