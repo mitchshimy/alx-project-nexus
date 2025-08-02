@@ -865,6 +865,7 @@ def test_api(request):
 
 
 @api_view(['GET'])
+@permission_classes([permissions.AllowAny])
 def health_check(request):
     """Health check endpoint for monitoring"""
     return Response({
