@@ -41,8 +41,7 @@ DEBUG = config('DEBUG', default=True, cast=bool)
 ALLOWED_HOSTS = config('ALLOWED_HOSTS', default='localhost,127.0.0.1,0.0.0.0').split(',')
 ALLOWED_HOSTS.extend([
     'movie-recommendation-api-6kmu.onrender.com',
-    'movie-recommendation-api-bftu.onrender.com',
-    '.onrender.com',  # Allow all Render subdomains
+    '.onrender.com',
 ])
 
 
