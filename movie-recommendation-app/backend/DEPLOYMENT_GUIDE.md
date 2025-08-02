@@ -25,6 +25,7 @@ This guide helps you deploy your Django backend to Render with the current versi
 - Updated CORS settings for development
 - Added Render domain to ALLOWED_HOSTS
 - More permissive CORS for testing
+- Added STATIC_ROOT and STATICFILES_DIRS for production deployment
 
 ## Deployment Steps
 
@@ -107,6 +108,7 @@ JWT_REFRESH_TOKEN_LIFETIME=1
 1. **psycopg2 Issues:** Python 3.11.7 should work fine
 2. **CORS Issues:** CORS_ALLOW_ALL_ORIGINS is enabled for development
 3. **Environment Variables:** Make sure all required variables are set
+4. **Static Files:** STATIC_ROOT is now properly configured
 
 ## Testing
 
