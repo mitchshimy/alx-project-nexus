@@ -1,199 +1,119 @@
-# Render Deployment Guide for Movie Recommendation API
+# Render Deployment Guide
 
-## 🚀 Step-by-Step Deployment Instructions
+## Quick Setup
 
-### **Step 1: Prepare Your Repository**
-
-1. **Ensure your code is committed to GitHub**
-   ```bash
-   git add .
-   git commit -m "Prepare for Render deployment"
-   git push origin main
-   ```
-
-2. **Verify these files exist in your backend directory:**
-   - `requirements.txt` ✅
-   - `build.sh` ✅
-   - `movie_api/production.py` ✅
-   - `env.production` ✅
-
-### **Step 2: Set Up PostgreSQL Database on Render**
+### 1. Create a New Web Service
 
 1. **Go to Render Dashboard**
-   - Visit [render.com](https://render.com)
-   - Sign in to your account
+2. **Click "New +" → "Web Service"**
+3. **Connect your GitHub repository**
+4. **Configure the service:**
 
-2. **Create PostgreSQL Database**
-   - Click "New" → "PostgreSQL"
-   - **Name**: `movie-recommendation-db`
-   - **Database**: `movie_db`
-   - **User**: `movie_user`
-   - **Region**: Choose closest to your users
-   - Click "Create Database"
+### 2. Service Configuration
 
-3. **Save Database Credentials**
-   - Copy the **Internal Database URL**
-   - Copy the **External Database URL**
-   - Save these for later use
+**Name:** `movie-recommendation-api` (or your preferred name)
 
-### **Step 3: Set Up Redis on Render**
+**Environment:** `Python 3`
 
-1. **Create Redis Instance**
-   - Click "New" → "Redis"
-   - **Name**: `movie-recommendation-redis`
-   - **Region**: Same as your database
-   - Click "Create Redis"
+**Build Command:** `chmod +x build.sh && ./build.sh`
 
-2. **Save Redis Credentials**
-   - Copy the **Internal Redis URL**
-   - Copy the **External Redis URL**
-   - Save these for later use
+**Start Command:** `cd movie-recommendation-app/backend && gunicorn movie_api.wsgi:application`
 
-### **Step 4: Deploy Your Django App**
+**Root Directory:** Leave empty (use repository root)
 
-1. **Create Web Service**
-   - Click "New" → "Web Service"
-   - Connect your GitHub repository
-   - Select your repository
+### 3. Environment Variables (Required)
 
-2. **Configure the Service**
-   - **Name**: `movie-recommendation-api`
-   - **Environment**: `Python 3`
-   - **Build Command**: `chmod +x build.sh && ./build.sh`
-   - **Start Command**: `cd movie-recommendation-app/backend && gunicorn movie_api.wsgi:application`
-   - **Root Directory**: Leave empty (use repository root)
+Add these environment variables in your Render service:
 
-3. **Set Environment Variables**
-   Click "Environment" tab and add these variables:
+```
+# Django Settings
+SECRET_KEY=your-secret-key-here
+DEBUG=False
+ALLOWED_HOSTS=your-app-name.onrender.com
 
-   ```bash
-   # Django Settings
-   SECRET_KEY=X5%BUZoW+Q94)eYZ(M-fGJ!YfJRC8FzF+RvLV1G@JmhXc_oQqlNtdwNtblP54MQd
-   DEBUG=False
-   
-   # Database Settings (from Step 2)
-   DB_NAME=movie_db
-   DB_USER=movie_user
-   DB_PASSWORD=your-db-password
-   DB_HOST=your-db-host
-   DB_PORT=5432
-   
-   # Redis Settings (from Step 3)
-   REDIS_HOST=your-redis-host
-   REDIS_PORT=6379
-   REDIS_PASSWORD=your-redis-password
-   REDIS_DB=0
-   
-   # TMDB API Settings
-   TMDB_READ_TOKEN=eyJhbGciOiJIUzI1NiJ9.eyJhdWQiOiI1Y2QyNDAyMDJlNzEwNWM5ZmJlYmFhNzU1OTNmZDAwZSIsIm5iZiI6MTc1MzY5NjA2Ny45NTIsInN1YiI6IjY4ODc0NzQzNTBlYWY2NjI1MjI0NzBiZSIsInNjb3BlcyI6WyJhcGlfcmVhZCJdLCJ2ZXJzaW9uIjoxfQ.-DSG0t2dpq-Hhv-IdYclsEq7vSIYyBd5LIPCnruii_Y
-   TMDB_API_KEY=5cd240202e7105c9fbebaa75593fd00e
-   
-   # JWT Settings
-   JWT_SECRET_KEY=piaYDAztqJziFMwmm!ZiM-2ZE_9fe0eKYR8L%7!s&to*)Fx(1hZ@bHQn%grYa8o8
-   JWT_ACCESS_TOKEN_LIFETIME=5
-   JWT_REFRESH_TOKEN_LIFETIME=1
-   
-   # CORS Settings (update with your frontend domain)
-   CORS_ALLOWED_ORIGINS=https://your-frontend-domain.com,http://localhost:3000
-   CSRF_TRUSTED_ORIGINS=https://your-frontend-domain.com,http://localhost:3000
-   ```
+# Database (Use Render's PostgreSQL)
+DATABASE_URL=postgresql://your-app-name:password@host:5432/database-name
 
-4. **Deploy**
-   - Click "Create Web Service"
-   - Wait for deployment to complete
+# Redis (Use Render's Redis)
+REDIS_URL=redis://your-redis-host:6379
 
-### **Step 5: Update Frontend Configuration**
+# JWT Settings
+JWT_SECRET_KEY=your-jwt-secret-key-here
+JWT_ACCESS_TOKEN_LIFETIME=60
+JWT_REFRESH_TOKEN_LIFETIME=1440
 
-1. **Update API Base URL**
-   - Go to your frontend code
-   - Update `API_BASE_URL` in `utils/api.ts`
-   - Change from `http://localhost:8000/api/v1` to `https://your-app-name.onrender.com/api/v1`
+# TMDB API
+TMDB_READ_TOKEN=your-tmdb-read-token
+TMDB_API_KEY=your-tmdb-api-key
 
-2. **Update CORS Settings**
-   - Go back to your Render app settings
-   - Update `CORS_ALLOWED_ORIGINS` with your frontend domain
-
-### **Step 6: Test Your Deployment**
-
-1. **Test API Endpoints**
-   ```bash
-   # Test health check
-   curl https://your-app-name.onrender.com/api/v1/movies/
-   
-   # Test authentication
-   curl https://your-app-name.onrender.com/api/v1/users/register/
-   ```
-
-2. **Check Logs**
-   - Go to your Render app dashboard
-   - Click "Logs" tab
-   - Monitor for any errors
-
-### **Step 7: Set Up Custom Domain (Optional)**
-
-1. **Add Custom Domain**
-   - Go to your app settings
-   - Click "Settings" → "Custom Domains"
-   - Add your domain (e.g., `api.yourdomain.com`)
-
-2. **Update DNS**
-   - Add CNAME record pointing to your Render app
-   - Wait for DNS propagation
-
-## 🔧 Troubleshooting
-
-### **Common Issues:**
-
-1. **Build Fails**
-   - Check `build.sh` has execute permissions
-   - Verify all dependencies in `requirements.txt`
-
-2. **Database Connection Error**
-   - Verify database credentials
-   - Check if database is accessible from your app
-
-3. **Static Files Not Loading**
-   - Ensure `STATIC_ROOT` is set correctly
-   - Check `whitenoise` is in requirements
-
-4. **CORS Errors**
-   - Update `CORS_ALLOWED_ORIGINS` with your frontend domain
-   - Check `CSRF_TRUSTED_ORIGINS`
-
-### **Useful Commands:**
-
-```bash
-# Check app logs
-# Go to Render dashboard → Logs
-
-# Restart app
-# Go to Render dashboard → Manual Deploy
-
-# Check environment variables
-# Go to Render dashboard → Environment
+# CORS Settings
+CORS_ALLOWED_ORIGINS=https://your-frontend-domain.com,http://localhost:3000
+CSRF_TRUSTED_ORIGINS=https://your-frontend-domain.com,http://localhost:3000
 ```
 
-## 📊 Monitoring
+### 4. Database Setup
 
-1. **Set up alerts** in Render dashboard
-2. **Monitor logs** for errors
-3. **Check performance** metrics
-4. **Set up uptime monitoring**
+1. **Create a PostgreSQL service** in Render
+2. **Copy the Internal Database URL** from your PostgreSQL service
+3. **Set it as `DATABASE_URL`** in your web service environment variables
 
-## 🔒 Security Checklist
+### 5. Redis Setup (Optional)
 
-- [ ] `DEBUG=False` in production
-- [ ] Strong `SECRET_KEY`
-- [ ] HTTPS enabled
-- [ ] CORS properly configured
-- [ ] Database credentials secure
-- [ ] API keys not exposed in logs
+1. **Create a Redis service** in Render
+2. **Copy the Redis URL** from your Redis service
+3. **Set it as `REDIS_URL`** in your web service environment variables
 
-## 🎯 Next Steps
+## Troubleshooting
 
-1. **Deploy your frontend** (Vercel, Netlify, etc.)
-2. **Set up monitoring** (Sentry, etc.)
-3. **Configure backups** for database
-4. **Set up CI/CD** pipeline
+### Common Issues:
 
-Your API should now be live at: `https://your-app-name.onrender.com` 
+1. **Build fails**: Check the build logs for dependency issues
+2. **Database connection fails**: Verify `DATABASE_URL` is correct
+3. **Static files not found**: Ensure `STATIC_ROOT` is set
+4. **Gunicorn fails**: Check the start command is correct
+
+### Debug Commands:
+
+```bash
+# Test database connection
+python manage.py dbshell
+
+# Check migrations
+python manage.py showmigrations
+
+# Test the application
+python manage.py runserver 0.0.0.0:8000
+```
+
+## Deployment Checklist
+
+- [ ] Repository connected to Render
+- [ ] Build command configured
+- [ ] Start command configured
+- [ ] Environment variables set
+- [ ] Database service created and connected
+- [ ] Redis service created (optional)
+- [ ] Domain configured (optional)
+
+## API Endpoints
+
+After deployment, your API will be available at:
+
+- **Base URL**: `https://your-app-name.onrender.com/api/v1`
+- **Health Check**: `https://your-app-name.onrender.com/api/v1/health/`
+- **Swagger Docs**: `https://your-app-name.onrender.com/swagger/`
+- **Admin Panel**: `https://your-app-name.onrender.com/admin/`
+
+## Environment Variables Reference
+
+| Variable | Description | Required |
+|----------|-------------|----------|
+| `SECRET_KEY` | Django secret key | Yes |
+| `DEBUG` | Debug mode (False for production) | Yes |
+| `DATABASE_URL` | PostgreSQL connection string | Yes |
+| `REDIS_URL` | Redis connection string | No |
+| `JWT_SECRET_KEY` | JWT signing key | Yes |
+| `TMDB_READ_TOKEN` | TMDB API read token | Yes |
+| `TMDB_API_KEY` | TMDB API key | Yes |
+| `CORS_ALLOWED_ORIGINS` | Allowed CORS origins | Yes |
+| `CSRF_TRUSTED_ORIGINS` | Trusted CSRF origins | Yes | 
