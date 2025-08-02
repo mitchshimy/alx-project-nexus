@@ -229,31 +229,14 @@ REDIS_PORT = config('REDIS_PORT', default=6379, cast=int)
 REDIS_DB = config('REDIS_DB', default=0, cast=int)
 
 # Redis Cache Configuration
-# Use database cache if Redis is not available
-try:
-    import redis
-    # Test Redis connection
-    r = redis.Redis(host=REDIS_HOST, port=REDIS_PORT, db=REDIS_DB, socket_connect_timeout=1)
-    r.ping()
-    # Redis is available, use it
-    CACHES = {
-        'default': {
-            'BACKEND': 'django.core.cache.backends.redis.RedisCache',
-            'LOCATION': f'redis://{REDIS_HOST}:{REDIS_PORT}/{REDIS_DB}',
-            'KEY_PREFIX': 'movie_api',
-            'TIMEOUT': 300,  # 5 minutes default
-        }
+CACHES = {
+    'default': {
+        'BACKEND': 'django.core.cache.backends.redis.RedisCache',
+        'LOCATION': f'redis://{REDIS_HOST}:{REDIS_PORT}/{REDIS_DB}',
+        'KEY_PREFIX': 'movie_api',
+        'TIMEOUT': 300,  # 5 minutes default
     }
-    print("✅ Redis cache configured successfully")
-except Exception as e:
-    print(f"⚠️  Redis not available ({e}), using database cache")
-    # Fallback to database cache
-    CACHES = {
-        'default': {
-            'BACKEND': 'django.core.cache.backends.db.DatabaseCache',
-            'LOCATION': 'cache_table',
-        }
-    }
+}
 
 # Session Configuration
 SESSION_ENGINE = 'django.contrib.sessions.backends.db'
