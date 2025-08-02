@@ -1,13 +1,39 @@
+# Django Core
 Django==4.2.7
 djangorestframework==3.14.0
 django-cors-headers==4.3.1
+
+# Environment and Configuration
 python-decouple==3.8
+
+# Authentication
 djangorestframework-simplejwt==5.3.0
+
+# API Documentation
 drf-yasg==1.21.7
+
+# Database
 psycopg[binary]==3.2.9
+
+# Caching
 redis==5.0.1
 django-redis==5.4.0
+
+# HTTP Requests
 requests==2.31.0
+
+# Production Server
 gunicorn==21.2.0
+
+# Static Files
 whitenoise==6.6.0
-setuptools>=65.0.0 
+
+# Development and Build Tools
+setuptools>=65.0.0
+
+# Filtering and Search
+django-filter==23.5
+
+# Additional Utilities
+Pillow==10.1.0  # For image handling
+python-dateutil==2.8.2  # For date parsing 
