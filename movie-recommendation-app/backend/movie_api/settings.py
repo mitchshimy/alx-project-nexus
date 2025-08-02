@@ -53,7 +53,7 @@ INSTALLED_APPS = [
     # Third party apps
     'rest_framework',
     'corsheaders',
-    'drf_spectacular',
+    'drf_yasg',
     
     # Local apps
     'users',
@@ -235,14 +235,4 @@ SWAGGER_SETTINGS = {
         }
     },
     'USE_SESSION_AUTH': False,
-}
-
-# Spectacular Settings
-SPECTACULAR_SETTINGS = {
-    'TITLE': 'Movie Recommendation API',
-    'DESCRIPTION': 'A comprehensive movie recommendation API with TMDB integration',
-    'VERSION': '1.0.0',
-    'SERVE_INCLUDE_SCHEMA': False,
-    'COMPONENT_SPLIT_REQUEST': True,
-    'SCHEMA_PATH_PREFIX': '/api/v1/',
 }
