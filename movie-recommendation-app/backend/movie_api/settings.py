@@ -17,9 +17,15 @@ import os
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
 
-# Load environment variables from env.local file
+# Load environment variables - try env.local first, fall back to system env
 from decouple import Config, RepositoryEnv
-config = Config(RepositoryEnv(BASE_DIR / 'env.local'))
+try:
+    # Try to load from env.local file (for local development)
+    config = Config(RepositoryEnv(BASE_DIR / 'env.local'))
+except FileNotFoundError:
+    # Fall back to system environment variables (for production)
+    from decouple import AutoConfig
+    config = AutoConfig()
 
 
 # Quick-start development settings - unsuitable for production
