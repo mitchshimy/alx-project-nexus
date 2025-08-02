@@ -861,3 +861,89 @@ def health_check(request):
         'timestamp': timezone.now().isoformat(),
         'service': 'movie-recommendation-api'
     }, status=status.HTTP_200_OK)
+
+
+@api_view(['GET'])
+@permission_classes([permissions.AllowAny])
+def mock_movies(request):
+    """Simple mock movies endpoint that doesn't use database"""
+    movie_type = request.query_params.get('type', 'movies')
+    page = int(request.query_params.get('page', 1))
+    
+    # Return mock data based on type
+    if movie_type == 'trending':
+        mock_data = {
+            'page': page,
+            'results': [
+                {
+                    'id': 550,
+                    'tmdb_id': 550,
+                    'title': 'Fight Club',
+                    'overview': 'A movie about fighting clubs',
+                    'poster_path': '/pB8BM7pdSp6B6Ih7QZ4DrQ3PmJK.jpg',
+                    'vote_average': 8.8,
+                    'vote_count': 3439,
+                    'media_type': 'movie'
+                },
+                {
+                    'id': 13,
+                    'tmdb_id': 13,
+                    'title': 'Forrest Gump',
+                    'overview': 'A movie about running',
+                    'poster_path': '/arw2vcBveWOVZr6pxd9TDd1TdQa.jpg',
+                    'vote_average': 8.8,
+                    'vote_count': 2453,
+                    'media_type': 'movie'
+                }
+            ],
+            'total_pages': 1,
+            'total_results': 2
+        }
+    elif movie_type == 'movies':
+        mock_data = {
+            'page': page,
+            'results': [
+                {
+                    'id': 238,
+                    'tmdb_id': 238,
+                    'title': 'The Godfather',
+                    'overview': 'A movie about family',
+                    'poster_path': '/3bhkrj58Vtu7enYsRolD1fZdja1.jpg',
+                    'vote_average': 9.2,
+                    'vote_count': 1564,
+                    'media_type': 'movie'
+                },
+                {
+                    'id': 278,
+                    'tmdb_id': 278,
+                    'title': 'The Shawshank Redemption',
+                    'overview': 'A movie about hope',
+                    'poster_path': '/q6y0Go1tsGEsmtFryDOJo3dEmqu.jpg',
+                    'vote_average': 8.7,
+                    'vote_count': 23420,
+                    'media_type': 'movie'
+                }
+            ],
+            'total_pages': 1,
+            'total_results': 2
+        }
+    else:
+        mock_data = {
+            'page': page,
+            'results': [
+                {
+                    'id': 550,
+                    'tmdb_id': 550,
+                    'title': 'Default Movie',
+                    'overview': 'A default movie',
+                    'poster_path': '/pB8BM7pdSp6B6Ih7QZ4DrQ3PmJK.jpg',
+                    'vote_average': 8.0,
+                    'vote_count': 1000,
+                    'media_type': 'movie'
+                }
+            ],
+            'total_pages': 1,
+            'total_results': 1
+        }
+    
+    return Response(mock_data)

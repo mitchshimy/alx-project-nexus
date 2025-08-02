@@ -6,6 +6,7 @@ app_name = 'movies'
 urlpatterns = [
     # Test endpoint
     path('test/', views.test_api, name='test_api'),
+    path('mock/', views.mock_movies, name='mock_movies'),
     
     # Movies
     path('', views.MovieListView.as_view(), name='movie_list'),
