@@ -105,26 +105,20 @@ class MovieListView(generics.ListAPIView):
                 data = tmdb_service.get_movies(page=page)
             
             print(f"TMDB Data received: {len(data.get('results', []))} items")  # Debug
+            print(f"First few items: {data.get('results', [])[:3]}")  # Debug
             
             # Store the TMDB data for pagination info
             self.tmdb_data = data  # Store for use in list() method
             
-            # Start background sync process (but don't wait for it)
-            try:
-                self._start_background_sync(data.get('results', []), tmdb_service)
-            except Exception as sync_error:
-                print(f"Background sync error (non-blocking): {sync_error}")  # Debug
+            # Start background sync process
+            self._start_background_sync(data.get('results', []), tmdb_service)
             
             # Return movies from database that match the TMDB IDs for immediate display
             tmdb_ids = [item.get('id') for item in data.get('results', [])]
+            existing_movies = Movie.objects.filter(tmdb_id__in=tmdb_ids)
             
-            try:
-                existing_movies = Movie.objects.filter(tmdb_id__in=tmdb_ids)
-                # Create a mapping of tmdb_id to movie for quick lookup
-                existing_movie_map = {movie.tmdb_id: movie for movie in existing_movies}
-            except Exception as db_error:
-                print(f"Database query error: {db_error}")  # Debug
-                existing_movie_map = {}
+            # Create a mapping of tmdb_id to movie for quick lookup
+            existing_movie_map = {movie.tmdb_id: movie for movie in existing_movies}
             
             # Create a list of movies in the same order as TMDB results
             ordered_movies = []
@@ -134,24 +128,20 @@ class MovieListView(generics.ListAPIView):
                     ordered_movies.append(existing_movie_map[tmdb_id])
                 else:
                     # Create a temporary movie object for display if not in database yet
-                    try:
-                        temp_movie = Movie(
-                            tmdb_id=tmdb_id,
-                            title=item.get('title') or item.get('name', ''),
-                            overview=item.get('overview', ''),
-                            poster_path=item.get('poster_path'),
-                            backdrop_path=item.get('backdrop_path'),
-                            vote_average=item.get('vote_average', 0.0),
-                            vote_count=item.get('vote_count', 0),
-                            popularity=item.get('popularity', 0.0),
-                            genre_ids=item.get('genre_ids', []),
-                            media_type=item.get('media_type', 'movie'),
-                            release_date=None  # Will be set during background sync
-                        )
-                        ordered_movies.append(temp_movie)
-                    except Exception as temp_error:
-                        print(f"Error creating temp movie for tmdb_id {tmdb_id}: {temp_error}")  # Debug
-                        continue
+                    temp_movie = Movie(
+                        tmdb_id=tmdb_id,
+                        title=item.get('title') or item.get('name', ''),
+                        overview=item.get('overview', ''),
+                        poster_path=item.get('poster_path'),
+                        backdrop_path=item.get('backdrop_path'),
+                        vote_average=item.get('vote_average', 0.0),
+                        vote_count=item.get('vote_count', 0),
+                        popularity=item.get('popularity', 0.0),
+                        genre_ids=item.get('genre_ids', []),
+                        media_type=item.get('media_type', 'movie'),
+                        release_date=None  # Will be set during background sync
+                    )
+                    ordered_movies.append(temp_movie)
             
             print(f"Returning {len(ordered_movies)} movies for immediate display")  # Debug
             return ordered_movies
@@ -159,11 +149,7 @@ class MovieListView(generics.ListAPIView):
         except Exception as e:
             print(f"Error in get_queryset: {e}")  # Debug
             # Fallback to database if TMDB fails
-            try:
-                return Movie.objects.all()[:20]  # Limit to 20 items
-            except Exception as fallback_error:
-                print(f"Fallback error: {fallback_error}")  # Debug
-                return []  # Return empty list if everything fails
+            return Movie.objects.all()
     
     def _start_background_sync(self, tmdb_results, tmdb_service):
         """Start background sync process for movies"""
@@ -879,52 +865,10 @@ def test_api(request):
 
 
 @api_view(['GET'])
-@permission_classes([permissions.AllowAny])
 def health_check(request):
-    """Simple health check endpoint"""
+    """Health check endpoint for monitoring"""
     return Response({
         'status': 'healthy',
-        'message': 'Movie API is running',
-        'timestamp': timezone.now().isoformat()
-    })
-
-@api_view(['GET'])
-@permission_classes([permissions.AllowAny])
-def simple_movies_test(request):
-    """Simple test endpoint that returns mock data without database operations"""
-    try:
-        # Return simple mock data without any database operations
-        mock_data = {
-            'page': 1,
-            'results': [
-                {
-                    'id': 1,
-                    'tmdb_id': 550,
-                    'title': 'Fight Club',
-                    'overview': 'A movie about fighting clubs',
-                    'poster_path': '/pB8BM7pdSp6B6Ih7QZ4DrQ3PmJK.jpg',
-                    'vote_average': 8.8,
-                    'vote_count': 3439,
-                    'media_type': 'movie'
-                },
-                {
-                    'id': 2,
-                    'tmdb_id': 13,
-                    'title': 'Forrest Gump',
-                    'overview': 'A movie about running',
-                    'poster_path': '/arw2vcBveWOVZr6pxd9TDd1TdQa.jpg',
-                    'vote_average': 8.8,
-                    'vote_count': 2453,
-                    'media_type': 'movie'
-                }
-            ],
-            'total_pages': 1,
-            'total_results': 2
-        }
-        return Response(mock_data)
-    except Exception as e:
-        print(f"Simple test error: {e}")
-        return Response({
-            'error': str(e),
-            'status': 'error'
-        }, status=500)
+        'timestamp': timezone.now().isoformat(),
+        'service': 'movie-recommendation-api'
+    }, status=status.HTTP_200_OK)
