@@ -4,10 +4,6 @@ import styled from 'styled-components';
 import Hero from '@/components/Hero';
 import MovieCard from '@/components/MovieCard';
 import { movieAPI } from '@/utils/api';
-import { TMDBMovie, Genre } from '@/types/tmdb';
-import { SkeletonBase } from '@/components/Skeleton';
-import { t } from '@/utils/translations';
-import Layout from '@/components/Layout';
 import { 
   MdMovie, 
   MdTrendingUp, 
@@ -486,10 +482,7 @@ export default function Home({ isSidebarOpen = false }: { isSidebarOpen?: boolea
     router.push('/movies');
   };
 
-  const handleMovieClick = (movie: { id: number; tmdb_id?: number }) => {
-    const movieId = movie.tmdb_id || movie.id;
-    router.push(`/movies/${movieId}`);
-  };
+
 
   const handleRetry = () => {
     setError(null);
@@ -561,7 +554,7 @@ export default function Home({ isSidebarOpen = false }: { isSidebarOpen?: boolea
               </FeatureIcon>
               <FeatureTitle>Trending Now</FeatureTitle>
               <FeatureDescription>
-                Stay updated with what's popular and trending in the entertainment world
+                Stay updated with what&apos;s popular and trending in the entertainment world
               </FeatureDescription>
             </FeatureCard>
             
@@ -591,7 +584,7 @@ export default function Home({ isSidebarOpen = false }: { isSidebarOpen?: boolea
               </FeatureIcon>
               <FeatureTitle>Smart Search</FeatureTitle>
               <FeatureDescription>
-                Find exactly what you're looking for with our advanced search features
+                Find exactly what you&apos;re looking for with our advanced search features
               </FeatureDescription>
             </FeatureCard>
             

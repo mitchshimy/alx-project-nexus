@@ -1,6 +1,5 @@
 // components/Sidebar.tsx
 import { useState, useEffect } from 'react';
-import Link from 'next/link';
 import { useRouter } from 'next/router';
 import styled from 'styled-components';
 import { t } from '@/utils/translations';
@@ -132,16 +131,7 @@ const NavItem = styled.div<{ isActive?: boolean; isOpen?: boolean }>`
   `}
 `;
 
-const Label = styled.span<{ isOpen: boolean }>`
-  opacity: ${props => props.isOpen ? 1 : 0};
-  transition: opacity 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-  white-space: nowrap;
-  font-weight: 500;
-  
-  @media (max-width: 768px) {
-    opacity: 1;
-  }
-`;
+
 
 const HoverTooltip = styled.div<{ isOpen: boolean }>`
   position: absolute;
@@ -267,32 +257,10 @@ const SectionTitle = styled.h3<{ isOpen: boolean }>`
   }
 `;
 
-const SidebarContent = styled.div`
-  padding: 1rem 0;
-  height: 100%;
-  overflow-y: auto;
-  
-  &::-webkit-scrollbar {
-    width: 4px;
-  }
-  
-  &::-webkit-scrollbar-track {
-    background: transparent;
-  }
-  
-  &::-webkit-scrollbar-thumb {
-    background: rgba(255, 255, 255, 0.1);
-    border-radius: 2px;
-  }
-  
-  &::-webkit-scrollbar-thumb:hover {
-    background: rgba(255, 255, 255, 0.2);
-  }
-`;
+
 
 export default function Sidebar({ isOpen, onClose }: SidebarProps) {
   const router = useRouter();
-  const [currentLanguage, setCurrentLanguage] = useState('en');
 
   const handleNavigation = (href: string) => {
     // Navigate to the page
@@ -300,41 +268,6 @@ export default function Sidebar({ isOpen, onClose }: SidebarProps) {
     // Close the sidebar after navigation
     onClose();
   };
-
-  useEffect(() => {
-    // Get current language from settings
-    const getLanguage = () => {
-      if (typeof window === 'undefined') {
-        return 'en';
-      }
-      
-      try {
-        const savedSettings = localStorage.getItem('userSettings');
-        if (savedSettings) {
-          const parsedSettings = JSON.parse(savedSettings);
-          return parsedSettings.language || 'en';
-        }
-      } catch (error) {
-        console.error('Error loading language setting:', error);
-      }
-      return 'en';
-    };
-
-    setCurrentLanguage(getLanguage());
-
-    // Listen for language changes
-    const handleLanguageChange = (event: CustomEvent) => {
-      setCurrentLanguage(event.detail.language);
-    };
-
-    if (typeof window !== 'undefined') {
-      window.addEventListener('languageChanged', handleLanguageChange as EventListener);
-
-      return () => {
-        window.removeEventListener('languageChanged', handleLanguageChange as EventListener);
-      };
-    }
-  }, []);
 
   const navItems = [
     { href: "/", icon: <MdHome />, label: t('nav.home') },

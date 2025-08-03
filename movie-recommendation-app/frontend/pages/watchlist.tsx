@@ -40,19 +40,7 @@ const EmptyState = styled.div`
   }
 `;
 
-const ErrorMessage = styled.div`
-  color: #e74c3c;
-  padding: 2rem;
-  text-align: center;
-  
-  @media (max-width: 768px) {
-    padding: 1.5rem;
-  }
-  
-  @media (max-width: 480px) {
-    padding: 1rem;
-  }
-`;
+
 
 const AuthPrompt = styled.div`
   text-align: center;
