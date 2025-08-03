@@ -433,7 +433,7 @@ export default function Help() {
           <h1>Help Center</h1>
           <p>
             Find answers to common questions and learn how to make the most of SHIMY. 
-            Can't find what you're looking for? Contact our support team.
+            Can&apos;t find what you&apos;re looking for? Contact our support team.
           </p>
         </HelpHeader>
 

@@ -3,7 +3,6 @@ import { useRouter } from 'next/router';
 import styled from 'styled-components';
 import { movieAPI, getAuthToken, clearApiCache } from '@/utils/api';
 import MovieCard from '@/components/MovieCard';
-import Layout from '@/components/Layout';
 
 const MovieGrid = styled.div`
   display: grid;
@@ -159,7 +158,6 @@ export default function Favorites() {
     release_date?: string;
   }>>([]);
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
   const [isAuthenticated, setIsAuthenticated] = useState(false);
 
   const loadFavorites = async () => {
@@ -301,16 +299,7 @@ export default function Favorites() {
     );
   }
 
-  if (error) {
-    return (
-      <>
-        <h1>Your Favorites</h1>
-        <ErrorMessage>
-          {error}
-        </ErrorMessage>
-      </>
-    );
-  }
+
 
   return (
     <>

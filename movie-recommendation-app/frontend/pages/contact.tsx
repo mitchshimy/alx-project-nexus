@@ -155,7 +155,7 @@ const SuccessMessage = styled.div`
   margin-bottom: 1rem;
 `;
 
-export default function Contact({ isSidebarOpen }: { isSidebarOpen?: boolean }) {
+export default function Contact() {
   const [formData, setFormData] = useState({
     name: '',
     email: '',
