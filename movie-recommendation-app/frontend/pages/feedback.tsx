@@ -1,6 +1,5 @@
 import { useState } from 'react';
 import styled from 'styled-components';
-import Layout from '@/components/Layout';
 import { showError } from '@/utils/api';
 
 const FeedbackContainer = styled.div`
@@ -252,7 +251,7 @@ const featureRequests = [
   'Export watchlist to other platforms'
 ];
 
-export default function Feedback({ isSidebarOpen }: { isSidebarOpen?: boolean }) {
+export default function Feedback() {
   const [formData, setFormData] = useState({
     name: '',
     email: '',
@@ -318,7 +317,7 @@ export default function Feedback({ isSidebarOpen }: { isSidebarOpen?: boolean })
 
       // Hide success message after 5 seconds
       setTimeout(() => setShowSuccess(false), 5000);
-    } catch (error) {
+    } catch {
       showError('Error', 'Failed to send feedback. Please try again.');
     } finally {
       setIsSubmitting(false);

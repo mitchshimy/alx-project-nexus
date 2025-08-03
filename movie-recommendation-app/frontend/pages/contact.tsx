@@ -1,7 +1,5 @@
 import { useState } from 'react';
 import styled from 'styled-components';
-import { useRouter } from 'next/router';
-import Layout from '@/components/Layout';
 import { showError } from '@/utils/api';
 
 const ContactContainer = styled.div`
@@ -158,7 +156,6 @@ const SuccessMessage = styled.div`
 `;
 
 export default function Contact({ isSidebarOpen }: { isSidebarOpen?: boolean }) {
-  const router = useRouter();
   const [formData, setFormData] = useState({
     name: '',
     email: '',
@@ -197,7 +194,7 @@ export default function Contact({ isSidebarOpen }: { isSidebarOpen?: boolean }) 
 
       // Hide success message after 5 seconds
       setTimeout(() => setShowSuccess(false), 5000);
-    } catch (error) {
+    } catch {
       showError('Error', 'Failed to send message. Please try again.');
     } finally {
       setIsSubmitting(false);
@@ -210,14 +207,14 @@ export default function Contact({ isSidebarOpen }: { isSidebarOpen?: boolean }) 
         <ContactHeader>
           <h1>Contact Us</h1>
           <p>
-            Have a question, suggestion, or need help? We're here to help! 
-            Fill out the form below and we'll get back to you as soon as possible.
+                         Have a question, suggestion, or need help? We&apos;re here to help! 
+             Fill out the form below and we&apos;ll get back to you as soon as possible.
           </p>
         </ContactHeader>
 
         {showSuccess && (
           <SuccessMessage>
-            Thank you for your message! We'll get back to you within 24 hours.
+                         Thank you for your message! We&apos;ll get back to you within 24 hours.
           </SuccessMessage>
         )}
 

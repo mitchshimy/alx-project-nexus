@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import styled from 'styled-components';
-import Layout from '@/components/Layout';
+import Link from 'next/link';
 
 const HelpContainer = styled.div`
   max-width: 1000px;
@@ -332,8 +332,8 @@ const faqData: { [key: string]: FAQItem[] } = {
       answer: 'Navigate to your Profile page and click "Edit Profile". You can update your username, email, and other personal information.'
     },
     {
-      question: 'How do I delete my account?',
-      answer: 'To delete your account, head over to Account page and click on "Delete Account". It is sad to see you go.'
+             question: 'How do I delete my account?',
+       answer: 'To delete your account, head over to Account page and click on &quot;Delete Account&quot;. It is sad to see you go.'
     }
   ],
   'Technical Issues': [
@@ -366,7 +366,7 @@ const faqData: { [key: string]: FAQItem[] } = {
   ]
 };
 
-export default function Help({ isSidebarOpen }: { isSidebarOpen?: boolean }) {
+export default function Help() {
   const [searchTerm, setSearchTerm] = useState('');
   const [openItems, setOpenItems] = useState<{ [key: string]: boolean }>({});
 
@@ -461,7 +461,7 @@ export default function Help({ isSidebarOpen }: { isSidebarOpen?: boolean }) {
               ) : (
                 <NoResults>
                   <h3>No results found</h3>
-                  <p>We couldn't find any help articles matching "{searchTerm}". Try different keywords or browse our categories below.</p>
+                  <p>We couldn&apos;t find any help articles matching &quot;{searchTerm}&quot;. Try different keywords or browse our categories below.</p>
                   <SearchSuggestions>
                     <span style={{ color: 'rgba(255, 255, 255, 0.5)', fontSize: '0.9rem', marginBottom: '0.5rem', width: '100%' }}>
                       Popular searches:
@@ -537,9 +537,9 @@ export default function Help({ isSidebarOpen }: { isSidebarOpen?: boolean }) {
         <ContactSection>
           <h2>Still Need Help?</h2>
           <p>
-            Can't find the answer you're looking for? Our support team is here to help.
+            Can&apos;t find the answer you&apos;re looking for? Our support team is here to help.
           </p>
-          <a href="/contact">Contact Support</a>
+          <Link href="/contact">Contact Support</Link>
         </ContactSection>
       </HelpContainer>
     </>

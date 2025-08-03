@@ -348,7 +348,7 @@ export default function Discover({ isSidebarOpen }: { isSidebarOpen?: boolean })
     };
     
     loadInitialContent();
-  }, []); // Only run on mount
+  }, [contentType, searchQuery]); // Include dependencies
 
   const filteredContent = content.filter(item => {
     const matchesGenre = filter === 'all' || item.genre_ids?.includes(Number(filter));
