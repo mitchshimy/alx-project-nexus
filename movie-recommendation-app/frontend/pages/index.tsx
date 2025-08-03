@@ -8,6 +8,14 @@ import { TMDBMovie, Genre } from '@/types/tmdb';
 import { SkeletonBase } from '@/components/Skeleton';
 import { t } from '@/utils/translations';
 import Layout from '@/components/Layout';
+import { 
+  MdMovie, 
+  MdTrendingUp, 
+  MdStar, 
+  MdFavorite, 
+  MdSearch, 
+  MdPlayArrow 
+} from 'react-icons/md';
 
 
 // Modern glassmorphism and neumorphism inspired design
@@ -156,7 +164,7 @@ const Loading = styled.div`
 const WelcomeSection = styled.div`
   text-align: center;
   padding: 6rem 2rem;
-  max-width: 1000px;
+  max-width: 1200px;
   margin: 3rem auto;
   background: rgba(255, 255, 255, 0.03);
   border-radius: 24px;
@@ -178,21 +186,64 @@ const WelcomeSection = styled.div`
     background-size: 200% auto;
   }
   
+  &::after {
+    content: '';
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    width: 300px;
+    height: 300px;
+    background: radial-gradient(circle, rgba(106, 17, 203, 0.1) 0%, transparent 70%);
+    transform: translate(-50%, -50%);
+    animation: pulse 4s ease-in-out infinite;
+    pointer-events: none;
+  }
+  
   @keyframes gradientFlow {
     0% { background-position: 0% center; }
     100% { background-position: 200% center; }
   }
+  
+  @keyframes pulse {
+    0%, 100% { opacity: 0.3; transform: translate(-50%, -50%) scale(1); }
+    50% { opacity: 0.6; transform: translate(-50%, -50%) scale(1.1); }
+  }
 `;
 
 const WelcomeTitle = styled.h1`
-  font-size: 3.2rem;
+  font-size: 3.5rem;
   margin-bottom: 1.5rem;
   color: #fff;
   font-weight: 700;
-  background: linear-gradient(135deg, #fff 0%, #aaa 100%);
+  background: linear-gradient(135deg, #fff 0%, #6a11cb 50%, #2575fc 100%);
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
   background-clip: text;
+  position: relative;
+  animation: titleGlow 3s ease-in-out infinite;
+  
+  &::after {
+    content: '';
+    position: absolute;
+    bottom: -10px;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 100px;
+    height: 3px;
+    background: linear-gradient(90deg, #6a11cb 0%, #2575fc 100%);
+    border-radius: 3px;
+    animation: titleUnderline 2s ease-in-out infinite;
+  }
+  
+  @keyframes titleGlow {
+    0%, 100% { filter: drop-shadow(0 0 20px rgba(106, 17, 203, 0.3)); }
+    50% { filter: drop-shadow(0 0 30px rgba(106, 17, 203, 0.6)); }
+  }
+  
+  @keyframes titleUnderline {
+    0%, 100% { width: 100px; opacity: 0.7; }
+    50% { width: 150px; opacity: 1; }
+  }
   
   @media (max-width: 768px) {
     font-size: 2.5rem;
@@ -285,6 +336,53 @@ const NoResults = styled.div`
   color: #e0e0e0;
   font-size: 1.2rem;
   margin: 2rem 0;
+`;
+
+const FeatureGrid = styled.div`
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+  gap: 2rem;
+  margin: 3rem 0;
+  max-width: 900px;
+  margin-left: auto;
+  margin-right: auto;
+`;
+
+const FeatureCard = styled.div`
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 16px;
+  padding: 2rem;
+  text-align: center;
+  transition: all 0.3s ease;
+  backdrop-filter: blur(10px);
+  
+  &:hover {
+    transform: translateY(-5px);
+    background: rgba(255, 255, 255, 0.08);
+    border-color: rgba(106, 17, 203, 0.3);
+    box-shadow: 0 8px 32px rgba(106, 17, 203, 0.2);
+  }
+`;
+
+const FeatureIcon = styled.div`
+  font-size: 2.5rem;
+  margin-bottom: 1rem;
+  color: #6a11cb;
+  filter: drop-shadow(0 0 10px rgba(106, 17, 203, 0.5));
+`;
+
+const FeatureTitle = styled.h3`
+  font-size: 1.2rem;
+  font-weight: 600;
+  color: #fff;
+  margin-bottom: 0.5rem;
+`;
+
+const FeatureDescription = styled.p`
+  font-size: 0.9rem;
+  color: rgba(255, 255, 255, 0.7);
+  line-height: 1.6;
 `;
 
 export default function Home({ isSidebarOpen = false }: { isSidebarOpen?: boolean }) {
@@ -445,6 +543,69 @@ export default function Home({ isSidebarOpen = false }: { isSidebarOpen?: boolea
             Explore the latest blockbusters, timeless classics, and hidden gems. 
             Curated collections to match your mood and taste.
           </WelcomeSubtitle>
+          
+          <FeatureGrid>
+            <FeatureCard>
+              <FeatureIcon>
+                <MdMovie />
+              </FeatureIcon>
+              <FeatureTitle>Vast Collection</FeatureTitle>
+              <FeatureDescription>
+                Access thousands of movies and TV shows from classics to the latest releases
+              </FeatureDescription>
+            </FeatureCard>
+            
+            <FeatureCard>
+              <FeatureIcon>
+                <MdTrendingUp />
+              </FeatureIcon>
+              <FeatureTitle>Trending Now</FeatureTitle>
+              <FeatureDescription>
+                Stay updated with what's popular and trending in the entertainment world
+              </FeatureDescription>
+            </FeatureCard>
+            
+            <FeatureCard>
+              <FeatureIcon>
+                <MdStar />
+              </FeatureIcon>
+              <FeatureTitle>Top Rated</FeatureTitle>
+              <FeatureDescription>
+                Discover critically acclaimed content with high ratings and reviews
+              </FeatureDescription>
+            </FeatureCard>
+            
+            <FeatureCard>
+              <FeatureIcon>
+                <MdFavorite />
+              </FeatureIcon>
+              <FeatureTitle>Personal Lists</FeatureTitle>
+              <FeatureDescription>
+                Create your own watchlist and favorites for personalized experience
+              </FeatureDescription>
+            </FeatureCard>
+            
+            <FeatureCard>
+              <FeatureIcon>
+                <MdSearch />
+              </FeatureIcon>
+              <FeatureTitle>Smart Search</FeatureTitle>
+              <FeatureDescription>
+                Find exactly what you're looking for with our advanced search features
+              </FeatureDescription>
+            </FeatureCard>
+            
+            <FeatureCard>
+              <FeatureIcon>
+                <MdPlayArrow />
+              </FeatureIcon>
+              <FeatureTitle>Instant Access</FeatureTitle>
+              <FeatureDescription>
+                Get detailed information, trailers, and cast details instantly
+              </FeatureDescription>
+            </FeatureCard>
+          </FeatureGrid>
+          
           <CTAButton onClick={handleBrowseMovies}>
             Explore Collection
           </CTAButton>

@@ -76,7 +76,7 @@ const SidebarContainer = styled.div<{ isOpen: boolean }>`
   }
 `;
 
-const NavItem = styled(Link)<{ isActive?: boolean; isOpen?: boolean }>`
+const NavItem = styled.div<{ isActive?: boolean; isOpen?: boolean }>`
   display: flex;
   align-items: center;
   padding: 1rem 1.25rem;
@@ -87,6 +87,7 @@ const NavItem = styled(Link)<{ isActive?: boolean; isOpen?: boolean }>`
   position: relative;
   margin: 0.25rem 0.75rem;
   border-radius: 12px;
+  cursor: pointer;
   
   svg {
     color: rgba(255, 255, 255, 0.6);
@@ -293,6 +294,13 @@ export default function Sidebar({ isOpen, onClose }: SidebarProps) {
   const router = useRouter();
   const [currentLanguage, setCurrentLanguage] = useState('en');
 
+  const handleNavigation = (href: string) => {
+    // Navigate to the page
+    router.push(href);
+    // Close the sidebar after navigation
+    onClose();
+  };
+
   useEffect(() => {
     // Get current language from settings
     const getLanguage = () => {
@@ -364,9 +372,9 @@ export default function Sidebar({ isOpen, onClose }: SidebarProps) {
           {navItems.map((item) => (
             <NavItemWrapper key={item.href} isOpen={isOpen}>
               <NavItem 
-                href={item.href}
                 isActive={router.pathname === item.href}
                 isOpen={isOpen}
+                onClick={() => handleNavigation(item.href)}
               >
                 {item.icon}
                 {isOpen && <NavText>{item.label}</NavText>}
@@ -385,9 +393,9 @@ export default function Sidebar({ isOpen, onClose }: SidebarProps) {
           {personalItems.map((item) => (
             <NavItemWrapper key={item.href} isOpen={isOpen}>
               <NavItem 
-                href={item.href}
                 isActive={router.pathname === item.href}
                 isOpen={isOpen}
+                onClick={() => handleNavigation(item.href)}
               >
                 {item.icon}
                 {isOpen && <NavText>{item.label}</NavText>}
@@ -406,9 +414,9 @@ export default function Sidebar({ isOpen, onClose }: SidebarProps) {
           {accountItems.map((item) => (
             <NavItemWrapper key={item.href} isOpen={isOpen}>
               <NavItem 
-                href={item.href}
                 isActive={router.pathname === item.href}
                 isOpen={isOpen}
+                onClick={() => handleNavigation(item.href)}
               >
                 {item.icon}
                 {isOpen && <NavText>{item.label}</NavText>}
@@ -423,9 +431,9 @@ export default function Sidebar({ isOpen, onClose }: SidebarProps) {
           {profileItems.map((item) => (
             <NavItemWrapper key={item.href} isOpen={isOpen}>
               <NavItem 
-                href={item.href}
                 isActive={router.pathname === item.href}
                 isOpen={isOpen}
+                onClick={() => handleNavigation(item.href)}
               >
                 {item.icon}
                 {isOpen && <NavText>{item.label}</NavText>}
