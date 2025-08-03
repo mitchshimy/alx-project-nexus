@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useRouter } from 'next/router';
 import styled from 'styled-components';
-import { movieAPI, getAuthToken, clearApiCache } from '@/utils/api';
+import { movieAPI, getAuthToken } from '@/utils/api';
 import MovieCard from '@/components/MovieCard';
 
 const MovieGrid = styled.div`
@@ -163,8 +163,6 @@ export default function Favorites() {
   const loadFavorites = async () => {
     try {
       setLoading(true);
-      // Clear any cached data first
-      await clearApiCache();
       
       const data = await movieAPI.getFavorites();
       
@@ -218,55 +216,11 @@ export default function Favorites() {
     loadFavorites();
   }, []);
 
-  // Refresh favorites when the page becomes visible or when user navigates to it
-  useEffect(() => {
-    const handleVisibilityChange = () => {
-      if (!document.hidden && isAuthenticated) {
-        loadFavorites();
-      }
-    };
-
-    const handleFocus = () => {
-      if (isAuthenticated) {
-        loadFavorites();
-      }
-    };
-
-    const handleRouteChange = (url: string) => {
-      if (url === '/favorites' && isAuthenticated) {
-        // Force a complete refresh when navigating to favorites page
-        setTimeout(() => {
-          loadFavorites();
-        }, 100);
-      }
-    };
-
-    // Listen for visibility changes and focus
-    document.addEventListener('visibilitychange', handleVisibilityChange);
-    window.addEventListener('focus', handleFocus);
-    router.events.on('routeChangeComplete', handleRouteChange);
-    
-    // Initial load with a slight delay to ensure everything is ready
-    if (isAuthenticated) {
-      setTimeout(() => {
-        loadFavorites();
-      }, 100);
-    }
-
-    return () => {
-      document.removeEventListener('visibilitychange', handleVisibilityChange);
-      window.removeEventListener('focus', handleFocus);
-      router.events.off('routeChangeComplete', handleRouteChange);
-    };
-  }, [isAuthenticated, router]);
-
 
 
   const handleFavoriteToggle = () => {
-    // Immediately refresh the favorites list when an item is toggled
-    setTimeout(() => {
-      loadFavorites();
-    }, 500); // Increased delay to ensure the API call completes
+    // Refresh the favorites list when an item is toggled
+    loadFavorites();
   };
 
   const handleManualRefresh = () => {

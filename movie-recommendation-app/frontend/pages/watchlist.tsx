@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useRouter } from 'next/router';
 import styled from 'styled-components';
-import { movieAPI, getAuthToken, clearApiCache } from '@/utils/api';
+import { movieAPI, getAuthToken } from '@/utils/api';
 import MovieCard from '@/components/MovieCard';
 
 const MovieGrid = styled.div`
@@ -157,8 +157,6 @@ export default function Watchlist() {
   const loadWatchlist = async () => {
     try {
       setLoading(true);
-      // Clear any cached data first
-      await clearApiCache();
       
       const data = await movieAPI.getWatchlist();
       
@@ -200,10 +198,8 @@ export default function Watchlist() {
   };
 
   const handleWatchlistToggle = () => {
-    // Immediately refresh the watchlist when an item is toggled
-    setTimeout(() => {
-      loadWatchlist();
-    }, 500); // Increased delay to ensure the API call completes
+    // Refresh the watchlist when an item is toggled
+    loadWatchlist();
   };
 
   const handleManualRefresh = () => {
@@ -222,48 +218,6 @@ export default function Watchlist() {
 
     loadWatchlist();
   }, []);
-
-  // Refresh watchlist when the page becomes visible or when user navigates to it
-  useEffect(() => {
-    const handleVisibilityChange = () => {
-      if (!document.hidden && isAuthenticated) {
-        loadWatchlist();
-      }
-    };
-
-    const handleFocus = () => {
-      if (isAuthenticated) {
-        loadWatchlist();
-      }
-    };
-
-    const handleRouteChange = (url: string) => {
-      if (url === '/watchlist' && isAuthenticated) {
-        // Force a complete refresh when navigating to watchlist page
-        setTimeout(() => {
-          loadWatchlist();
-        }, 100);
-      }
-    };
-
-    // Listen for visibility changes and focus
-    document.addEventListener('visibilitychange', handleVisibilityChange);
-    window.addEventListener('focus', handleFocus);
-    router.events.on('routeChangeComplete', handleRouteChange);
-    
-    // Initial load with a slight delay to ensure everything is ready
-    if (isAuthenticated) {
-      setTimeout(() => {
-        loadWatchlist();
-      }, 100);
-    }
-
-    return () => {
-      document.removeEventListener('visibilitychange', handleVisibilityChange);
-      window.removeEventListener('focus', handleFocus);
-      router.events.off('routeChangeComplete', handleRouteChange);
-    };
-  }, [isAuthenticated, router]);
 
   
 
