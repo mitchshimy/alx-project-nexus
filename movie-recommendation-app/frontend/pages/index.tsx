@@ -204,6 +204,31 @@ const WelcomeSection = styled.div`
     0%, 100% { opacity: 0.3; transform: translate(-50%, -50%) scale(1); }
     50% { opacity: 0.6; transform: translate(-50%, -50%) scale(1.1); }
   }
+  
+  @media (max-width: 1200px) {
+    max-width: 1000px;
+    padding: 5rem 1.5rem;
+    margin: 2.5rem auto;
+  }
+  
+  @media (max-width: 900px) {
+    max-width: 100%;
+    padding: 4rem 1.5rem;
+    margin: 2rem 1rem;
+    border-radius: 20px;
+  }
+  
+  @media (max-width: 768px) {
+    padding: 3rem 1rem;
+    margin: 1.5rem 0.5rem;
+    border-radius: 16px;
+  }
+  
+  @media (max-width: 480px) {
+    padding: 2rem 0.75rem;
+    margin: 1rem 0.25rem;
+    border-radius: 12px;
+  }
 `;
 
 const WelcomeTitle = styled.h1`
@@ -336,12 +361,42 @@ const NoResults = styled.div`
 
 const FeatureGrid = styled.div`
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
   gap: 2rem;
   margin: 3rem 0;
   max-width: 900px;
   margin-left: auto;
   margin-right: auto;
+  
+  @media (max-width: 1200px) {
+    grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+    gap: 1.5rem;
+    max-width: 800px;
+  }
+  
+  @media (max-width: 900px) {
+    grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+    gap: 1.25rem;
+    max-width: 100%;
+    padding: 0 1rem;
+  }
+  
+  @media (max-width: 768px) {
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 1rem;
+    margin: 2rem 0;
+  }
+  
+  @media (max-width: 600px) {
+    grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+    gap: 0.75rem;
+  }
+  
+  @media (max-width: 480px) {
+    grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+    gap: 0.5rem;
+    margin: 1.5rem 0;
+  }
 `;
 
 const FeatureCard = styled.div`
@@ -359,6 +414,22 @@ const FeatureCard = styled.div`
     border-color: rgba(106, 17, 203, 0.3);
     box-shadow: 0 8px 32px rgba(106, 17, 203, 0.2);
   }
+  
+  @media (max-width: 900px) {
+    padding: 1.5rem;
+  }
+  
+  @media (max-width: 768px) {
+    padding: 1.25rem;
+  }
+  
+  @media (max-width: 600px) {
+    padding: 1rem;
+  }
+  
+  @media (max-width: 480px) {
+    padding: 0.75rem;
+  }
 `;
 
 const FeatureIcon = styled.div`
@@ -366,6 +437,26 @@ const FeatureIcon = styled.div`
   margin-bottom: 1rem;
   color: #6a11cb;
   filter: drop-shadow(0 0 10px rgba(106, 17, 203, 0.5));
+  
+  @media (max-width: 900px) {
+    font-size: 2.25rem;
+    margin-bottom: 0.875rem;
+  }
+  
+  @media (max-width: 768px) {
+    font-size: 2rem;
+    margin-bottom: 0.75rem;
+  }
+  
+  @media (max-width: 600px) {
+    font-size: 1.75rem;
+    margin-bottom: 0.625rem;
+  }
+  
+  @media (max-width: 480px) {
+    font-size: 1.5rem;
+    margin-bottom: 0.5rem;
+  }
 `;
 
 const FeatureTitle = styled.h3`
@@ -373,12 +464,52 @@ const FeatureTitle = styled.h3`
   font-weight: 600;
   color: #fff;
   margin-bottom: 0.5rem;
+  
+  @media (max-width: 900px) {
+    font-size: 1.1rem;
+    margin-bottom: 0.4rem;
+  }
+  
+  @media (max-width: 768px) {
+    font-size: 1rem;
+    margin-bottom: 0.375rem;
+  }
+  
+  @media (max-width: 600px) {
+    font-size: 0.9rem;
+    margin-bottom: 0.25rem;
+  }
+  
+  @media (max-width: 480px) {
+    font-size: 0.85rem;
+    margin-bottom: 0.25rem;
+  }
 `;
 
 const FeatureDescription = styled.p`
   font-size: 0.9rem;
   color: rgba(255, 255, 255, 0.7);
   line-height: 1.6;
+  
+  @media (max-width: 900px) {
+    font-size: 0.85rem;
+    line-height: 1.5;
+  }
+  
+  @media (max-width: 768px) {
+    font-size: 0.8rem;
+    line-height: 1.4;
+  }
+  
+  @media (max-width: 600px) {
+    font-size: 0.75rem;
+    line-height: 1.3;
+  }
+  
+  @media (max-width: 480px) {
+    font-size: 0.7rem;
+    line-height: 1.2;
+  }
 `;
 
 export default function Home({ isSidebarOpen = false }: { isSidebarOpen?: boolean }) {
