@@ -142,7 +142,7 @@ const Label = styled.span<{ isOpen: boolean }>`
   }
 `;
 
-const HoverTooltip = styled.span<{ isOpen: boolean }>`
+const HoverTooltip = styled.div<{ isOpen: boolean }>`
   position: absolute;
   left: 100%;
   top: 50%;
@@ -153,7 +153,7 @@ const HoverTooltip = styled.span<{ isOpen: boolean }>`
   padding: 0.75rem 1rem;
   border-radius: 12px;
   font-size: 0.9rem;
-  font-weight: 500;
+  font-weight: 600;
   white-space: nowrap;
   z-index: 1000;
   opacity: 0;
@@ -362,15 +362,19 @@ export default function Sidebar({ isOpen, onClose }: SidebarProps) {
         <NavList>
           {/* Main Navigation */}
           {navItems.map((item) => (
-            <NavItem 
-              key={item.href}
-              href={item.href}
-              isActive={router.pathname === item.href}
-              isOpen={isOpen}
-            >
-              {item.icon}
-              {isOpen && <NavText>{item.label}</NavText>}
-            </NavItem>
+            <NavItemWrapper key={item.href} isOpen={isOpen}>
+              <NavItem 
+                href={item.href}
+                isActive={router.pathname === item.href}
+                isOpen={isOpen}
+              >
+                {item.icon}
+                {isOpen && <NavText>{item.label}</NavText>}
+              </NavItem>
+              <HoverTooltip isOpen={isOpen}>
+                {item.label}
+              </HoverTooltip>
+            </NavItemWrapper>
           ))}
           
           <Divider />
@@ -379,15 +383,19 @@ export default function Sidebar({ isOpen, onClose }: SidebarProps) {
           
           {/* Personal Navigation */}
           {personalItems.map((item) => (
-            <NavItem 
-              key={item.href}
-              href={item.href}
-              isActive={router.pathname === item.href}
-              isOpen={isOpen}
-            >
-              {item.icon}
-              {isOpen && <NavText>{item.label}</NavText>}
-            </NavItem>
+            <NavItemWrapper key={item.href} isOpen={isOpen}>
+              <NavItem 
+                href={item.href}
+                isActive={router.pathname === item.href}
+                isOpen={isOpen}
+              >
+                {item.icon}
+                {isOpen && <NavText>{item.label}</NavText>}
+              </NavItem>
+              <HoverTooltip isOpen={isOpen}>
+                {item.label}
+              </HoverTooltip>
+            </NavItemWrapper>
           ))}
           
           <Divider />
@@ -396,28 +404,36 @@ export default function Sidebar({ isOpen, onClose }: SidebarProps) {
           
           {/* Account Navigation */}
           {accountItems.map((item) => (
-            <NavItem 
-              key={item.href}
-              href={item.href}
-              isActive={router.pathname === item.href}
-              isOpen={isOpen}
-            >
-              {item.icon}
-              {isOpen && <NavText>{item.label}</NavText>}
-            </NavItem>
+            <NavItemWrapper key={item.href} isOpen={isOpen}>
+              <NavItem 
+                href={item.href}
+                isActive={router.pathname === item.href}
+                isOpen={isOpen}
+              >
+                {item.icon}
+                {isOpen && <NavText>{item.label}</NavText>}
+              </NavItem>
+              <HoverTooltip isOpen={isOpen}>
+                {item.label}
+              </HoverTooltip>
+            </NavItemWrapper>
           ))}
           
           {/* Profile Navigation (only show when sidebar is open) */}
           {profileItems.map((item) => (
-            <NavItem 
-              key={item.href}
-              href={item.href}
-              isActive={router.pathname === item.href}
-              isOpen={isOpen}
-            >
-              {item.icon}
-              {isOpen && <NavText>{item.label}</NavText>}
-            </NavItem>
+            <NavItemWrapper key={item.href} isOpen={isOpen}>
+              <NavItem 
+                href={item.href}
+                isActive={router.pathname === item.href}
+                isOpen={isOpen}
+              >
+                {item.icon}
+                {isOpen && <NavText>{item.label}</NavText>}
+              </NavItem>
+              <HoverTooltip isOpen={isOpen}>
+                {item.label}
+              </HoverTooltip>
+            </NavItemWrapper>
           ))}
         </NavList>
       </SidebarContainer>
