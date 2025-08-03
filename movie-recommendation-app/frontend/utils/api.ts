@@ -23,6 +23,10 @@ export const setAuthToken = (token: string): void => {
     sessionStorage.clear();
     
     localStorage.setItem('access_token', token);
+    
+    // Reset error count on successful login
+    resetErrorCount();
+    
     // Dispatch custom event to notify components of auth state change
     window.dispatchEvent(new CustomEvent('authStateChanged', { detail: { isAuthenticated: true } }));
   }
@@ -245,9 +249,27 @@ const apiRequest = async (endpoint: string, options: RequestInit = {}) => {
         return { error: errorMessage, errorTitle };
       }
       
-      // For other errors (401, 500, etc.), show global modal and return error object
-      showError(errorTitle, errorMessage, 'error');
-      return { error: errorMessage, errorTitle };
+      // For 401 errors, handle token expiration
+      if (response.status === 401) {
+        handleTokenExpiration();
+        return { error: errorMessage, errorTitle };
+      }
+      
+      // For other errors (500, etc.), only show for critical operations
+      const isCriticalOperation = endpoint.includes('/users/') || 
+                                 endpoint.includes('/movies/favorites/') || 
+                                 endpoint.includes('/movies/watchlist/') ||
+                                 endpoint.includes('/movies/rate/') ||
+                                 endpoint.includes('/movies/search/');
+      
+      if (isCriticalOperation) {
+        showError(errorTitle, errorMessage, 'error');
+        return { error: errorMessage, errorTitle };
+      } else {
+        // For non-critical operations, just return empty data silently
+        console.log(`Server error for non-critical operation: ${errorMessage}`);
+        return { results: [], total_pages: 0, total_results: 0 };
+      }
     }
 
     // Handle empty responses (common with DELETE requests)
@@ -269,16 +291,17 @@ const apiRequest = async (endpoint: string, options: RequestInit = {}) => {
   } catch (error) {
     // Handle timeout and network errors gracefully
     if (error instanceof TypeError && error.message.includes('fetch')) {
-      const timeoutMessage = 'Network error. Please check your connection and try again.';
-      showError('Connection Error', timeoutMessage, 'error');
-      return { error: timeoutMessage, errorTitle: 'Connection Error' };
+      // Network errors - just log and return empty data silently
+      console.log('Network error, returning empty data silently');
+      return { results: [], total_pages: 0, total_results: 0 };
     }
     if (error instanceof Error && error.message === 'Request timeout') {
       // Only show timeout errors for critical operations (not for movie listings)
       const isCriticalOperation = endpoint.includes('/users/') || 
                                  endpoint.includes('/movies/favorites/') || 
                                  endpoint.includes('/movies/watchlist/') ||
-                                 endpoint.includes('/movies/rate/');
+                                 endpoint.includes('/movies/rate/') ||
+                                 endpoint.includes('/movies/search/');
       
       if (isCriticalOperation) {
         const timeoutMessage = 'The server is taking longer than expected. Please try again in a moment.';
@@ -290,10 +313,9 @@ const apiRequest = async (endpoint: string, options: RequestInit = {}) => {
         return { results: [], total_pages: 0, total_results: 0 };
       }
     }
-    // For any other unexpected errors, show a generic message
-    const genericMessage = 'An unexpected error occurred. Please try again.';
-    showError('Error', genericMessage, 'error');
-    return { error: genericMessage, errorTitle: 'Error' };
+    // For any other unexpected errors, just log and return empty data
+    console.error('Unexpected API error:', error);
+    return { results: [], total_pages: 0, total_results: 0 };
   }
 };
 
@@ -745,24 +767,51 @@ export const fetchPopularMovies = async () => {
 // Global error handler
 let globalErrorHandler: ((title: string, message: string, type?: 'error' | 'warning' | 'info') => void) | null = null;
 
-// Debounce mechanism for timeout errors
-let lastTimeoutError = 0;
-const TIMEOUT_ERROR_DEBOUNCE = 30000; // 30 seconds between timeout error messages
+// Debounce mechanism for all error types
+let lastErrorTime = 0;
+const ERROR_DEBOUNCE = 10000; // 10 seconds between any error messages
+let errorCount = 0;
+const MAX_ERRORS_PER_SESSION = 5; // Maximum errors to show per session
 
 export const setGlobalErrorHandler = (handler: (title: string, message: string, type?: 'error' | 'warning' | 'info') => void) => {
   globalErrorHandler = handler;
 };
 
+export const resetErrorCount = () => {
+  errorCount = 0;
+  lastErrorTime = 0;
+};
+
 export const showError = (title: string, message: string, type: 'error' | 'warning' | 'info' = 'error') => {
-  // Debounce timeout errors to prevent spam
-  if (title === 'Slow Response' || title === 'Timeout Error') {
-    const now = Date.now();
-    if (now - lastTimeoutError < TIMEOUT_ERROR_DEBOUNCE) {
-      console.log('Suppressing timeout error due to debounce');
-      return;
-    }
-    lastTimeoutError = now;
+  const now = Date.now();
+  
+  // Debounce all errors to prevent spam
+  if (now - lastErrorTime < ERROR_DEBOUNCE) {
+    console.log(`Suppressing error "${title}" due to debounce`);
+    return;
   }
+  
+  // Limit total errors shown per session
+  if (errorCount >= MAX_ERRORS_PER_SESSION) {
+    console.log(`Suppressing error "${title}" - max errors per session reached`);
+    return;
+  }
+  
+  // Don't show errors for common network issues that users can't fix
+  const silentErrors = [
+    'Connection Error',
+    'Network error',
+    'Slow Response',
+    'Timeout Error'
+  ];
+  
+  if (silentErrors.some(silent => title.includes(silent) || message.includes(silent))) {
+    console.log(`Suppressing common error: ${title} - ${message}`);
+    return;
+  }
+  
+  lastErrorTime = now;
+  errorCount++;
   
   if (globalErrorHandler) {
     globalErrorHandler(title, message, type);

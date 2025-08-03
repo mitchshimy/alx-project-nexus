@@ -277,39 +277,39 @@ export default function Watchlist() {
 
   if (!isAuthenticated) {
     return (
-      <Layout>
+      <>
         <h1>📋 Your Watchlist</h1>
         <AuthPrompt>
           <h2>Sign in to view your watchlist</h2>
           <p>You need to be signed in to access your watchlist of movies and TV shows.</p>
           <button onClick={handleSignIn}>Sign In</button>
         </AuthPrompt>
-      </Layout>
+      </>
     );
   }
 
   if (loading) {
     return (
-      <Layout>
+      <>
         <h1>📋 Your Watchlist</h1>
         <div>Loading your watchlist...</div>
-      </Layout>
+      </>
     );
   }
 
   if (error) {
     return (
-      <Layout>
+      <>
         <h1>📋 Your Watchlist</h1>
         <ErrorMessage>
           {error}
         </ErrorMessage>
-      </Layout>
+      </>
     );
   }
 
   return (
-    <Layout>
+    <>
       <HeaderContainer>
         <h1>📋 Your Watchlist</h1>
         <RefreshButton onClick={handleManualRefresh} disabled={loading}>
@@ -328,6 +328,6 @@ export default function Watchlist() {
           ))}
         </MovieGrid>
       )}
-    </Layout>
+    </>
   );
 } 

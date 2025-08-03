@@ -2,6 +2,7 @@ import React, { useState, useEffect, useCallback } from 'react';
 import styled from 'styled-components';
 import { movieAPI } from '@/utils/api';
 import MovieCard from '@/components/MovieCard';
+import { SkeletonMovieGrid } from '@/components/Skeleton';
 
 const Section = styled.section<{ isSidebarOpen?: boolean }>`
   padding: 2rem;
@@ -28,9 +29,36 @@ const Section = styled.section<{ isSidebarOpen?: boolean }>`
 `;
 
 const SectionTitle = styled.h2`
-  font-size: 2rem;
-  margin-bottom: 1rem;
+  font-size: 2.5rem;
+  margin-bottom: 0.5rem;
   color: #f0f0f0;
+  font-weight: 700;
+  
+  @media (max-width: 768px) {
+    font-size: 2rem;
+  }
+`;
+
+const Description = styled.div`
+  margin-bottom: 2rem;
+  padding: 1.5rem;
+  background: linear-gradient(135deg, rgba(0, 212, 255, 0.1), rgba(0, 212, 255, 0.05));
+  border-radius: 12px;
+  border: 1px solid rgba(0, 212, 255, 0.2);
+`;
+
+const DescriptionTitle = styled.h3`
+  font-size: 1.3rem;
+  margin-bottom: 1rem;
+  color: #00D4FF;
+  font-weight: 600;
+`;
+
+const DescriptionText = styled.p`
+  font-size: 1rem;
+  line-height: 1.6;
+  color: #cccccc;
+  margin-bottom: 1rem;
 `;
 
 const MovieGrid = styled.div`
@@ -65,6 +93,57 @@ const Loading = styled.div`
   padding: 2rem;
   font-size: 1.2rem;
   color: #666;
+`;
+
+const LoadMoreButton = styled.button`
+  display: block;
+  margin: 2rem auto;
+  padding: 1rem 2rem;
+  background: linear-gradient(135deg, #00D4FF 0%, #0099CC 100%);
+  color: #FFFFFF;
+  border: none;
+  border-radius: 8px;
+  font-size: 1.1rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+
+  &:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 8px 25px rgba(0, 212, 255, 0.3);
+  }
+
+  &:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+    transform: none;
+  }
+`;
+
+const TipsContainer = styled.div`
+  margin-top: 3rem;
+  padding: 2rem;
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 16px;
+  backdrop-filter: blur(10px);
+`;
+
+const TipsTitle = styled.h3`
+  color: #00D4FF;
+  font-size: 1.3rem;
+  margin-bottom: 1rem;
+  font-weight: 600;
+`;
+
+const TipsList = styled.ul`
+  color: rgba(255, 255, 255, 0.8);
+  line-height: 1.6;
+  margin-left: 1.5rem;
+
+  li {
+    margin-bottom: 0.5rem;
+  }
 `;
 
 const TabContainer = styled.div`
@@ -107,6 +186,7 @@ export default function Discover({ isSidebarOpen }: { isSidebarOpen?: boolean })
   }>>([]);
   const [page, setPage] = useState(1);
   const [loading, setLoading] = useState(false);
+  const [initialLoading, setInitialLoading] = useState(true);
   const [hasMore, setHasMore] = useState(true);
   const [contentType, setContentType] = useState<'movies' | 'tv'>('movies');
   const [filter, setFilter] = useState('all');
@@ -121,15 +201,19 @@ export default function Discover({ isSidebarOpen }: { isSidebarOpen?: boolean })
 
     setLoading(true);
     try {
+      console.log(`Loading page ${page} for ${contentType}`);
       const data = await movieAPI.getMovies({ 
         type: contentType, 
+        media_type: contentType === 'tv' ? 'tv' : 'movie',
         page,
-        search: searchQuery // Added search query to API call
+        search: searchQuery
       });
+      
       if (data?.results?.length) {
         setContent(prev => {
           const existingIds = new Set(prev.map((m: { id: number }) => m.id));
           const uniqueNew = data.results.filter((m: { id: number }) => !existingIds.has(m.id));
+          console.log(`Adding ${uniqueNew.length} new items to existing ${prev.length}`);
           return [...prev, ...uniqueNew];
         });
         setPage(prev => prev + 1);
@@ -142,6 +226,7 @@ export default function Discover({ isSidebarOpen }: { isSidebarOpen?: boolean })
       setHasMore(false);
     } finally {
       setLoading(false);
+      setInitialLoading(false);
     }
   }, [loading, hasMore, page, contentType, searchQuery]);
 
@@ -150,8 +235,36 @@ export default function Discover({ isSidebarOpen }: { isSidebarOpen?: boolean })
     setContent([]);
     setPage(1);
     setHasMore(true);
-    loadMoreContent();
-  }, [contentType, loadMoreContent]);
+    setInitialLoading(true);
+    setLoading(false);
+    
+    // Load initial content for the new type
+    const loadInitialContent = async () => {
+      try {
+        const data = await movieAPI.getMovies({ 
+          type: contentType, 
+          media_type: contentType === 'tv' ? 'tv' : 'movie',
+          page: 1,
+          search: searchQuery
+        });
+        
+        if (data?.results?.length) {
+          setContent(data.results);
+          setPage(2); // Set to 2 since we've loaded page 1
+          setHasMore(data.page < data.total_pages);
+        } else {
+          setHasMore(false);
+        }
+      } catch (err) {
+        console.error('Error loading initial content:', err);
+        setHasMore(false);
+      } finally {
+        setInitialLoading(false);
+      }
+    };
+    
+    loadInitialContent();
+  }, [contentType, searchQuery]);
 
   useEffect(() => {
     const onScroll = () => {
@@ -207,88 +320,132 @@ export default function Discover({ isSidebarOpen }: { isSidebarOpen?: boolean })
     fetchGenres();
   }, []);
 
+  // Initial load effect
+  useEffect(() => {
+    const loadInitialContent = async () => {
+      setInitialLoading(true);
+      try {
+        const data = await movieAPI.getMovies({ 
+          type: contentType, 
+          media_type: contentType === 'tv' ? 'tv' : 'movie',
+          page: 1,
+          search: searchQuery
+        });
+        
+        if (data?.results?.length) {
+          setContent(data.results);
+          setPage(2); // Set to 2 since we've loaded page 1
+          setHasMore(data.page < data.total_pages);
+        } else {
+          setHasMore(false);
+        }
+      } catch (err) {
+        console.error('Error loading initial content:', err);
+        setHasMore(false);
+      } finally {
+        setInitialLoading(false);
+      }
+    };
+    
+    loadInitialContent();
+  }, []); // Only run on mount
+
   const filteredContent = content.filter(item => {
     const matchesGenre = filter === 'all' || item.genre_ids?.includes(Number(filter));
     return matchesGenre;
   });
 
-  const handleSearch = async () => {
-    setLoading(true);
-    setContent([]);
-    setPage(1);
-    setHasMore(true);
-    try {
-             const data = await movieAPI.getMovies({ 
-         type: contentType, 
-         page: 1,
-         search: searchQuery
-       });
-      // setSearchResults(data.results); // This line was removed as per the edit hint
-    } catch (err) {
-      console.error('Error searching content:', err);
-    } finally {
-      setLoading(false);
-    }
-  };
+
 
   return (
-    <Section isSidebarOpen={isSidebarOpen}>
-      <SectionTitle>🔍 Discover</SectionTitle>
+    <>
+      <Section isSidebarOpen={isSidebarOpen}>
+        <SectionTitle>🔍 Discover</SectionTitle>
+        
+        <Description>
+          <DescriptionTitle>Explore Movies & TV Shows</DescriptionTitle>
+          <DescriptionText>
+            Discover amazing content from our vast collection of movies and TV shows. 
+            Switch between movies and TV shows, filter by genre, and find your next favorite entertainment. 
+            Use the search functionality to find specific titles or explore by genre to discover new content.
+          </DescriptionText>
+        </Description>
 
-      <TabContainer>
-        <Tab 
-          active={contentType === 'movies'} 
-          onClick={() => setContentType('movies')}
-        >
-          Movies
-        </Tab>
-        <Tab 
-          active={contentType === 'tv'} 
-          onClick={() => setContentType('tv')}
-        >
-          TV Shows
-        </Tab>
-      </TabContainer>
+        <TabContainer>
+          <Tab 
+            active={contentType === 'movies'} 
+            onClick={() => setContentType('movies')}
+          >
+            Movies
+          </Tab>
+          <Tab 
+            active={contentType === 'tv'} 
+            onClick={() => setContentType('tv')}
+          >
+            TV Shows
+          </Tab>
+        </TabContainer>
 
-      <FilterContainer>
-        <FilterSelect value={filter} onChange={e => setFilter(e.target.value)}>
-          <option value="all">All Genres</option>
-          {genres.map(genre => (
-            <option key={genre.id} value={genre.id}>
-              {genre.name}
-            </option>
-          ))}
-        </FilterSelect>
-      </FilterContainer>
-
-      <SearchTerm>
-        {/* {t('discover.searchResults')}: &ldquo;{searchQuery}&rdquo; */}
-        Search Results for &ldquo;{searchQuery}&rdquo;
-      </SearchTerm>
-
-      {loading ? (
-        <Loading>Loading {contentType}...</Loading>
-      ) : (
-        <>
-          <MovieGrid>
-            {filteredContent.map(item => (
-              <MovieCard 
-                key={item.id} 
-                movie={{
-                  tmdb_id: item.tmdb_id || item.id,
-                  title: item.title,
-                  poster_path: item.poster_path,
-                  vote_average: item.vote_average,
-                  release_date: item.release_date,
-                 
-                }} 
-              />
+        <FilterContainer>
+          <FilterSelect value={filter} onChange={e => setFilter(e.target.value)}>
+            <option value="all">All Genres</option>
+            {genres.map(genre => (
+              <option key={genre.id} value={genre.id}>
+                {genre.name}
+              </option>
             ))}
-          </MovieGrid>
+          </FilterSelect>
+        </FilterContainer>
 
-          {loading && <Loading>Loading more {contentType}...</Loading>}
-        </>
-      )}
-    </Section>
+        {searchQuery && (
+          <SearchTerm>
+            Search Results for &ldquo;{searchQuery}&rdquo;
+          </SearchTerm>
+        )}
+
+        {initialLoading ? (
+          <SkeletonMovieGrid />
+        ) : (
+          <>
+            <MovieGrid>
+              {filteredContent.map(item => (
+                <MovieCard 
+                  key={item.id} 
+                  movie={{
+                    tmdb_id: item.tmdb_id || item.id,
+                    title: item.title || '',
+                    poster_path: item.poster_path || '',
+                    vote_average: item.vote_average || 0,
+                    release_date: item.release_date || '',
+                  }} 
+                />
+              ))}
+            </MovieGrid>
+
+            {loading && <Loading>Loading more {contentType}...</Loading>}
+            
+            {!loading && hasMore && (
+              <LoadMoreButton onClick={loadMoreContent}>
+                Load More {contentType === 'movies' ? 'Movies' : 'TV Shows'}
+              </LoadMoreButton>
+            )}
+          </>
+        )}
+
+        {!initialLoading && content.length > 0 && (
+          <TipsContainer data-tips-container>
+            <TipsTitle>💡 Discovery Tips</TipsTitle>
+            <TipsList>
+              <li>Switch between Movies and TV Shows using the tabs above</li>
+              <li>Use the genre filter to explore specific types of content</li>
+              <li>Click on any card to see detailed information and trailers</li>
+              <li>Add content to your favorites or watchlist for later viewing</li>
+              <li>Scroll down to automatically load more content</li>
+              <li>Use the search bar to find specific titles</li>
+            </TipsList>
+          </TipsContainer>
+        )}
+      </Section>
+    </>
   );
 } 

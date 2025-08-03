@@ -1,6 +1,7 @@
 import { useState, ReactNode, useEffect } from 'react';
 import styled from 'styled-components';
 import Head from 'next/head';
+import Link from 'next/link';
 import Header from './Header';
 import Sidebar from './Sidebar';
 import React from 'react';
@@ -365,27 +366,27 @@ export default function Layout({ children }: LayoutProps) {
               <FooterSection>
                 <h3>Explore</h3>
                 <ul>
-                  <li><a href="/trending">Trending</a></li>
-                  <li><a href="/discover">Discover</a></li>
-                  <li><a href="/upcoming">Upcoming</a></li>
-                  <li><a href="/top-imdb">Top Rated</a></li>
+                  <li><Link href="/trending">Trending</Link></li>
+                  <li><Link href="/discover">Discover</Link></li>
+                  <li><Link href="/upcoming">Upcoming</Link></li>
+                  <li><Link href="/top-imdb">Top Rated</Link></li>
                 </ul>
               </FooterSection>
               <FooterSection>
                 <h3>Account</h3>
                 <ul>
-                  <li><a href="/profile">Profile</a></li>
-                  <li><a href="/favorites">Favorites</a></li>
-                  <li><a href="/watchlist">Watchlist</a></li>
-                  <li><a href="/settings">Settings</a></li>
+                  <li><Link href="/profile">Profile</Link></li>
+                  <li><Link href="/favorites">Favorites</Link></li>
+                  <li><Link href="/watchlist">Watchlist</Link></li>
+                  <li><Link href="/settings">Settings</Link></li>
                 </ul>
               </FooterSection>
               <FooterSection>
                 <h3>Support</h3>
                 <ul>
-                  <li><a href="/contact">Contact</a></li>
-                  <li><a href="/help">Help Center</a></li>
-                  <li><a href="/feedback">Feedback</a></li>
+                  <li><Link href="/contact">Contact</Link></li>
+                  <li><Link href="/help">Help Center</Link></li>
+                  <li><Link href="/feedback">Feedback</Link></li>
                 </ul>
               </FooterSection>
             </FooterContent>

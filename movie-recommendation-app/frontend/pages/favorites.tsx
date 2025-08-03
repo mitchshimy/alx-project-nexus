@@ -281,39 +281,39 @@ export default function Favorites() {
 
   if (!isAuthenticated) {
     return (
-      <Layout>
+      <>
         <h1>Your Favorites</h1>
         <AuthPrompt>
           <h2>Sign in to view your favorites</h2>
           <p>You need to be signed in to access your favorite movies and TV shows.</p>
           <button onClick={handleSignIn}>Sign In</button>
         </AuthPrompt>
-      </Layout>
+      </>
     );
   }
 
   if (loading) {
     return (
-      <Layout>
+      <>
         <h1>Your Favorites</h1>
         <div>Loading your favorites...</div>
-      </Layout>
+      </>
     );
   }
 
   if (error) {
     return (
-      <Layout>
+      <>
         <h1>Your Favorites</h1>
         <ErrorMessage>
           {error}
         </ErrorMessage>
-      </Layout>
+      </>
     );
   }
 
   return (
-    <Layout>
+    <>
       <HeaderContainer>
         <h1>Your Favorites</h1>
         <RefreshButton onClick={handleManualRefresh} disabled={loading}>
@@ -342,6 +342,6 @@ export default function Favorites() {
           ))}
         </MovieGrid>
       )}
-    </Layout>
+    </>
   );
 }
