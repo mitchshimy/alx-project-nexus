@@ -14,7 +14,7 @@ import {
 } from 'react-icons/md';
 
 
-// Modern glassmorphism and neumorphism inspired design
+
 const PageContainer = styled.div`
   min-height: 100vh;
   background: linear-gradient(135deg, #0f0f15 0%, #1a1a24 100%);

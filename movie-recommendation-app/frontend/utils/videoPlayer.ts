@@ -236,20 +236,7 @@ export const getOptimalQuality = (): string => {
 
 // Function to get all available quality options for a device
 export const getAvailableQualityOptions = (): YouTubeQualityOption[] => {
-  const connection = (navigator as any).connection;
-  const isSlowConnection = connection && (
-    connection.effectiveType === 'slow-2g' || 
-    connection.effectiveType === '2g' || 
-    connection.effectiveType === '3g'
-  );
-  
-  if (isSlowConnection) {
-    return YOUTUBE_QUALITY_OPTIONS.filter(option => 
-      ['large', 'medium'].includes(option.value)
-    );
-  }
-  
-  return YOUTUBE_QUALITY_OPTIONS.filter(option => 
-    isQualitySupported(option.value.replace('hd', '').replace('p', '') + 'p')
-  );
+  // Return all quality options and let users choose
+  // Users can decide based on their own network conditions and preferences
+  return YOUTUBE_QUALITY_OPTIONS;
 }; 

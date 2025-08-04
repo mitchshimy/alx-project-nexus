@@ -11,6 +11,22 @@ import {
   getQualityDescription 
 } from '@/utils/videoPlayer';
 
+const MainHeading = styled.h1`
+  font-size: 2rem;
+  margin-bottom: 2rem;
+  color: #f0f0f0;
+  
+  @media (max-width: 768px) {
+    font-size: 1.5rem;
+    margin-bottom: 1.5rem;
+  }
+  
+  @media (max-width: 480px) {
+    font-size: 1.3rem;
+    margin-bottom: 1rem;
+  }
+`;
+
 const Container = styled.div<{ isSidebarOpen?: boolean }>`
   padding: 2rem;
   max-width: ${({ isSidebarOpen }) => 
@@ -44,12 +60,33 @@ const SettingsCard = styled.div`
   padding: 2rem;
   border: 1px solid rgba(255, 255, 255, 0.1);
   margin-bottom: 2rem;
+  
+  @media (max-width: 768px) {
+    padding: 1.5rem;
+    margin-bottom: 1.5rem;
+  }
+  
+  @media (max-width: 480px) {
+    padding: 1rem;
+    margin-bottom: 1rem;
+    border-radius: 12px;
+  }
 `;
 
 const SectionTitle = styled.h2`
   font-size: 1.5rem;
   margin-bottom: 1rem;
   color: #e50914;
+  
+  @media (max-width: 768px) {
+    font-size: 1.3rem;
+    margin-bottom: 0.8rem;
+  }
+  
+  @media (max-width: 480px) {
+    font-size: 1.2rem;
+    margin-bottom: 0.6rem;
+  }
 `;
 
 const SettingItem = styled.div`
@@ -62,17 +99,47 @@ const SettingItem = styled.div`
   &:last-child {
     border-bottom: none;
   }
+  
+  @media (max-width: 768px) {
+    padding: 0.8rem 0;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 0.8rem;
+  }
+  
+  @media (max-width: 480px) {
+    padding: 0.6rem 0;
+    gap: 0.6rem;
+  }
 `;
 
 const SettingLabel = styled.div`
   color: #f0f0f0;
   font-size: 1rem;
+  
+  @media (max-width: 768px) {
+    font-size: 0.95rem;
+  }
+  
+  @media (max-width: 480px) {
+    font-size: 0.9rem;
+  }
 `;
 
 const SettingDescription = styled.div`
   color: #ccc;
   font-size: 0.9rem;
   margin-top: 0.25rem;
+  
+  @media (max-width: 768px) {
+    font-size: 0.85rem;
+    margin-top: 0.2rem;
+  }
+  
+  @media (max-width: 480px) {
+    font-size: 0.8rem;
+    margin-top: 0.15rem;
+  }
 `;
 
 const Toggle = styled.label`
@@ -132,6 +199,19 @@ const Select = styled.select`
     background: #1a1a2e;
     color: #f0f0f0;
   }
+  
+  @media (max-width: 768px) {
+    font-size: 0.95rem;
+    padding: 0.6rem;
+    width: 100%;
+    max-width: 300px;
+  }
+  
+  @media (max-width: 480px) {
+    font-size: 0.9rem;
+    padding: 0.5rem;
+    max-width: 100%;
+  }
 `;
 
 const Button = styled.button`
@@ -147,6 +227,18 @@ const Button = styled.button`
 
   &:hover {
     background: #b2070e;
+  }
+  
+  @media (max-width: 768px) {
+    padding: 0.6rem 1.2rem;
+    font-size: 0.95rem;
+  }
+  
+  @media (max-width: 480px) {
+    padding: 0.5rem 1rem;
+    font-size: 0.9rem;
+    width: 100%;
+    margin-bottom: 0.5rem;
   }
 `;
 
@@ -206,6 +298,19 @@ const QualityInfoCard = styled.div`
   border: 1px solid rgba(255, 255, 255, 0.1);
   margin-top: 2rem;
   margin-bottom: 2rem;
+  
+  @media (max-width: 768px) {
+    padding: 1.2rem;
+    margin-top: 1.5rem;
+    margin-bottom: 1.5rem;
+  }
+  
+  @media (max-width: 480px) {
+    padding: 1rem;
+    margin-top: 1rem;
+    margin-bottom: 1rem;
+    border-radius: 12px;
+  }
 `;
 
 const QualityInfoTitle = styled.h3`
@@ -213,12 +318,32 @@ const QualityInfoTitle = styled.h3`
   margin-bottom: 1rem;
   color: #e50914;
   text-align: center;
+  
+  @media (max-width: 768px) {
+    font-size: 1.1rem;
+    margin-bottom: 0.8rem;
+  }
+  
+  @media (max-width: 480px) {
+    font-size: 1rem;
+    margin-bottom: 0.6rem;
+  }
 `;
 
 const QualityInfoGrid = styled.div`
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
   gap: 1rem;
+  
+  @media (max-width: 768px) {
+    grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+    gap: 0.8rem;
+  }
+  
+  @media (max-width: 480px) {
+    grid-template-columns: 1fr;
+    gap: 0.6rem;
+  }
 `;
 
 const QualityInfoItem = styled.div`
@@ -231,12 +356,31 @@ const QualityInfoItem = styled.div`
   flex-direction: column;
   align-items: center;
   text-align: center;
+  
+  @media (max-width: 768px) {
+    padding: 0.8rem;
+  }
+  
+  @media (max-width: 480px) {
+    padding: 0.6rem;
+    border-radius: 8px;
+  }
 `;
 
 const QualityInfoLabel = styled.div`
   color: #f0f0f0;
   font-size: 0.9rem;
   margin-bottom: 0.5rem;
+  
+  @media (max-width: 768px) {
+    font-size: 0.85rem;
+    margin-bottom: 0.4rem;
+  }
+  
+  @media (max-width: 480px) {
+    font-size: 0.8rem;
+    margin-bottom: 0.3rem;
+  }
 `;
 
 const QualityInfoDetails = styled.div`
@@ -245,6 +389,16 @@ const QualityInfoDetails = styled.div`
   display: flex;
   flex-direction: column;
   gap: 0.25rem;
+  
+  @media (max-width: 768px) {
+    font-size: 0.75rem;
+    gap: 0.2rem;
+  }
+  
+  @media (max-width: 480px) {
+    font-size: 0.7rem;
+    gap: 0.15rem;
+  }
 `;
 
 export default function Settings({ isSidebarOpen }: { isSidebarOpen?: boolean }) {
@@ -440,7 +594,7 @@ export default function Settings({ isSidebarOpen }: { isSidebarOpen?: boolean })
 
   return (
     <Container isSidebarOpen={isSidebarOpen}>
-      <h1>⚙️ {t('settings.title')}</h1>
+      <MainHeading>⚙️ {t('settings.title')}</MainHeading>
 
       {saveMessage && <SuccessMessage>{saveMessage}</SuccessMessage>}
 
@@ -499,6 +653,25 @@ export default function Settings({ isSidebarOpen }: { isSidebarOpen?: boolean })
         </SettingItem>
         <SettingItem>
           <div>
+            <SettingLabel>Mobile Auto-Play</SettingLabel>
+            <SettingDescription>
+              {settings.mobileAutoPlay 
+                ? 'Trailers will automatically play when you long-press movie cards for 0.8 seconds'
+                : 'Trailers will only play when you manually click the play button on mobile'
+              }
+            </SettingDescription>
+          </div>
+          <Toggle>
+            <input
+              type="checkbox"
+              checked={settings.mobileAutoPlay}
+              onChange={() => handleToggle('mobileAutoPlay')}
+            />
+            <span></span>
+          </Toggle>
+        </SettingItem>
+        <SettingItem>
+          <div>
             <SettingLabel>{t('settings.videoQuality')}</SettingLabel>
             <SettingDescription>
               {getQualityDescription(settings.quality)}
@@ -532,7 +705,6 @@ export default function Settings({ isSidebarOpen }: { isSidebarOpen?: boolean })
           </QualityInfoGrid>
         </QualityInfoCard>
       </SettingsCard>
-
       <SettingsCard>
         <SectionTitle>Preferences</SectionTitle>
         <SettingItem>
@@ -573,7 +745,12 @@ export default function Settings({ isSidebarOpen }: { isSidebarOpen?: boolean })
 
       <SettingsCard>
         <SectionTitle>Account</SectionTitle>
-        <div style={{ display: 'flex', gap: '1rem', flexWrap: 'wrap' }}>
+        <div style={{ 
+          display: 'flex', 
+          gap: '1rem', 
+          flexWrap: 'wrap',
+          flexDirection: 'column'
+        }}>
           <Button onClick={handleExportData}>{t('settings.export')}</Button>
           <Button onClick={handleClearCache}>{t('settings.clearCache')}</Button>
           <Button style={{ background: '#dc3545' }} onClick={handleLogout}>{t('settings.logout')}</Button>

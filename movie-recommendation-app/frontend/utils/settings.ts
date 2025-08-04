@@ -2,6 +2,7 @@ export interface UserSettings {
   notifications: boolean;
   emailUpdates: boolean;
   autoPlay: boolean;
+  mobileAutoPlay: boolean;
   language: string;
   theme: string;
   quality: string;
@@ -11,6 +12,7 @@ export const defaultSettings: UserSettings = {
   notifications: true,
   emailUpdates: false,
   autoPlay: true,
+  mobileAutoPlay: true,
   language: 'en',
   theme: 'dark',
   quality: '1080p',
@@ -41,6 +43,11 @@ export const getVideoQuality = (): string => {
 export const getAutoPlayTrailers = (): boolean => {
   const settings = getSettings();
   return settings.autoPlay;
+};
+
+export const getMobileAutoPlayTrailers = (): boolean => {
+  const settings = getSettings();
+  return settings.mobileAutoPlay;
 };
 
 export const getLanguage = (): string => {

@@ -3,6 +3,7 @@ import { useRouter } from 'next/router';
 import styled from 'styled-components';
 import { movieAPI, getAuthToken } from '@/utils/api';
 import { shouldAutoPlayTrailer } from '@/utils/videoPlayer';
+import { getMobileAutoPlayTrailers } from '@/utils/settings';
 import TrailerPreview from './TrailerPreview';
 import { FaHeart, FaRegHeart, FaBookmark, FaRegBookmark } from 'react-icons/fa';
 
@@ -20,7 +21,7 @@ interface MovieCardProps {
   onWatchlistToggle?: () => void;
 }
 
-const Card = styled.div`
+const Card = styled.div<{ isLongPressing?: boolean }>`
   background: rgba(255, 255, 255, 0.05);
   backdrop-filter: blur(10px);
   border-radius: 12px;
@@ -29,9 +30,11 @@ const Card = styled.div`
   border: 1px solid rgba(255, 255, 255, 0.1);
   cursor: pointer;
   position: relative;
+  transform: ${props => props.isLongPressing ? 'scale(0.98)' : 'scale(1)'};
+  opacity: ${props => props.isLongPressing ? '0.8' : '1'};
 
   &:hover {
-    transform: translateY(-8px);
+    transform: ${props => props.isLongPressing ? 'scale(0.98)' : 'translateY(-8px)'};
     box-shadow: 0 20px 40px rgba(0, 0, 0, 0.3);
     border-color: rgba(255, 255, 255, 0.2);
   }
@@ -205,11 +208,17 @@ const ActionButton = styled.button`
 
 const MovieCard = ({ movie, onFavoriteToggle, onWatchlistToggle }: MovieCardProps) => {
   const router = useRouter();
+  const [isLoading, setIsLoading] = useState(false);
   const [isFavorite, setIsFavorite] = useState(false);
   const [isInWatchlist, setIsInWatchlist] = useState(false);
-  const [isLoading, setIsLoading] = useState(false);
   const [showTrailerPreview, setShowTrailerPreview] = useState(false);
   const [trailerKey, setTrailerKey] = useState<string | null>(null);
+  
+  // Mobile touch handling
+  const [isLongPressing, setIsLongPressing] = useState(false);
+  const longPressTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const touchStartTimeRef = useRef<number>(0);
+  const isMobileRef = useRef<boolean>(false);
   const hoverTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const isHoveringRef = useRef(false);
 
@@ -281,6 +290,9 @@ const MovieCard = ({ movie, onFavoriteToggle, onWatchlistToggle }: MovieCardProp
   };
 
   const handleMouseEnter = () => {
+    // Only work on desktop devices (not mobile)
+    if (isMobileRef.current) return;
+    
     isHoveringRef.current = true;
     
     // Only start hover timer if auto-play is enabled and user is authenticated
@@ -315,6 +327,9 @@ const MovieCard = ({ movie, onFavoriteToggle, onWatchlistToggle }: MovieCardProp
   };
 
   const handleMouseLeave = () => {
+    // Only work on desktop devices (not mobile)
+    if (isMobileRef.current) return;
+    
     isHoveringRef.current = false;
     
     // Clear the hover timeout
@@ -330,6 +345,68 @@ const MovieCard = ({ movie, onFavoriteToggle, onWatchlistToggle }: MovieCardProp
         setTrailerKey(null);
       }, 300);
     }
+  };
+
+  // Mobile touch handlers
+  const handleTouchStart = (e: React.TouchEvent) => {
+    // Detect if it's a mobile device
+    isMobileRef.current = true;
+    touchStartTimeRef.current = Date.now();
+    
+    // Start long press timer for mobile
+    if (getMobileAutoPlayTrailers() && getAuthToken()) {
+      longPressTimeoutRef.current = setTimeout(async () => {
+        setIsLongPressing(true);
+        
+        // Only trigger if still pressing and no trailer is showing
+        if (!trailerKey) {
+          try {
+            const movieDetails = await movieAPI.getMovieDetails(movie.tmdb_id);
+            
+            if (movieDetails && movieDetails.error) {
+              console.warn('Error fetching trailer:', movieDetails.error);
+              return;
+            }
+            
+            if (movieDetails && movieDetails.videos?.results) {
+              const trailer = movieDetails.videos.results.find((video: any) => video.type === 'Trailer');
+              if (trailer) {
+                setTrailerKey(trailer.key);
+                setShowTrailerPreview(true);
+              }
+            }
+          } catch (error) {
+            console.error('Error fetching trailer:', error);
+          }
+        }
+      }, 800); // 800ms for mobile long press (faster than desktop hover)
+    }
+  };
+
+  const handleTouchEnd = (e: React.TouchEvent) => {
+    const touchDuration = Date.now() - touchStartTimeRef.current;
+    
+    // Clear long press timeout
+    if (longPressTimeoutRef.current) {
+      clearTimeout(longPressTimeoutRef.current);
+      longPressTimeoutRef.current = null;
+    }
+    
+    // If it was a short tap (not a long press), navigate to details
+    if (touchDuration < 800 && !isLongPressing) {
+      handleCardClick();
+    }
+    
+    setIsLongPressing(false);
+  };
+
+  const handleTouchMove = (e: React.TouchEvent) => {
+    // Cancel long press if user moves finger
+    if (longPressTimeoutRef.current) {
+      clearTimeout(longPressTimeoutRef.current);
+      longPressTimeoutRef.current = null;
+    }
+    setIsLongPressing(false);
   };
 
   const handleFavoriteToggle = async (e: React.MouseEvent) => {
@@ -402,6 +479,9 @@ const MovieCard = ({ movie, onFavoriteToggle, onWatchlistToggle }: MovieCardProp
       if (hoverTimeoutRef.current) {
         clearTimeout(hoverTimeoutRef.current);
       }
+      if (longPressTimeoutRef.current) {
+        clearTimeout(longPressTimeoutRef.current);
+      }
     };
   }, []);
 
@@ -417,6 +497,10 @@ const MovieCard = ({ movie, onFavoriteToggle, onWatchlistToggle }: MovieCardProp
       onClick={handleCardClick}
       onMouseEnter={shouldAutoPlayTrailer() ? handleMouseEnter : undefined}
       onMouseLeave={shouldAutoPlayTrailer() ? handleMouseLeave : undefined}
+      onTouchStart={handleTouchStart}
+      onTouchEnd={handleTouchEnd}
+      onTouchMove={handleTouchMove}
+      isLongPressing={isLongPressing}
     >
       <PosterContainer>
         <Skeleton />
