@@ -471,6 +471,173 @@ class TMDBService:
                 'total_pages': 0,
                 'total_results': 0
             }
+
+    def search_by_actor(self, actor_name, page=1):
+        """Search for movies and TV shows by actor name"""
+        print(f"TMDB Service: search_by_actor called with actor: '{actor_name}', page: {page}")  # Debug
+        
+        try:
+            # First, search for the actor/actress
+            print(f"TMDB Service: Searching for actor: '{actor_name}'")  # Debug
+            person_data = self._make_request('/search/person', {
+                'query': actor_name,
+                'page': 1
+            })
+            
+            if not person_data.get('results'):
+                print(f"TMDB Service: No actor found for '{actor_name}'")  # Debug
+                return {
+                    'page': page,
+                    'results': [],
+                    'total_pages': 0,
+                    'total_results': 0
+                }
+            
+            # Get the first (most relevant) person
+            person = person_data['results'][0]
+            person_id = person['id']
+            person_name = person['name']
+            
+            print(f"TMDB Service: Found actor '{person_name}' with ID {person_id}")  # Debug
+            
+            # Get movies and TV shows for this person
+            combined_results = []
+            
+            # Get movies
+            movies_data = self._make_request(f'/discover/movie', {
+                'with_cast': person_id,
+                'page': page,
+                'sort_by': 'popularity.desc'
+            })
+            
+            # Get TV shows
+            tv_data = self._make_request(f'/discover/tv', {
+                'with_cast': person_id,
+                'page': page,
+                'sort_by': 'popularity.desc'
+            })
+            
+            # Add movies with media_type
+            for movie in movies_data.get('results', []):
+                movie['media_type'] = 'movie'
+                combined_results.append(movie)
+            
+            # Add TV shows with media_type
+            for tv in tv_data.get('results', []):
+                tv['media_type'] = 'tv'
+                combined_results.append(tv)
+            
+            # Sort by popularity
+            combined_results.sort(key=lambda x: (x.get('vote_average', 0) * x.get('vote_count', 0)), reverse=True)
+            
+            # Calculate combined totals
+            total_results = movies_data.get('total_results', 0) + tv_data.get('total_results', 0)
+            total_pages = max(movies_data.get('total_pages', 0), tv_data.get('total_pages', 0))
+            
+            print(f"TMDB Service: Actor search results - {len(combined_results)} items for '{person_name}'")  # Debug
+            
+            return {
+                'page': page,
+                'results': combined_results,
+                'total_pages': total_pages,
+                'total_results': total_results
+            }
+            
+        except Exception as e:
+            print(f"TMDB Service: Error in search_by_actor for actor '{actor_name}': {str(e)}")  # Debug
+            import traceback
+            print(f"TMDB Service: Full traceback: {traceback.format_exc()}")  # Debug
+            return {
+                'page': page,
+                'results': [],
+                'total_pages': 0,
+                'total_results': 0
+            }
+
+    def search_by_genre(self, genre_name, page=1):
+        """Search for movies and TV shows by genre"""
+        print(f"TMDB Service: search_by_genre called with genre: '{genre_name}', page: {page}")  # Debug
+        
+        try:
+            # First, get all genres to find the genre ID
+            print(f"TMDB Service: Getting genres to find '{genre_name}'")  # Debug
+            genres_data = self._make_request('/genre/movie/list')
+            tv_genres_data = self._make_request('/genre/tv/list')
+            
+            # Combine movie and TV genres
+            all_genres = genres_data.get('genres', []) + tv_genres_data.get('genres', [])
+            
+            # Find the genre by name (case-insensitive)
+            genre_id = None
+            for genre in all_genres:
+                if genre['name'].lower() == genre_name.lower():
+                    genre_id = genre['id']
+                    break
+            
+            if not genre_id:
+                print(f"TMDB Service: No genre found for '{genre_name}'")  # Debug
+                return {
+                    'page': page,
+                    'results': [],
+                    'total_pages': 0,
+                    'total_results': 0
+                }
+            
+            print(f"TMDB Service: Found genre '{genre_name}' with ID {genre_id}")  # Debug
+            
+            # Get movies and TV shows for this genre
+            combined_results = []
+            
+            # Get movies
+            movies_data = self._make_request(f'/discover/movie', {
+                'with_genres': genre_id,
+                'page': page,
+                'sort_by': 'popularity.desc'
+            })
+            
+            # Get TV shows
+            tv_data = self._make_request(f'/discover/tv', {
+                'with_genres': genre_id,
+                'page': page,
+                'sort_by': 'popularity.desc'
+            })
+            
+            # Add movies with media_type
+            for movie in movies_data.get('results', []):
+                movie['media_type'] = 'movie'
+                combined_results.append(movie)
+            
+            # Add TV shows with media_type
+            for tv in tv_data.get('results', []):
+                tv['media_type'] = 'tv'
+                combined_results.append(tv)
+            
+            # Sort by popularity
+            combined_results.sort(key=lambda x: (x.get('vote_average', 0) * x.get('vote_count', 0)), reverse=True)
+            
+            # Calculate combined totals
+            total_results = movies_data.get('total_results', 0) + tv_data.get('total_results', 0)
+            total_pages = max(movies_data.get('total_pages', 0), tv_data.get('total_pages', 0))
+            
+            print(f"TMDB Service: Genre search results - {len(combined_results)} items for '{genre_name}'")  # Debug
+            
+            return {
+                'page': page,
+                'results': combined_results,
+                'total_pages': total_pages,
+                'total_results': total_results
+            }
+            
+        except Exception as e:
+            print(f"TMDB Service: Error in search_by_genre for genre '{genre_name}': {str(e)}")  # Debug
+            import traceback
+            print(f"TMDB Service: Full traceback: {traceback.format_exc()}")  # Debug
+            return {
+                'page': page,
+                'results': [],
+                'total_pages': 0,
+                'total_results': 0
+            }
     
     def get_movie_details(self, movie_id):
         """Get detailed movie information with credits, videos, reviews, and similar movies"""

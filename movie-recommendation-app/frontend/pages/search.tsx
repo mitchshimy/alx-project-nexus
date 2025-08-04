@@ -82,6 +82,69 @@ const SearchSubtitle = styled.p`
   }
 `;
 
+const SearchTypeContainer = styled.div`
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 1rem;
+  margin-bottom: 2rem;
+  padding: 1rem;
+  background: rgba(255, 255, 255, 0.03);
+  border-radius: 12px;
+  backdrop-filter: blur(10px);
+  border: 1px solid rgba(255, 255, 255, 0.05);
+  
+  @media (max-width: 768px) {
+    flex-direction: column;
+    gap: 0.5rem;
+  }
+`;
+
+const SearchTypeLabel = styled.span`
+  font-size: 1rem;
+  color: #A1A1AA;
+  font-weight: 500;
+  
+  @media (max-width: 768px) {
+    font-size: 0.9rem;
+  }
+`;
+
+const SearchTypeButton = styled.button<{ active?: boolean }>`
+  padding: 0.5rem 1rem;
+  border: none;
+  border-radius: 8px;
+  font-size: 0.9rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  background: ${({ active }) => 
+    active 
+      ? 'linear-gradient(135deg, #00D4FF 0%, #7C3AED 100%)' 
+      : 'rgba(255, 255, 255, 0.05)'
+  };
+  color: ${({ active }) => active ? '#000' : '#A1A1AA'};
+  border: 1px solid ${({ active }) => 
+    active 
+      ? 'transparent' 
+      : 'rgba(255, 255, 255, 0.1)'
+  };
+  
+  &:hover {
+    background: ${({ active }) => 
+      active 
+        ? 'linear-gradient(135deg, #00D4FF 0%, #7C3AED 100%)' 
+        : 'rgba(255, 255, 255, 0.1)'
+    };
+    transform: translateY(-1px);
+  }
+  
+  @media (max-width: 768px) {
+    padding: 0.4rem 0.8rem;
+    font-size: 0.8rem;
+  }
+`;
+
 
 
 const ResultsContainer = styled.div`
@@ -428,6 +491,7 @@ export default function Search({ isSidebarOpen }: { isSidebarOpen?: boolean }) {
   const [currentPage, setCurrentPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
   const [filter, setFilter] = useState<'all' | 'movie' | 'tv'>('all');
+  const [searchType, setSearchType] = useState<'general' | 'actor' | 'genre'>('general');
   const [totalResults, setTotalResults] = useState(0);
   const [searchTime, setSearchTime] = useState<number>(0);
   const [forceUpdate, setForceUpdate] = useState(0); // Force re-render
@@ -435,7 +499,7 @@ export default function Search({ isSidebarOpen }: { isSidebarOpen?: boolean }) {
   const loadSearchResults = useCallback(async (page: number = 1) => {
     if (!searchQuery || typeof searchQuery !== 'string') return;
 
-    console.log(`🚀 Starting loadSearchResults for page ${page}`);
+    console.log(`🚀 Starting loadSearchResults for page ${page} with type: ${searchType}`);
     setLoading(true);
     if (page === 1) {
       setInitialLoading(true);
@@ -444,9 +508,9 @@ export default function Search({ isSidebarOpen }: { isSidebarOpen?: boolean }) {
 
     try {
       const startTime = Date.now();
-      console.log(`📡 Making API call for "${searchQuery}" page ${page}`);
+      console.log(`📡 Making API call for "${searchQuery}" page ${page} with type: ${searchType}`);
       
-      const data = await movieAPI.searchMovies(searchQuery, page);
+      const data = await movieAPI.searchMovies(searchQuery, page, searchType);
       
       if (data?.error) {
         console.error('❌ Search error:', data.error);
@@ -492,7 +556,7 @@ export default function Search({ isSidebarOpen }: { isSidebarOpen?: boolean }) {
       setLoading(false);
       setInitialLoading(false);
     }
-  }, [searchQuery]);
+  }, [searchQuery, searchType]);
 
   // Load initial search results
   useEffect(() => {
@@ -500,7 +564,7 @@ export default function Search({ isSidebarOpen }: { isSidebarOpen?: boolean }) {
       setCurrentPage(1);
       loadSearchResults(1);
     }
-  }, [searchQuery, loadSearchResults]);
+  }, [searchQuery, searchType, loadSearchResults]);
 
   // Debug searchResults changes
   useEffect(() => {
@@ -517,16 +581,18 @@ export default function Search({ isSidebarOpen }: { isSidebarOpen?: boolean }) {
       console.log(`🚀 Changing to page ${page}`);
       // Clear API cache to ensure fresh data
       clearApiCache();
-      
-      // Scroll to top instantly (no delay)
-      window.scrollTo({ top: 0, behavior: 'auto' });
-      
       loadSearchResults(page);
     }
   };
 
   const handleFilterChange = (newFilter: 'all' | 'movie' | 'tv') => {
     setFilter(newFilter);
+  };
+
+  const handleSearchTypeChange = (newSearchType: 'general' | 'actor' | 'genre') => {
+    setSearchType(newSearchType);
+    setCurrentPage(1);
+    // The useEffect will trigger a new search
   };
 
   const handleSuggestionClick = (suggestion: string) => {
@@ -610,8 +676,30 @@ export default function Search({ isSidebarOpen }: { isSidebarOpen?: boolean }) {
     <SearchContainer isSidebarOpen={isSidebarOpen}>
       <SearchTitle>🔍 Search Results</SearchTitle>
       <SearchSubtitle>
-        Showing results for: <strong>&ldquo;{searchQuery}&rdquo;</strong>
+        Showing {searchType} results for: <strong>&ldquo;{searchQuery}&rdquo;</strong>
       </SearchSubtitle>
+
+      <SearchTypeContainer>
+        <SearchTypeLabel>Search Type:</SearchTypeLabel>
+        <SearchTypeButton 
+          active={searchType === 'general'} 
+          onClick={() => handleSearchTypeChange('general')}
+        >
+          General
+        </SearchTypeButton>
+        <SearchTypeButton 
+          active={searchType === 'actor'} 
+          onClick={() => handleSearchTypeChange('actor')}
+        >
+          Actor
+        </SearchTypeButton>
+        <SearchTypeButton 
+          active={searchType === 'genre'} 
+          onClick={() => handleSearchTypeChange('genre')}
+        >
+          Genre
+        </SearchTypeButton>
+      </SearchTypeContainer>
 
       <FilterContainer>
         <FilterButton 

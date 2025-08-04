@@ -346,13 +346,13 @@ class MovieDetailView(generics.RetrieveAPIView):
         return context
 
 
-@method_decorator(cache_page(60 * 30), name='dispatch')  # Cache for 30 minutes
 class SearchView(generics.ListAPIView):
     """
     Search movies and TV shows
     
     This endpoint allows searching through movies and TV shows using:
     - **q**: Search query (required)
+    - **type**: Search type - 'general', 'actor', or 'genre' (optional, defaults to 'general')
     - **page**: Page number for pagination
     
     The search is performed against TMDB's database and returns matching results.
@@ -371,6 +371,14 @@ class SearchView(generics.ListAPIView):
                 required=True
             ),
             openapi.Parameter(
+                'type',
+                openapi.IN_QUERY,
+                description="Search type: 'general' (default), 'actor', or 'genre'",
+                type=openapi.TYPE_STRING,
+                enum=['general', 'actor', 'genre'],
+                default='general'
+            ),
+            openapi.Parameter(
                 'page',
                 openapi.IN_QUERY,
                 description="Page number for pagination",
@@ -387,7 +395,7 @@ class SearchView(generics.ListAPIView):
                         'count': openapi.Schema(type=openapi.TYPE_INTEGER),
                         'next': openapi.Schema(type=openapi.TYPE_STRING, nullable=True),
                         'previous': openapi.Schema(type=openapi.TYPE_STRING, nullable=True),
-                                                 'results': openapi.Schema(type=openapi.TYPE_ARRAY, items=openapi.Schema(type=openapi.TYPE_OBJECT))
+                        'results': openapi.Schema(type=openapi.TYPE_ARRAY, items=openapi.Schema(type=openapi.TYPE_OBJECT))
                     }
                 )
             ),
@@ -400,8 +408,9 @@ class SearchView(generics.ListAPIView):
     
     def get_queryset(self):
         query = self.request.query_params.get('q', '')
+        search_type = self.request.query_params.get('type', 'general')
         page = int(self.request.query_params.get('page', 1))
-        print(f"SearchView: Received search query: '{query}', page: {page}")  # Debug
+        print(f"SearchView: Received search query: '{query}', type: '{search_type}', page: {page}")  # Debug
         
         if not query:
             print("SearchView: No query provided, returning empty queryset")  # Debug
@@ -410,8 +419,17 @@ class SearchView(generics.ListAPIView):
         tmdb_service = TMDBService()
         
         try:
-            print(f"SearchView: Calling TMDB search_movies_and_tv with query: '{query}', page: {page}")  # Debug
-            data = tmdb_service.search_movies_and_tv(query, page=page)
+            # Choose search method based on type
+            if search_type == 'actor':
+                print(f"SearchView: Performing actor search for: '{query}'")  # Debug
+                data = tmdb_service.search_by_actor(query, page=page)
+            elif search_type == 'genre':
+                print(f"SearchView: Performing genre search for: '{query}'")  # Debug
+                data = tmdb_service.search_by_genre(query, page=page)
+            else:  # general search
+                print(f"SearchView: Performing general search for: '{query}'")  # Debug
+                data = tmdb_service.search_movies_and_tv(query, page=page)
+            
             print(f"SearchView: TMDB search returned {len(data.get('results', []))} results for page {page}")  # Debug
             
             # Debug: Show breakdown of media types
@@ -470,7 +488,7 @@ class SearchView(generics.ListAPIView):
             return ordered_movies
             
         except Exception as e:
-            print(f"SearchView: Error in search_multi: {str(e)}")  # Debug
+            print(f"SearchView: Error in search: {str(e)}")  # Debug
             import traceback
             print(f"SearchView: Full traceback: {traceback.format_exc()}")  # Debug
             

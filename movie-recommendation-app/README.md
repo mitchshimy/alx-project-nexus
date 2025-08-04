@@ -1,8 +1,8 @@
-# MovieHub - Movie Recommendation Platform
+# Movie Recommendation App
 
-A full-stack movie recommendation platform built with Next.js frontend and Django backend, featuring TMDB integration, user authentication, favorites, watchlist, and personalized recommendations.
+A modern, responsive movie and TV show recommendation application built with Next.js, Django, and TMDB API.
 
-## 🎬 Features
+## Features
 
 ### Frontend (Next.js)
 - **Modern UI/UX**: Beautiful, responsive design with smooth animations

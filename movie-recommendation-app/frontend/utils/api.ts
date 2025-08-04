@@ -60,7 +60,6 @@ export const handleTokenExpiration = () => {
       } 
     }));
     
-    // Show a user-friendly notification
     showError(
       'Session Expired', 
       'Your session has expired. Please log in again to continue.',
@@ -478,11 +477,11 @@ export const movieAPI = {
   },
 
   // Search movies and TV shows
-  searchMovies: async (query: string, page: number = 1) => {
+  searchMovies: async (query: string, page: number = 1, searchType: 'general' | 'actor' | 'genre' = 'general') => {
     try {
       // Add cache-busting parameter to ensure fresh data
       const timestamp = Date.now();
-      return await apiRequest(`/movies/search/?q=${encodeURIComponent(query)}&page=${page}&_t=${timestamp}`);
+      return await apiRequest(`/movies/search/?q=${encodeURIComponent(query)}&type=${searchType}&page=${page}&_t=${timestamp}`);
     } catch (error) {
       // Handle timeout gracefully for search - return empty data instead of throwing
       if (error instanceof Error && error.message.includes('timeout')) {

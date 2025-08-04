@@ -790,6 +790,48 @@ const MobileSuggestionType = styled.div`
   gap: 8px;
 `;
 
+const MobileSearchTypeContainer = styled.div`
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-top: 15px;
+  padding: 10px 15px;
+  background: rgba(255, 255, 255, 0.08);
+  border-radius: 12px;
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  backdrop-filter: blur(10px);
+`;
+
+const MobileSearchTypeLabel = styled.span`
+  color: rgba(255, 255, 255, 0.7);
+  font-size: 0.9rem;
+`;
+
+const MobileSearchTypeButtons = styled.div`
+  display: flex;
+  gap: 8px;
+`;
+
+const MobileSearchTypeButton = styled.button<{ active: boolean }>`
+  padding: 6px 12px;
+  background: ${props => props.active ? 'linear-gradient(135deg, #00D4FF 0%, #0099CC 100%)' : 'rgba(255, 255, 255, 0.1)'};
+  border: 1px solid ${props => props.active ? 'rgba(0, 212, 255, 0.4)' : 'rgba(255, 255, 255, 0.2)'};
+  border-radius: 10px;
+  color: ${props => props.active ? '#000' : '#FFFFFF'};
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  backdrop-filter: blur(10px);
+  box-shadow: ${props => props.active ? '0 4px 16px rgba(0, 212, 255, 0.3)' : 'none'};
+
+  &:hover {
+    background: ${props => props.active ? 'linear-gradient(135deg, #00D4FF 0%, #0099CC 100%)' : 'rgba(0, 212, 255, 0.15)'};
+    border-color: ${props => props.active ? 'rgba(0, 212, 255, 0.4)' : 'rgba(0, 212, 255, 0.4)'};
+    color: ${props => props.active ? '#000' : '#00D4FF'};
+    transform: translateY(-1px);
+    box-shadow: ${props => props.active ? '0 8px 32px rgba(0, 212, 255, 0.3)' : 'none'};
+  }
+`;
 
 
 interface HeaderProps {
@@ -802,10 +844,10 @@ export default function Header({ toggleSidebar }: HeaderProps) {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [user, setUser] = useState<any>(null);
   const [searchTerm, setSearchTerm] = useState('');
-  const [showMobileMenu, setShowMobileMenu] = useState(false);
   const [searchSuggestions, setSearchSuggestions] = useState<any[]>([]);
-  const [isSearching, setIsSearching] = useState(false);
   const [showSuggestions, setShowSuggestions] = useState(false);
+  const [isSearching, setIsSearching] = useState(false);
+  const [searchType, setSearchType] = useState<'general' | 'actor' | 'genre'>('general');
   const [showMobileSearch, setShowMobileSearch] = useState(false);
   const searchTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const searchInputRef = useRef<HTMLInputElement>(null);
@@ -966,7 +1008,7 @@ export default function Header({ toggleSidebar }: HeaderProps) {
   const handleSearch = (e: React.FormEvent) => {
     e.preventDefault();
     if (searchTerm.trim()) {
-      router.push(`/search?q=${encodeURIComponent(searchTerm.trim())}`);
+      router.push(`/search?q=${encodeURIComponent(searchTerm.trim())}&type=${searchType}`);
       setSearchTerm('');
       setShowSuggestions(false);
       setSearchSuggestions([]);
@@ -990,7 +1032,7 @@ export default function Header({ toggleSidebar }: HeaderProps) {
     } else {
       console.error('Invalid ID in suggestion:', suggestion);
       // Fallback to search page
-      router.push(`/search?q=${encodeURIComponent(suggestion.title)}`);
+      router.push(`/search?q=${encodeURIComponent(suggestion.title)}&type=${searchType}`);
     }
     
     setSearchTerm('');
@@ -1040,7 +1082,7 @@ export default function Header({ toggleSidebar }: HeaderProps) {
   const handleMobileSearch = (e: React.FormEvent) => {
     e.preventDefault();
     if (searchTerm.trim()) {
-      router.push(`/search?q=${encodeURIComponent(searchTerm.trim())}`);
+      router.push(`/search?q=${encodeURIComponent(searchTerm.trim())}&type=${searchType}`);
       handleMobileSearchClose();
     }
   };
@@ -1217,6 +1259,33 @@ export default function Header({ toggleSidebar }: HeaderProps) {
             </MobileSearchButton>
           </MobileSearchForm>
           
+          <MobileSearchTypeContainer>
+            <MobileSearchTypeLabel>Search Type:</MobileSearchTypeLabel>
+            <MobileSearchTypeButtons>
+              <MobileSearchTypeButton 
+                active={searchType === 'general'} 
+                onClick={() => setSearchType('general')}
+                type="button"
+              >
+                General
+              </MobileSearchTypeButton>
+              <MobileSearchTypeButton 
+                active={searchType === 'actor'} 
+                onClick={() => setSearchType('actor')}
+                type="button"
+              >
+                Actor
+              </MobileSearchTypeButton>
+              <MobileSearchTypeButton 
+                active={searchType === 'genre'} 
+                onClick={() => setSearchType('genre')}
+                type="button"
+              >
+                Genre
+              </MobileSearchTypeButton>
+            </MobileSearchTypeButtons>
+          </MobileSearchTypeContainer>
+
           {showSuggestions && searchSuggestions.length > 0 && (
             <MobileSearchSuggestions>
               {searchSuggestions.map((suggestion) => (
