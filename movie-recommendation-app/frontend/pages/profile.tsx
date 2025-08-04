@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useRouter } from 'next/router';
 import styled from 'styled-components';
 import { authAPI, getAuthToken, clearApiCache } from '@/utils/api';
@@ -461,12 +461,37 @@ export default function Profile({ isSidebarOpen }: { isSidebarOpen?: boolean }) 
         
         setUser(userProfile);
         
-        // Set default stats since getUserStats is not available
-        setStats({
-          favorites_count: 0,
-          watchlist_count: 0,
-          ratings_count: 0
-        });
+        // Fetch real user statistics
+        try {
+          const userStats = await authAPI.getUserStats();
+          console.log('User stats:', userStats);
+          
+          if (userStats && !userStats.error) {
+            setStats({
+              favorites_count: userStats.favorites_count || 0,
+              watchlist_count: userStats.watchlist_count || 0,
+              ratings_count: userStats.ratings_count || 0,
+              member_since: userStats.member_since || userProfile?.date_joined
+            });
+          } else {
+            // Fallback to default stats if API fails
+            setStats({
+              favorites_count: 0,
+              watchlist_count: 0,
+              ratings_count: 0,
+              member_since: userProfile?.date_joined
+            });
+          }
+        } catch (statsError) {
+          console.error('Error loading user stats:', statsError);
+          // Fallback to default stats if API fails
+          setStats({
+            favorites_count: 0,
+            watchlist_count: 0,
+            ratings_count: 0,
+            member_since: userProfile?.date_joined
+          });
+        }
       } catch (err: any) {
         console.error('Error loading user data:', err);
         if (err.message.includes('401')) {
@@ -480,7 +505,38 @@ export default function Profile({ isSidebarOpen }: { isSidebarOpen?: boolean }) 
     };
 
     loadUserData();
-  }, []);
+    
+    // Add focus event listener to refresh stats when user returns to the page
+    const handleFocus = () => {
+      if (isAuthenticated) {
+        refreshStats();
+      }
+    };
+    
+    window.addEventListener('focus', handleFocus);
+    
+    return () => {
+      window.removeEventListener('focus', handleFocus);
+    };
+  }, [isAuthenticated]);
+
+  const refreshStats = useCallback(async () => {
+    try {
+      const userStats = await authAPI.getUserStats();
+      console.log('Refreshed user stats:', userStats);
+      
+      if (userStats && !userStats.error) {
+        setStats({
+          favorites_count: userStats.favorites_count || 0,
+          watchlist_count: userStats.watchlist_count || 0,
+          ratings_count: userStats.ratings_count || 0,
+          member_since: userStats.member_since || user?.date_joined
+        });
+      }
+    } catch (statsError) {
+      console.error('Error refreshing user stats:', statsError);
+    }
+  }, [user]);
 
   const handleSignIn = () => {
     router.push('/signin');
@@ -783,7 +839,7 @@ export default function Profile({ isSidebarOpen }: { isSidebarOpen?: boolean }) 
           </InfoItem>
           <InfoItem>
             <Label>{t('profile.memberSince')}</Label>
-            <Value>{formatDate(user?.date_joined)}</Value>
+            <Value>{stats?.member_since ? formatDate(stats.member_since) : formatDate(user?.date_joined)}</Value>
           </InfoItem>
         </InfoGrid>
         <Button onClick={handleEditProfile}>{t('profile.editProfile')}</Button>

@@ -433,6 +433,17 @@ export const authAPI = {
     
     return response;
   },
+
+  getUserStats: async () => {
+    const response = await apiRequest('/users/stats/');
+    
+    // Check if response has error property
+    if (response && response.error) {
+      return { error: response.error, errorTitle: response.errorTitle };
+    }
+    
+    return response;
+  },
 };
 
 // Movie APIs
