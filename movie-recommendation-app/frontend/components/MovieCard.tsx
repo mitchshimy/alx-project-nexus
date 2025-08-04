@@ -459,6 +459,7 @@ const MovieCard = ({ movie, onFavoriteToggle, onWatchlistToggle }: MovieCardProp
         <TrailerPreview
           videoKey={trailerKey}
           movieTitle={movieTitle}
+          movieId={movie.tmdb_id}
           onClose={() => {
             setShowTrailerPreview(false);
             // Reset trailerKey after a short delay to allow re-triggering

@@ -6,6 +6,7 @@ import { FaPlay, FaPause, FaVolumeMute, FaVolumeUp, FaInfoCircle } from 'react-i
 interface TrailerPreviewProps {
   videoKey: string;
   movieTitle: string;
+  movieId: number;
   onClose?: () => void;
   autoPlay?: boolean;
 }
@@ -34,11 +35,34 @@ const VideoWrapper = styled.div`
   max-height: 450px;
 `;
 
+const ClickableOverlay = styled.div`
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 10;
+  cursor: pointer;
+  
+  /* Only cover the video area, leave space for controls */
+  &::before {
+    content: '';
+    position: absolute;
+    top: 60px; /* Leave space for top controls */
+    left: 0;
+    right: 0;
+    bottom: 60px; /* Leave space for bottom controls */
+    background: transparent;
+    pointer-events: auto;
+  }
+`;
+
 const VideoIframe = styled.iframe`
   width: 100%;
   height: 100%;
   border: none;
   border-radius: 8px;
+  pointer-events: none; /* Disable iframe clicks */
 `;
 
 const Controls = styled.div`
@@ -52,6 +76,7 @@ const Controls = styled.div`
   padding: 8px 16px;
   border-radius: 20px;
   backdrop-filter: blur(10px);
+  z-index: 20; /* Higher than overlay */
 `;
 
 const ControlButton = styled.button`
@@ -84,6 +109,7 @@ const CloseButton = styled.button`
   font-size: 18px;
   transition: all 0.2s ease;
   backdrop-filter: blur(10px);
+  z-index: 20; /* Higher than overlay */
   
   &:hover {
     background: rgba(255, 255, 255, 0.2);
@@ -107,6 +133,7 @@ const QualityInfo = styled.div`
   gap: 6px;
   cursor: pointer;
   transition: all 0.2s ease;
+  z-index: 20; /* Higher than overlay */
   
   &:hover {
     background: rgba(0, 0, 0, 0.9);
@@ -147,6 +174,7 @@ const QualityTooltip = styled.div<{ isVisible: boolean }>`
 export default function TrailerPreview({ 
   videoKey, 
   movieTitle, 
+  movieId, 
   onClose, 
   autoPlay 
 }: TrailerPreviewProps) {
@@ -193,19 +221,22 @@ export default function TrailerPreview({
     };
   }, [onClose]);
 
-  const handlePlayPause = () => {
+  const handlePlayPause = (e: React.MouseEvent) => {
+    e.stopPropagation();
     setIsPlaying(!isPlaying);
     // In a real implementation, you would control the iframe player
     // For now, we'll just toggle the state
   };
 
-  const handleMuteToggle = () => {
+  const handleMuteToggle = (e: React.MouseEvent) => {
+    e.stopPropagation();
     setIsMuted(!isMuted);
     // In a real implementation, you would control the iframe player
     // For now, we'll just toggle the state
   };
 
-  const handleClose = () => {
+  const handleClose = (e: React.MouseEvent) => {
+    e.stopPropagation();
     setIsVisible(false);
     setTimeout(() => {
       onClose?.();
@@ -216,7 +247,8 @@ export default function TrailerPreview({
     return buildYouTubeEmbedUrl(videoKey, {
       autoPlay: isPlaying,
       muted: isMuted,
-      quality: currentQuality
+      quality: currentQuality,
+      controls: false // Hide default YouTube controls
     });
   };
 
@@ -240,14 +272,33 @@ export default function TrailerPreview({
   return (
     <PreviewContainer isVisible={isVisible}>
       <VideoWrapper>
-        <VideoIframe
-          src={getVideoUrl()}
-          title={`${movieTitle} Trailer`}
-          allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-          allowFullScreen
-        />
+        <ClickableOverlay>
+          <div 
+            style={{
+              position: 'absolute',
+              top: '60px',
+              left: 0,
+              right: 0,
+              bottom: '60px',
+              cursor: 'pointer'
+            }}
+            onClick={() => {
+              // Navigate to movie details page
+              window.location.href = `/movies/${movieId}`;
+            }}
+          />
+          <VideoIframe
+            src={getVideoUrl()}
+            title={`${movieTitle} Trailer`}
+            allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+            allowFullScreen
+          />
+        </ClickableOverlay>
         
-        <QualityInfo onClick={() => setShowQualityInfo(!showQualityInfo)}>
+        <QualityInfo onClick={(e) => {
+          e.stopPropagation();
+          setShowQualityInfo(!showQualityInfo);
+        }}>
           <FaInfoCircle size={12} />
           {getQualityDisplayName(currentQuality)}
         </QualityInfo>
