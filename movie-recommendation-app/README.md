@@ -11,6 +11,7 @@ A modern, responsive movie and TV show recommendation application built with Nex
 - **User Authentication**: Sign up, sign in, and profile management
 - **Favorites & Watchlist**: Save and manage your favorite content
 - **Responsive Design**: Works perfectly on desktop, tablet, and mobile
+- **Enhanced Mobile Touch**: Improved touch sensitivity with scroll detection to prevent accidental clicks
 
 ### Backend (Django)
 - **RESTful API**: Complete API with authentication and data management

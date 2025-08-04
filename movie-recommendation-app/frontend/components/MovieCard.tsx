@@ -21,7 +21,7 @@ interface MovieCardProps {
   onWatchlistToggle?: () => void;
 }
 
-const Card = styled.div<{ isLongPressing?: boolean }>`
+const Card = styled.div<{ isLongPressing?: boolean; isTouching?: boolean }>`
   background: rgba(255, 255, 255, 0.05);
   backdrop-filter: blur(10px);
   border-radius: 12px;
@@ -30,11 +30,11 @@ const Card = styled.div<{ isLongPressing?: boolean }>`
   border: 1px solid rgba(255, 255, 255, 0.1);
   cursor: pointer;
   position: relative;
-  transform: ${props => props.isLongPressing ? 'scale(0.98)' : 'scale(1)'};
-  opacity: ${props => props.isLongPressing ? '0.8' : '1'};
+  transform: ${props => props.isLongPressing ? 'scale(0.98)' : props.isTouching ? 'scale(0.99)' : 'scale(1)'};
+  opacity: ${props => props.isLongPressing ? '0.8' : props.isTouching ? '0.9' : '1'};
 
   &:hover {
-    transform: ${props => props.isLongPressing ? 'scale(0.98)' : 'translateY(-8px)'};
+    transform: ${props => props.isLongPressing ? 'scale(0.98)' : props.isTouching ? 'scale(0.99)' : 'translateY(-8px)'};
     box-shadow: 0 20px 40px rgba(0, 0, 0, 0.3);
     border-color: rgba(255, 255, 255, 0.2);
   }
@@ -213,14 +213,19 @@ const MovieCard = ({ movie, onFavoriteToggle, onWatchlistToggle }: MovieCardProp
   const [isInWatchlist, setIsInWatchlist] = useState(false);
   const [showTrailerPreview, setShowTrailerPreview] = useState(false);
   const [trailerKey, setTrailerKey] = useState<string | null>(null);
+  const [isLongPressing, setIsLongPressing] = useState(false);
+  const [isTouching, setIsTouching] = useState(false);
   
   // Mobile touch handling
-  const [isLongPressing, setIsLongPressing] = useState(false);
   const longPressTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const touchStartTimeRef = useRef<number>(0);
   const isMobileRef = useRef<boolean>(false);
   const hoverTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const isHoveringRef = useRef(false);
+  const touchStartXRef = useRef<number>(0);
+  const touchStartYRef = useRef<number>(0);
+  const isScrollingRef = useRef<boolean>(false);
+  const scrollTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
   useEffect(() => {
     // Only check favorites/watchlist if user is authenticated
@@ -285,6 +290,33 @@ const MovieCard = ({ movie, onFavoriteToggle, onWatchlistToggle }: MovieCardProp
     checkWatchlist();
   }, [movie.tmdb_id]);
 
+  // Add scroll detection
+  useEffect(() => {
+    const handleScroll = () => {
+      isScrollingRef.current = true;
+      
+      // Clear existing timeout
+      if (scrollTimeoutRef.current) {
+        clearTimeout(scrollTimeoutRef.current);
+      }
+      
+      // Set scrolling to false after scroll stops
+      scrollTimeoutRef.current = setTimeout(() => {
+        isScrollingRef.current = false;
+      }, 150); // 150ms delay to detect when scrolling stops
+    };
+
+    // Add scroll listener to window
+    window.addEventListener('scroll', handleScroll, { passive: true });
+    
+    return () => {
+      window.removeEventListener('scroll', handleScroll);
+      if (scrollTimeoutRef.current) {
+        clearTimeout(scrollTimeoutRef.current);
+      }
+    };
+  }, []);
+
   const handleCardClick = () => {
     router.push(`/movies/${movie.tmdb_id}`);
   };
@@ -347,11 +379,25 @@ const MovieCard = ({ movie, onFavoriteToggle, onWatchlistToggle }: MovieCardProp
     }
   };
 
-  // Mobile touch handlers
+  // Mobile touch handlers with improved sensitivity
+  // Features:
+  // - Scroll detection to prevent accidental clicks during scrolling
+  // - Distance tracking to ensure minimal movement (max 15px)
+  // - Touch duration validation (50-500ms for intentional taps)
+  // - Visual feedback for touch interactions
+  // - Delayed execution to distinguish between scroll and tap gestures
   const handleTouchStart = (e: React.TouchEvent) => {
     // Detect if it's a mobile device
     isMobileRef.current = true;
     touchStartTimeRef.current = Date.now();
+    
+    // Set touching state for visual feedback
+    setIsTouching(true);
+    
+    // Store initial touch position for distance calculation
+    const touch = e.touches[0];
+    touchStartXRef.current = touch.clientX;
+    touchStartYRef.current = touch.clientY;
     
     // Start long press timer for mobile
     if (getMobileAutoPlayTrailers() && getAuthToken()) {
@@ -392,12 +438,34 @@ const MovieCard = ({ movie, onFavoriteToggle, onWatchlistToggle }: MovieCardProp
       longPressTimeoutRef.current = null;
     }
     
-    // If it was a short tap (not a long press), navigate to details
-    if (touchDuration < 800 && !isLongPressing) {
-      handleCardClick();
+    // Calculate touch distance
+    const touch = e.changedTouches[0];
+    const distanceX = Math.abs(touch.clientX - touchStartXRef.current);
+    const distanceY = Math.abs(touch.clientY - touchStartYRef.current);
+    const totalDistance = Math.sqrt(distanceX * distanceX + distanceY * distanceY);
+    
+    // Enhanced touch sensitivity logic:
+    // 1. Touch duration should be between 50ms and 500ms (not too short, not too long)
+    // 2. Distance should be less than 15px (minimal movement)
+    // 3. Not a long press (not showing trailer)
+    // 4. Not currently scrolling
+    const isShortTap = touchDuration >= 50 && touchDuration <= 500;
+    const isMinimalMovement = totalDistance < 15; // Reduced from 20px to 15px
+    const isNotLongPress = !isLongPressing;
+    const isNotScrolling = !isScrollingRef.current;
+    
+    if (isShortTap && isMinimalMovement && isNotLongPress && isNotScrolling) {
+      // Add a small delay to ensure it's not part of a scroll gesture
+      setTimeout(() => {
+        // Double-check that we're still not scrolling
+        if (!isScrollingRef.current) {
+          handleCardClick();
+        }
+      }, 100); // Increased delay to 100ms for better scroll detection
     }
     
     setIsLongPressing(false);
+    setIsTouching(false);
   };
 
   const handleTouchMove = (e: React.TouchEvent) => {
@@ -407,6 +475,7 @@ const MovieCard = ({ movie, onFavoriteToggle, onWatchlistToggle }: MovieCardProp
       longPressTimeoutRef.current = null;
     }
     setIsLongPressing(false);
+    setIsTouching(false);
   };
 
   const handleFavoriteToggle = async (e: React.MouseEvent) => {
@@ -482,6 +551,9 @@ const MovieCard = ({ movie, onFavoriteToggle, onWatchlistToggle }: MovieCardProp
       if (longPressTimeoutRef.current) {
         clearTimeout(longPressTimeoutRef.current);
       }
+      if (scrollTimeoutRef.current) {
+        clearTimeout(scrollTimeoutRef.current);
+      }
     };
   }, []);
 
@@ -501,6 +573,7 @@ const MovieCard = ({ movie, onFavoriteToggle, onWatchlistToggle }: MovieCardProp
       onTouchEnd={handleTouchEnd}
       onTouchMove={handleTouchMove}
       isLongPressing={isLongPressing}
+      isTouching={isTouching}
     >
       <PosterContainer>
         <Skeleton />
