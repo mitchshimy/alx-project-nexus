@@ -537,25 +537,33 @@ const FullCastCharacter = styled.div`
 
 const ReviewsGrid = styled.div`
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
   gap: 1.5rem;
   margin-bottom: 2rem;
   
   @media (max-width: 768px) {
-    grid-template-columns: 1fr;
+    gap: 1rem;
   }
 `;
 
 const ReviewCard = styled.div`
   background: rgba(255, 255, 255, 0.05);
+  backdrop-filter: blur(10px);
   border-radius: 12px;
-  padding: 20px;
+  padding: 1.5rem;
   border: 1px solid rgba(255, 255, 255, 0.1);
   transition: all 0.3s ease;
   
   &:hover {
-    transform: translateY(-3px);
-    box-shadow: 0 8px 16px rgba(0, 0, 0, 0.2);
+    background: rgba(255, 255, 255, 0.08);
+    transform: translateY(-2px);
+  }
+  
+  @media (max-width: 768px) {
+    padding: 1.2rem;
+  }
+  
+  @media (max-width: 480px) {
+    padding: 1rem;
   }
 `;
 
@@ -563,15 +571,24 @@ const ReviewHeader = styled.div`
   display: flex;
   align-items: center;
   gap: 12px;
-  margin-bottom: 16px;
+  margin-bottom: 12px;
+  
+  @media (max-width: 768px) {
+    gap: 10px;
+    margin-bottom: 10px;
+  }
 `;
 
 const ReviewAuthorImage = styled.img`
-  width: 50px;
-  height: 50px;
-  object-fit: cover;
+  width: 40px;
+  height: 40px;
   border-radius: 50%;
-  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+  object-fit: cover;
+  
+  @media (max-width: 768px) {
+    width: 35px;
+    height: 35px;
+  }
 `;
 
 const ReviewAuthorInfo = styled.div`
@@ -579,30 +596,87 @@ const ReviewAuthorInfo = styled.div`
 `;
 
 const ReviewAuthorName = styled.div`
-  font-size: 1rem;
-  color: #FFFFFF;
   font-weight: 600;
-  margin-bottom: 4px;
+  color: #FFFFFF;
+  font-size: 1rem;
+  
+  @media (max-width: 768px) {
+    font-size: 0.95rem;
+  }
 `;
 
 const ReviewDate = styled.div`
   font-size: 0.85rem;
-  color: #A1A1AA;
+  color: rgba(255, 255, 255, 0.6);
+  
+  @media (max-width: 768px) {
+    font-size: 0.8rem;
+  }
 `;
 
 const ReviewRating = styled.div`
   display: flex;
   align-items: center;
-  gap: 6px;
-  font-size: 1rem;
+  gap: 4px;
+  font-size: 0.9rem;
   color: #FFD700;
   font-weight: 600;
+  
+  @media (max-width: 768px) {
+    font-size: 0.85rem;
+  }
 `;
 
 const ReviewContent = styled.div`
   font-size: 0.95rem;
   color: #E5E7EB;
   line-height: 1.7;
+  position: relative;
+  
+  @media (max-width: 768px) {
+    font-size: 0.9rem;
+    line-height: 1.6;
+  }
+  
+  @media (max-width: 480px) {
+    font-size: 0.85rem;
+    line-height: 1.5;
+  }
+`;
+
+const ReadMoreButton = styled.button`
+  background: none;
+  border: none;
+  color: #e50914;
+  font-size: 0.9rem;
+  font-weight: 600;
+  cursor: pointer;
+  padding: 0;
+  margin-top: 8px;
+  text-decoration: underline;
+  
+  &:hover {
+    color: #b2070e;
+  }
+  
+  @media (max-width: 768px) {
+    font-size: 0.85rem;
+    margin-top: 6px;
+  }
+  
+  @media (max-width: 480px) {
+    font-size: 0.8rem;
+    margin-top: 5px;
+  }
+`;
+
+const ReviewText = styled.div<{ isExpanded: boolean }>`
+  ${props => !props.isExpanded && `
+    overflow: hidden;
+    display: -webkit-box;
+    -webkit-line-clamp: 3;
+    -webkit-box-orient: vertical;
+  `}
 `;
 
 const SimilarMoviesGrid = styled.div`
@@ -679,6 +753,7 @@ export default function MovieDetailPage({ isSidebarOpen = false }: { isSidebarOp
   const [cast, setCast] = useState<TMDBCast[]>([]);
   const [fullCast, setFullCast] = useState<TMDBCast[]>([]);
   const [reviews, setReviews] = useState<any[]>([]);
+  const [expandedReviews, setExpandedReviews] = useState<Set<number>>(new Set());
   const [activeTab, setActiveTab] = useState<'details' | 'cast' | 'reviews'>('details');
   const [videos, setVideos] = useState<any[]>([]);
   const [showTrailerModal, setShowTrailerModal] = useState(false);
@@ -697,6 +772,7 @@ export default function MovieDetailPage({ isSidebarOpen = false }: { isSidebarOp
     setError(null);
     setLoading(true);
     setNavigatingToSimilar(false);
+    setExpandedReviews(new Set());
     
     // Clear any existing timeout
     if (navigatingTimeoutRef.current) {
@@ -750,42 +826,11 @@ export default function MovieDetailPage({ isSidebarOpen = false }: { isSidebarOp
         }
 
         // Set reviews if available
-        if (movieData.reviews?.results) {
+        if (movieData.reviews?.results && movieData.reviews.results.length > 0) {
           setReviews(movieData.reviews.results);
         } else {
-          // Mock reviews for demonstration
-          setReviews([
-            {
-              id: 1,
-              author: 'MovieFan123',
-              author_details: { 
-                avatar_path: null,
-                rating: 9 
-              },
-              content: 'This movie was absolutely fantastic! The acting was superb and the storyline kept me engaged throughout.',
-              created_at: '2024-01-15T10:30:00Z'
-            },
-            {
-              id: 2,
-              author: 'CinemaLover',
-              author_details: { 
-                avatar_path: null,
-                rating: 8 
-              },
-              content: 'A solid film with great performances. The cinematography was beautiful and the pacing was perfect.',
-              created_at: '2024-01-14T15:45:00Z'
-            },
-            {
-              id: 3,
-              author: 'FilmCritic',
-              author_details: { 
-                avatar_path: null,
-                rating: 7 
-              },
-              content: 'While not perfect, this movie delivers on its promises. Worth watching for the performances alone.',
-              created_at: '2024-01-13T09:20:00Z'
-            }
-          ]);
+          // No reviews available
+          setReviews([]);
         }
 
         // Fetch similar movies if available
@@ -1287,7 +1332,24 @@ export default function MovieDetailPage({ isSidebarOpen = false }: { isSidebarOp
                           </ReviewRating>
                         )}
                       </ReviewHeader>
-                      <ReviewContent>{review.content}</ReviewContent>
+                      <ReviewContent>
+                        <ReviewText isExpanded={expandedReviews.has(review.id)}>
+                          {review.content}
+                        </ReviewText>
+                        {review.content.length > 300 && (
+                          <ReadMoreButton onClick={() => {
+                            const newExpandedReviews = new Set(expandedReviews);
+                            if (expandedReviews.has(review.id)) {
+                              newExpandedReviews.delete(review.id);
+                            } else {
+                              newExpandedReviews.add(review.id);
+                            }
+                            setExpandedReviews(newExpandedReviews);
+                          }}>
+                            {expandedReviews.has(review.id) ? 'Read Less' : 'Read More'}
+                          </ReadMoreButton>
+                        )}
+                      </ReviewContent>
                     </ReviewCard>
                   ))}
                 </ReviewsGrid>
