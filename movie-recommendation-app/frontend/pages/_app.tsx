@@ -9,6 +9,7 @@ import GlobalStyle from '@/styles/GlobalStyle';
 import { fetchTrendingMovies, fetchTopRatedMovies, fetchPopularMovies } from '@/utils/api';
 import { setGlobalErrorHandler, checkTokenExpiration } from '@/utils/api';
 import { initializeSettings } from '@/utils/settings';
+import { initializeLanguageSystem } from '@/utils/translations';
 
 // Global state for preloaded content
 export const preloadedContent = {
@@ -116,6 +117,9 @@ export default function App({ Component, pageProps }: AppProps) {
     
     // Initialize user settings
     initializeSettings();
+    
+    // Initialize language system
+    initializeLanguageSystem();
     
     // Check if we should show splash (only on client)
     const shouldShow = shouldShowSplash();

@@ -3,6 +3,7 @@ import { useRouter } from 'next/router';
 import Link from 'next/link';
 import styled from 'styled-components';
 import { authAPI, getAuthToken, removeAuthToken, performComprehensiveLogout, checkTokenExpiration } from '../utils/api';
+import { persistLanguagePreference } from '@/utils/settings';
 
 const HeaderContainer = styled.div`
   position: fixed;
@@ -409,6 +410,11 @@ const AccountIcon = styled(Link)`
   display: none;
   backdrop-filter: blur(20px);
   box-shadow: 0 4px 16px rgba(0, 0, 0, 0.3);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 44px;
+  height: 44px;
 
   &:hover {
     background: rgba(0, 212, 255, 0.15);
@@ -419,7 +425,13 @@ const AccountIcon = styled(Link)`
   }
   
   @media (max-width: 768px) {
-    display: block;
+    display: flex;
+  }
+  
+  @media (max-width: 480px) {
+    width: 40px;
+    height: 40px;
+    font-size: 1rem;
   }
 `;
 
@@ -456,7 +468,7 @@ const MobileSearchOverlay = styled.div<{ isOpen: boolean }>`
   left: 0;
   right: 0;
   bottom: 0;
-  background: linear-gradient(135deg, rgba(0, 0, 0, 0.95) 0%, rgba(20, 20, 40, 0.98) 100%);
+  background: linear-gradient(135deg, rgba(10, 10, 15, 0.95) 0%, rgba(26, 26, 36, 0.98) 100%);
   backdrop-filter: blur(25px);
   z-index: 2000;
   display: flex;
@@ -472,11 +484,11 @@ const MobileSearchOverlay = styled.div<{ isOpen: boolean }>`
 const MobileSearchContainer = styled.div`
   width: 92%;
   max-width: 480px;
-  background: rgba(255, 255, 255, 0.08);
+  background: rgba(255, 255, 255, 0.03);
   border-radius: 24px;
   padding: 24px;
   backdrop-filter: blur(30px);
-  border: 1px solid rgba(255, 255, 255, 0.15);
+  border: 1px solid rgba(255, 255, 255, 0.05);
   box-shadow: 
     0 25px 80px rgba(0, 0, 0, 0.6),
     0 0 0 1px rgba(255, 255, 255, 0.1) inset;
@@ -489,10 +501,33 @@ const MobileSearchContainer = styled.div`
     top: 0;
     left: 0;
     right: 0;
-    bottom: 0;
-    background: linear-gradient(135deg, rgba(0, 212, 255, 0.1) 0%, rgba(0, 153, 204, 0.05) 100%);
-    border-radius: 24px;
+    height: 4px;
+    background: linear-gradient(90deg, #6a11cb 0%, #2575fc 50%, #6a11cb 100%);
+    animation: gradientFlow 3s linear infinite;
+    background-size: 200% auto;
+  }
+  
+  &::after {
+    content: '';
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    width: 300px;
+    height: 300px;
+    background: radial-gradient(circle, rgba(106, 17, 203, 0.1) 0%, transparent 70%);
+    transform: translate(-50%, -50%);
+    animation: pulse 4s ease-in-out infinite;
     pointer-events: none;
+  }
+  
+  @keyframes gradientFlow {
+    0% { background-position: 0% center; }
+    100% { background-position: 200% center; }
+  }
+  
+  @keyframes pulse {
+    0%, 100% { opacity: 0.3; transform: translate(-50%, -50%) scale(1); }
+    50% { opacity: 0.6; transform: translate(-50%, -50%) scale(1.1); }
   }
 `;
 
@@ -505,14 +540,37 @@ const MobileSearchHeader = styled.div`
 
 const MobileSearchTitle = styled.h2`
   color: #FFFFFF;
-  font-size: 1.6rem;
+  font-size: 1.8rem;
   font-weight: 800;
   margin: 0;
-  background: linear-gradient(135deg, #FFFFFF 0%, #E0E0E0 100%);
+  background: linear-gradient(135deg, #fff 0%, #6a11cb 50%, #2575fc 100%);
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
   background-clip: text;
-  text-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
+  position: relative;
+  animation: titleGlow 3s ease-in-out infinite;
+  
+  &::after {
+    content: '';
+    position: absolute;
+    bottom: -8px;
+    left: 0;
+    width: 60px;
+    height: 3px;
+    background: linear-gradient(90deg, #6a11cb 0%, #2575fc 100%);
+    border-radius: 3px;
+    animation: titleUnderline 2s ease-in-out infinite;
+  }
+  
+  @keyframes titleGlow {
+    0%, 100% { filter: drop-shadow(0 0 20px rgba(106, 17, 203, 0.3)); }
+    50% { filter: drop-shadow(0 0 30px rgba(106, 17, 203, 0.6)); }
+  }
+  
+  @keyframes titleUnderline {
+    0%, 100% { width: 60px; opacity: 0.7; }
+    50% { width: 100px; opacity: 1; }
+  }
 `;
 
 const MobileSearchCloseButton = styled.button`
@@ -567,10 +625,10 @@ const MobileSearchInput = styled.input`
   }
   
   &:focus {
-    border-color: rgba(0, 212, 255, 0.6);
+    border-color: rgba(106, 17, 203, 0.6);
     box-shadow: 
-      0 0 25px rgba(0, 212, 255, 0.4),
-      0 0 0 1px rgba(0, 212, 255, 0.2) inset;
+      0 0 25px rgba(106, 17, 203, 0.4),
+      0 0 0 1px rgba(106, 17, 203, 0.2) inset;
     background: rgba(255, 255, 255, 0.12);
     transform: scale(1.02);
   }
@@ -578,7 +636,7 @@ const MobileSearchInput = styled.input`
 
 const MobileSearchButton = styled.button`
   padding: 20px 32px;
-  background: linear-gradient(135deg, #00D4FF 0%, #0099CC 100%);
+  background: linear-gradient(135deg, #6a11cb 0%, #2575fc 100%);
   border: none;
   border-radius: 18px;
   color: #FFFFFF;
@@ -586,7 +644,7 @@ const MobileSearchButton = styled.button`
   font-weight: 700;
   cursor: pointer;
   transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-  box-shadow: 0 8px 25px rgba(0, 212, 255, 0.3);
+  box-shadow: 0 8px 25px rgba(106, 17, 203, 0.3);
   position: relative;
   overflow: hidden;
   min-height: 60px;
@@ -607,7 +665,7 @@ const MobileSearchButton = styled.button`
   
   &:hover {
     transform: translateY(-2px);
-    box-shadow: 0 12px 35px rgba(0, 212, 255, 0.4);
+    box-shadow: 0 12px 35px rgba(106, 17, 203, 0.4);
     
     &::before {
       left: 100%;
@@ -616,7 +674,7 @@ const MobileSearchButton = styled.button`
   
   &:active {
     transform: translateY(0);
-    box-shadow: 0 4px 15px rgba(0, 212, 255, 0.3);
+    box-shadow: 0 4px 15px rgba(106, 17, 203, 0.3);
   }
   
   &:disabled {
@@ -655,12 +713,12 @@ const MobileSuggestionItem = styled.div`
     left: -100%;
     width: 100%;
     height: 100%;
-    background: linear-gradient(90deg, transparent, rgba(0, 212, 255, 0.1), transparent);
+    background: linear-gradient(90deg, transparent, rgba(106, 17, 203, 0.1), transparent);
     transition: left 0.3s ease;
   }
   
   &:hover {
-    background: rgba(0, 212, 255, 0.08);
+    background: rgba(106, 17, 203, 0.08);
     transform: translateX(4px);
     
     &::before {
@@ -669,7 +727,7 @@ const MobileSuggestionItem = styled.div`
   }
   
   &:active {
-    background: rgba(0, 212, 255, 0.15);
+    background: rgba(106, 17, 203, 0.15);
     transform: translateX(2px);
   }
   
@@ -695,12 +753,7 @@ const MobileSuggestionType = styled.div`
   gap: 8px;
 `;
 
-const MobileSearchLoading = styled.div`
-  padding: 20px;
-  color: rgba(255, 255, 255, 0.7);
-  text-align: center;
-  font-size: 1rem;
-`;
+
 
 interface HeaderProps {
   isSidebarOpen: boolean;
@@ -732,6 +785,8 @@ export default function Header({ isSidebarOpen, toggleSidebar }: HeaderProps) {
     if (token) {
       setIsAuthenticated(true);
       fetchUserProfile();
+      // Ensure language preference is maintained when user logs in
+      persistLanguagePreference();
     } else {
       setIsAuthenticated(false);
       setUser(null);
@@ -953,28 +1008,7 @@ export default function Header({ isSidebarOpen, toggleSidebar }: HeaderProps) {
     }
   };
 
-  const handleMobileSuggestionClick = async (suggestion: any) => {
-    console.log('Mobile suggestion clicked:', suggestion);
-    
-    // Navigate to movie details page for both movies and TV shows
-    // since the backend handles both types in the same way
-    if (suggestion.id && suggestion.id > 0) {
-      console.log('Mobile navigating to details page:', suggestion.id, 'Type:', suggestion.type);
-      console.log('Router object:', router);
-      try {
-        await router.push(`/movies/${suggestion.id}`);
-        console.log('Mobile navigation successful');
-      } catch (error) {
-        console.error('Mobile navigation failed:', error);
-      }
-    } else {
-      console.error('Invalid ID in mobile suggestion:', suggestion);
-      // Fallback to search page
-      router.push(`/search?q=${encodeURIComponent(suggestion.title)}`);
-    }
-    
-    handleMobileSearchClose();
-  };
+
 
   // Close suggestions when clicking outside
   useEffect(() => {
@@ -1005,6 +1039,9 @@ export default function Header({ isSidebarOpen, toggleSidebar }: HeaderProps) {
   }, []);
 
   const handleLogout = () => {
+    // Persist language preference before logout
+    persistLanguagePreference();
+    
     // Use the comprehensive logout function
     performComprehensiveLogout();
     

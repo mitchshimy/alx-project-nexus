@@ -3,7 +3,7 @@ import { useRouter } from 'next/router';
 import styled from 'styled-components';
 import { getAuthToken, clearApiCache, authAPI, performComprehensiveLogout } from '@/utils/api';
 import { getSettings, saveSettings, applyTheme, UserSettings } from '@/utils/settings';
-import { t, getTranslation } from '@/utils/translations';
+import { t, getTranslation, setLanguage, getAvailableLanguages } from '@/utils/translations';
 import ConfirmationModal from '@/components/ConfirmationModal';
 import { 
   YOUTUBE_QUALITY_OPTIONS, 
@@ -297,11 +297,11 @@ export default function Settings({ isSidebarOpen }: { isSidebarOpen?: boolean })
   };
 
   const applyLanguageChange = (language: string) => {
+    // Use the new setLanguage function to properly persist the language
+    setLanguage(language);
+    
     // Force a re-render by updating the document title
     document.title = getTranslation('settings.title', language);
-    
-    // Dispatch a custom event to notify other components
-    window.dispatchEvent(new CustomEvent('languageChanged', { detail: { language } }));
   };
 
   const handleSaveSettings = () => {

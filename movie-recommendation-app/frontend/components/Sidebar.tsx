@@ -268,28 +268,43 @@ export default function Sidebar({ isOpen, onClose }: SidebarProps) {
 
   // Initialize navigation items on client-side only to prevent hydration mismatch
   useEffect(() => {
-    setNavItems([
-      { href: "/", icon: <MdHome />, label: t('nav.home') },
-      { href: "/movies", icon: <MdMovie />, label: t('nav.movies') },
-      { href: "/tv", icon: <MdLiveTv />, label: t('nav.tv') },
-      { href: "/trending", icon: <MdWhatshot />, label: t('nav.trending') },
-      { href: "/top-imdb", icon: <MdStar />, label: t('nav.topRated') },
-    ]);
+    const updateNavigationItems = () => {
+      setNavItems([
+        { href: "/", icon: <MdHome />, label: t('nav.home') },
+        { href: "/movies", icon: <MdMovie />, label: t('nav.movies') },
+        { href: "/tv", icon: <MdLiveTv />, label: t('nav.tv') },
+        { href: "/trending", icon: <MdWhatshot />, label: t('nav.trending') },
+        { href: "/top-imdb", icon: <MdStar />, label: t('nav.topRated') },
+      ]);
 
-    setPersonalItems([
-      { href: "/favorites", icon: <MdFavorite />, label: t('nav.favorites') },
-      { href: "/watchlist", icon: <MdBookmark />, label: t('nav.watchlist') },
-    ]);
+      setPersonalItems([
+        { href: "/favorites", icon: <MdFavorite />, label: t('nav.favorites') },
+        { href: "/watchlist", icon: <MdBookmark />, label: t('nav.watchlist') },
+      ]);
 
-    setAccountItems([
-      { href: "/signin", icon: <MdLogin />, label: t('auth.signIn') },
-      { href: "/signup", icon: <MdPersonAdd />, label: t('auth.signUp') },
-    ]);
+      setAccountItems([
+        { href: "/signin", icon: <MdLogin />, label: t('auth.signIn') },
+        { href: "/signup", icon: <MdPersonAdd />, label: t('auth.signUp') },
+      ]);
 
-    setProfileItems(isOpen ? [
-      { href: "/profile", icon: <MdPerson />, label: t('nav.profile') },
-      { href: "/settings", icon: <MdSettings />, label: t('nav.settings') },
-    ] : []);
+      setProfileItems(isOpen ? [
+        { href: "/profile", icon: <MdPerson />, label: t('nav.profile') },
+        { href: "/settings", icon: <MdSettings />, label: t('nav.settings') },
+      ] : []);
+    };
+
+    updateNavigationItems();
+
+    // Listen for language changes
+    const handleLanguageChange = () => {
+      updateNavigationItems();
+    };
+
+    window.addEventListener('languageChanged', handleLanguageChange);
+    
+    return () => {
+      window.removeEventListener('languageChanged', handleLanguageChange);
+    };
   }, [isOpen]);
 
   const handleNavigation = (href: string) => {

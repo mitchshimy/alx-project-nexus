@@ -45,7 +45,7 @@ export const getAutoPlayTrailers = (): boolean => {
 
 export const getLanguage = (): string => {
   const settings = getSettings();
-  return settings.language;
+  return settings.language || 'en';
 };
 
 export const getTheme = (): string => {
@@ -88,4 +88,50 @@ export const initializeSettings = (): void => {
   
   const settings = getSettings();
   applyTheme(settings.theme);
+};
+
+export const persistLanguagePreference = (): void => {
+  if (typeof window === 'undefined') {
+    return;
+  }
+  
+  try {
+    // Get current language preference
+    const currentLanguage = getLanguage();
+    
+    // Ensure the language setting is saved in userSettings
+    const savedSettings = localStorage.getItem('userSettings');
+    let settings = savedSettings ? JSON.parse(savedSettings) : {};
+    
+    // Only update if language is not already set or is different
+    if (!settings.language || settings.language !== currentLanguage) {
+      settings.language = currentLanguage;
+      localStorage.setItem('userSettings', JSON.stringify(settings));
+    }
+  } catch (error) {
+    console.error('Error persisting language preference:', error);
+  }
+};
+
+export const resetLanguageToDefault = (): void => {
+  if (typeof window === 'undefined') {
+    return;
+  }
+  
+  try {
+    const savedSettings = localStorage.getItem('userSettings');
+    let settings = savedSettings ? JSON.parse(savedSettings) : {};
+    
+    // Reset language to English
+    settings.language = 'en';
+    
+    localStorage.setItem('userSettings', JSON.stringify(settings));
+    
+    // Dispatch language change event
+    window.dispatchEvent(new CustomEvent('languageChanged', { 
+      detail: { language: 'en' } 
+    }));
+  } catch (error) {
+    console.error('Error resetting language to default:', error);
+  }
 }; 

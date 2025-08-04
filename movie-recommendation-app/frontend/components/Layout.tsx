@@ -4,6 +4,7 @@ import Head from 'next/head';
 import Link from 'next/link';
 import Header from './Header';
 import Sidebar from './Sidebar';
+import { t, tWithParams } from '@/utils/translations';
 import React from 'react';
 import { getAuthToken } from '@/utils/api';
 
@@ -290,10 +291,28 @@ interface LayoutProps {
 export default function Layout({ children }: LayoutProps) {
   const [isSidebarOpen, setSidebarOpen] = useState(false);
   const [isAuthenticated, setIsAuthenticated] = useState(false);
+  const [footerContent, setFooterContent] = useState({
+    description: '',
+    explore: '',
+    account: '',
+    support: '',
+    copyright: ''
+  });
   
   // Check if user prefers reduced motion
   const prefersReducedMotion = typeof window !== 'undefined' && 
     window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+  // Update footer content based on current language
+  const updateFooterContent = () => {
+    setFooterContent({
+      description: t('footer.description'),
+      explore: t('footer.explore'),
+      account: t('footer.account'),
+      support: t('footer.support'),
+      copyright: tWithParams('footer.copyright', { year: new Date().getFullYear() })
+    });
+  };
 
   // Handle authentication state changes
   useEffect(() => {
@@ -313,12 +332,22 @@ export default function Layout({ children }: LayoutProps) {
       }
     };
 
-    // Add event listener
+    // Listen for language changes
+    const handleLanguageChange = () => {
+      updateFooterContent();
+    };
+
+    // Add event listeners
     window.addEventListener('authStateChanged', handleAuthStateChange as EventListener);
+    window.addEventListener('languageChanged', handleLanguageChange);
+
+    // Initialize footer content
+    updateFooterContent();
 
     // Cleanup
     return () => {
       window.removeEventListener('authStateChanged', handleAuthStateChange as EventListener);
+      window.removeEventListener('languageChanged', handleLanguageChange);
     };
   }, []);
 
@@ -359,39 +388,38 @@ export default function Layout({ children }: LayoutProps) {
               <FooterSection>
                 <h3>SHIMY</h3>
                 <p>
-                  Your gateway to the world of cinema. Discover, explore, and enjoy the finest films in stunning
-                  quality with our modern, intuitive interface.
+                  {footerContent.description}
                 </p>
               </FooterSection>
               <FooterSection>
-                <h3>Explore</h3>
+                <h3>{footerContent.explore}</h3>
                 <ul>
-                  <li><Link href="/trending">Trending</Link></li>
-                  <li><Link href="/discover">Discover</Link></li>
-                  <li><Link href="/upcoming">Upcoming</Link></li>
-                  <li><Link href="/top-imdb">Top Rated</Link></li>
+                  <li><Link href="/trending">{t('nav.trending')}</Link></li>
+                  <li><Link href="/discover">{t('nav.discover')}</Link></li>
+                  <li><Link href="/upcoming">{t('footer.upcoming')}</Link></li>
+                  <li><Link href="/top-imdb">{t('nav.topRated')}</Link></li>
                 </ul>
               </FooterSection>
               <FooterSection>
-                <h3>Account</h3>
+                <h3>{footerContent.account}</h3>
                 <ul>
-                  <li><Link href="/profile">Profile</Link></li>
-                  <li><Link href="/favorites">Favorites</Link></li>
-                  <li><Link href="/watchlist">Watchlist</Link></li>
-                  <li><Link href="/settings">Settings</Link></li>
+                  <li><Link href="/profile">{t('nav.profile')}</Link></li>
+                  <li><Link href="/favorites">{t('nav.favorites')}</Link></li>
+                  <li><Link href="/watchlist">{t('nav.watchlist')}</Link></li>
+                  <li><Link href="/settings">{t('nav.settings')}</Link></li>
                 </ul>
               </FooterSection>
               <FooterSection>
-                <h3>Support</h3>
+                <h3>{footerContent.support}</h3>
                 <ul>
-                  <li><Link href="/contact">Contact</Link></li>
-                  <li><Link href="/help">Help Center</Link></li>
-                  <li><Link href="/feedback">Feedback</Link></li>
+                  <li><Link href="/contact">{t('footer.contact')}</Link></li>
+                  <li><Link href="/help">{t('footer.help')}</Link></li>
+                  <li><Link href="/feedback">{t('footer.feedback')}</Link></li>
                 </ul>
               </FooterSection>
             </FooterContent>
             <Copyright>
-              © {new Date().getFullYear()} SHIMY. All movie data provided by TMDB.
+              {footerContent.copyright}
             </Copyright>
           </Footer>
         </ContentWrapper>

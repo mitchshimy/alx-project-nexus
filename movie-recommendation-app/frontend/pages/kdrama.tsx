@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import styled from 'styled-components';
 import MovieCard from '@/components/MovieCard';
 import { movieAPI } from '@/utils/api';

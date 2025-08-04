@@ -115,6 +115,19 @@ const translations: LanguageData = {
     'theme.dark': 'Dark',
     'theme.light': 'Light',
     'theme.auto': 'Auto (System)',
+    
+    // Footer
+    'footer.description': 'Your gateway to the world of cinema. Discover, explore, and enjoy the finest films in stunning quality with our modern, intuitive interface.',
+    'footer.explore': 'Explore',
+    'footer.account': 'Account',
+    'footer.support': 'Support',
+    'footer.copyright': '© {year} SHIMY. All movie data provided by TMDB.',
+    
+    // Additional footer links
+    'footer.upcoming': 'Upcoming',
+    'footer.contact': 'Contact',
+    'footer.help': 'Help Center',
+    'footer.feedback': 'Feedback',
   },
   
   es: {
@@ -224,6 +237,19 @@ const translations: LanguageData = {
     'theme.dark': 'Oscuro',
     'theme.light': 'Claro',
     'theme.auto': 'Automático (Sistema)',
+    
+    // Footer
+    'footer.description': 'Tu puerta de entrada al mundo del cine. Descubre, explora y disfruta de las mejores películas en calidad impresionante con nuestra interfaz moderna e intuitiva.',
+    'footer.explore': 'Explorar',
+    'footer.account': 'Cuenta',
+    'footer.support': 'Soporte',
+    'footer.copyright': '© {year} SHIMY. Todos los datos de películas proporcionados por TMDB.',
+    
+    // Additional footer links
+    'footer.upcoming': 'Próximamente',
+    'footer.contact': 'Contacto',
+    'footer.help': 'Centro de Ayuda',
+    'footer.feedback': 'Comentarios',
   },
   
   fr: {
@@ -333,6 +359,19 @@ const translations: LanguageData = {
     'theme.dark': 'Sombre',
     'theme.light': 'Clair',
     'theme.auto': 'Automatique (Système)',
+    
+    // Footer
+    'footer.description': 'Votre passerelle vers le monde du cinéma. Découvrez, explorez et profitez des meilleurs films dans une qualité époustouflante avec notre interface moderne et intuitive.',
+    'footer.explore': 'Explorer',
+    'footer.account': 'Compte',
+    'footer.support': 'Support',
+    'footer.copyright': '© {year} SHIMY. Toutes les données de films fournies par TMDB.',
+    
+    // Additional footer links
+    'footer.upcoming': 'À venir',
+    'footer.contact': 'Contact',
+    'footer.help': 'Centre d\'aide',
+    'footer.feedback': 'Commentaires',
   }
 };
 
@@ -346,16 +385,21 @@ export const getCurrentLanguage = (): string => {
   if (typeof window === 'undefined') return 'en';
   
   try {
+    // First, try to get language from userSettings (local storage)
     const savedSettings = localStorage.getItem('userSettings');
     if (savedSettings) {
       const parsedSettings = JSON.parse(savedSettings);
-      return parsedSettings.language || 'en';
+      if (parsedSettings.language) {
+        return parsedSettings.language;
+      }
     }
+    
+    // If no language setting found, default to English
+    return 'en';
   } catch (error) {
     console.error('Error loading language setting:', error);
+    return 'en';
   }
-  
-  return 'en';
 };
 
 export const t = (key: string): string => {
@@ -366,4 +410,76 @@ export const t = (key: string): string => {
   
   const currentLanguage = getCurrentLanguage();
   return getTranslation(key, currentLanguage);
+};
+
+export const tWithParams = (key: string, params: Record<string, string | number>): string => {
+  // During SSR, always use English to prevent hydration mismatch
+  if (typeof window === 'undefined') {
+    let translation = getTranslation(key, 'en');
+    Object.entries(params).forEach(([param, value]) => {
+      translation = translation.replace(`{${param}}`, String(value));
+    });
+    return translation;
+  }
+  
+  const currentLanguage = getCurrentLanguage();
+  let translation = getTranslation(key, currentLanguage);
+  Object.entries(params).forEach(([param, value]) => {
+    translation = translation.replace(`{${param}}`, String(value));
+  });
+  return translation;
+};
+
+export const setLanguage = (language: string): void => {
+  if (typeof window === 'undefined') {
+    return;
+  }
+  
+  try {
+    // Get current settings
+    const savedSettings = localStorage.getItem('userSettings');
+    let settings = savedSettings ? JSON.parse(savedSettings) : {};
+    
+    // Update language setting
+    settings.language = language;
+    
+    // Save back to localStorage
+    localStorage.setItem('userSettings', JSON.stringify(settings));
+    
+    // Dispatch custom event to notify components of language change
+    window.dispatchEvent(new CustomEvent('languageChanged', { 
+      detail: { language } 
+    }));
+    
+    console.log(`Language changed to: ${language}`);
+  } catch (error) {
+    console.error('Error setting language:', error);
+  }
+};
+
+export const getAvailableLanguages = (): Array<{ code: string; name: string }> => {
+  return [
+    { code: 'en', name: 'English' },
+    { code: 'es', name: 'Español' },
+    { code: 'fr', name: 'Français' }
+  ];
+};
+
+export const initializeLanguageSystem = (): void => {
+  if (typeof window === 'undefined') {
+    return;
+  }
+  
+  try {
+    // Ensure default language is set if none exists
+    const currentLanguage = getCurrentLanguage();
+    if (!currentLanguage || currentLanguage === 'en') {
+      // Set default language to English if not already set
+      setLanguage('en');
+    }
+    
+    console.log('Language system initialized with:', currentLanguage);
+  } catch (error) {
+    console.error('Error initializing language system:', error);
+  }
 }; 
