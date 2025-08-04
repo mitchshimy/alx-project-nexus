@@ -139,6 +139,7 @@ class MovieListView(generics.ListAPIView):
                         popularity=item.get('popularity', 0.0),
                         genre_ids=item.get('genre_ids', []),
                         media_type=item.get('media_type', 'movie'),
+                        runtime=item.get('runtime', 0),
                         release_date=None  # Will be set during background sync
                     )
                     ordered_movies.append(temp_movie)
@@ -480,6 +481,7 @@ class SearchView(generics.ListAPIView):
                             popularity=item.get('popularity', 0.0),
                             genre_ids=item.get('genre_ids', []),
                             media_type=item.get('media_type', 'movie'),
+                            runtime=item.get('runtime', 0),
                             release_date=None  # Will be set during background sync
                         )
                         ordered_movies.append(temp_movie)

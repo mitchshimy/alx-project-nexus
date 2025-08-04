@@ -380,6 +380,7 @@ const Hero = ({ isSidebarOpen = false }: HeroProps) => {
   const [movies, setMovies] = useState<TMDBMovie[]>([]);
   const [currentIndex, setCurrentIndex] = useState(0);
   const [loading, setLoading] = useState(true);
+  const [genres, setGenres] = useState<any[]>([]);
 
   useEffect(() => {
     const fetchTopMovies = async () => {
@@ -402,7 +403,22 @@ const Hero = ({ isSidebarOpen = false }: HeroProps) => {
         setLoading(false);
       }
     };
+
+    const fetchGenres = async () => {
+      try {
+        const genresData = await movieAPI.getGenres();
+        if (Array.isArray(genresData)) {
+          setGenres(genresData);
+        } else if (genresData && Array.isArray(genresData.genres)) {
+          setGenres(genresData.genres);
+        }
+      } catch (error) {
+        console.error('Error fetching genres:', error);
+      }
+    };
+
     fetchTopMovies();
+    fetchGenres();
   }, []);
 
   const nextSlide = useCallback(() => {
@@ -464,8 +480,20 @@ const Hero = ({ isSidebarOpen = false }: HeroProps) => {
     ? currentMovie.vote_average.toFixed(1) 
     : 'N/A';
 
-  const duration = currentMovie?.runtime || '120 min';
-  const genre = currentMovie?.genre_ids?.[0] || 'Action';
+  // Get real runtime or show N/A if not available
+  const duration = currentMovie?.runtime 
+    ? `${currentMovie.runtime} min` 
+    : 'N/A';
+
+  // Convert genre ID to actual genre name
+  const getGenreName = (genreId: number) => {
+    const genre = genres.find(g => g.id === genreId);
+    return genre ? genre.name : 'Unknown';
+  };
+
+  const genre = currentMovie?.genre_ids?.[0] 
+    ? getGenreName(currentMovie.genre_ids[0])
+    : 'N/A';
 
   return (
     <HeroSection $isSidebarOpen={isSidebarOpen}>
@@ -497,7 +525,7 @@ const Hero = ({ isSidebarOpen = false }: HeroProps) => {
                 ⭐ {rating}
               </RatingBadge>
               <QualityBadge>HD</QualityBadge>
-              <MetadataItem>{duration}</MetadataItem>
+              {/* <MetadataItem>{duration}</MetadataItem> */}
               <MetadataItem>{genre}</MetadataItem>
               <MetadataItem>{releaseYear}</MetadataItem>
             </MovieMetadata>

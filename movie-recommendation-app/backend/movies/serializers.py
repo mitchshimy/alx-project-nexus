@@ -68,7 +68,7 @@ class MovieSerializer(serializers.ModelSerializer):
         model = Movie
         fields = ['id', 'tmdb_id', 'title', 'overview', 'poster_path', 'backdrop_path',
                  'release_date', 'vote_average', 'vote_count', 'popularity', 'genre_ids',
-                 'media_type', 'is_favorite', 'is_watchlisted', 'user_rating', 'created_at']
+                 'media_type', 'is_favorite', 'is_watchlisted', 'user_rating', 'created_at', 'runtime']
         read_only_fields = ['id', 'created_at']
     
     def get_is_favorite(self, obj):
