@@ -1,9 +1,9 @@
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/router';
 import styled from 'styled-components';
-import { getAuthToken, clearApiCache, authAPI, performComprehensiveLogout } from '@/utils/api';
+import { getAuthToken, clearApiCache, performComprehensiveLogout } from '@/utils/api';
 import { getSettings, saveSettings, applyTheme, UserSettings } from '@/utils/settings';
-import { t, getTranslation, setLanguage, getAvailableLanguages } from '@/utils/translations';
+import { t, getTranslation, setLanguage } from '@/utils/translations';
 import ConfirmationModal from '@/components/ConfirmationModal';
 import { 
   YOUTUBE_QUALITY_OPTIONS, 
@@ -35,12 +35,7 @@ const Container = styled.div<{ isSidebarOpen?: boolean }>`
   }
 `;
 
-const Title = styled.h1`
-  font-size: 2.5rem;
-  margin-bottom: 2rem;
-  color: #f0f0f0;
-  text-align: center;
-`;
+
 
 const SettingsCard = styled.div`
   background: rgba(255, 255, 255, 0.05);

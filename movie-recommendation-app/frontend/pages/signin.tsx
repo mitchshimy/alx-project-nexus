@@ -210,15 +210,7 @@ const InlineError = styled.div`
   text-align: left;
 `;
 
-const SuccessMessage = styled.div`
-  color: #51cf66;
-  background: rgba(81, 207, 102, 0.1);
-  border: 1px solid rgba(81, 207, 102, 0.3);
-  border-radius: 8px;
-  padding: 0.75rem;
-  margin-bottom: 1rem;
-  font-size: 0.9rem;
-`;
+
 
 export default function SignIn() {
   const router = useRouter();
@@ -230,7 +222,7 @@ export default function SignIn() {
   const [error, setError] = useState('');
   const [emailError, setEmailError] = useState('');
   const [passwordError, setPasswordError] = useState('');
-  const [success, setSuccess] = useState('');
+
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -238,7 +230,6 @@ export default function SignIn() {
     setError('');
     setEmailError('');
     setPasswordError('');
-    setSuccess('');
     
     try {
       const response = await authAPI.login({
@@ -265,7 +256,7 @@ export default function SignIn() {
         return;
       }
       
-      setSuccess('Sign in successful! Redirecting...');
+      // setSuccess('Sign in successful! Redirecting...'); // Removed unused success state
     
       // Redirect to home page after successful login without page reload
       setTimeout(() => {

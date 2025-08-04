@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import styled from 'styled-components';
 import { movieAPI } from '@/utils/api';
 import MovieCard from '@/components/MovieCard';
@@ -140,7 +140,7 @@ export default function TopIMDB({ isSidebarOpen }: { isSidebarOpen?: boolean }) 
   const [genres, setGenres] = useState<any[]>([]);
 
 
-  const loadMoreMovies = async () => {
+  const loadMoreMovies = useCallback(async () => {
     if (loading || !hasMore) return;
 
     setLoading(true);
@@ -171,11 +171,11 @@ export default function TopIMDB({ isSidebarOpen }: { isSidebarOpen?: boolean }) 
       setLoading(false);
       setInitialLoading(false);
     }
-  };
+  }, [loading, hasMore, page]);
 
   useEffect(() => {
     loadMoreMovies();
-  }, []); // Only on first load
+  }, [loadMoreMovies]); // Include loadMoreMovies in dependencies
 
   useEffect(() => {
     const onScroll = () => {

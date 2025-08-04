@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/router';
 import styled from 'styled-components';
-import { movieAPI, getAuthToken } from '@/utils/api';
+import { movieAPI, getAuthToken, clearApiCache } from '@/utils/api';
 import MovieCard from '@/components/MovieCard';
 
 const MovieGrid = styled.div`
@@ -146,6 +146,9 @@ export default function Watchlist() {
     try {
       setLoading(true);
       
+      // Clear cache to ensure fresh data
+      clearApiCache();
+      
       const data = await movieAPI.getWatchlist();
       
       // Handle paginated response from Django REST Framework
@@ -187,7 +190,10 @@ export default function Watchlist() {
 
   const handleWatchlistToggle = () => {
     // Refresh the watchlist when an item is toggled
-    loadWatchlist();
+    // Add a small delay to ensure the backend has processed the change
+    setTimeout(() => {
+      loadWatchlist();
+    }, 500);
   };
 
   const handleManualRefresh = () => {
@@ -205,7 +211,20 @@ export default function Watchlist() {
     }
 
     loadWatchlist();
-  }, []);
+    
+    // Add focus event listener to refresh data when user returns to the page
+    const handleFocus = () => {
+      if (isAuthenticated) {
+        loadWatchlist();
+      }
+    };
+    
+    window.addEventListener('focus', handleFocus);
+    
+    return () => {
+      window.removeEventListener('focus', handleFocus);
+    };
+  }, [isAuthenticated]);
 
   
 

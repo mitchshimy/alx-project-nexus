@@ -335,4 +335,74 @@ def change_password(request):
             'message': 'Password changed successfully'
         }, status=status.HTTP_200_OK)
     else:
-        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+        return Response({
+            'error': 'Current password is incorrect'
+        }, status=status.HTTP_400_BAD_REQUEST)
+
+
+@swagger_auto_schema(
+    method='delete',
+    operation_description="Delete user account permanently",
+    request_body=openapi.Schema(
+        type=openapi.TYPE_OBJECT,
+        required=['password'],
+        properties={
+            'password': openapi.Schema(
+                type=openapi.TYPE_STRING,
+                description="User's current password for confirmation"
+            )
+        }
+    ),
+    responses={
+        200: openapi.Response(
+            description="Account deleted successfully",
+            schema=openapi.Schema(
+                type=openapi.TYPE_OBJECT,
+                properties={
+                    'message': openapi.Schema(type=openapi.TYPE_STRING)
+                }
+            )
+        ),
+        400: 'Bad Request - Incorrect password',
+        401: 'Unauthorized - Authentication required'
+    }
+)
+@api_view(['DELETE'])
+@permission_classes([permissions.IsAuthenticated])
+def delete_account(request):
+    """
+    Delete user account permanently
+    
+    Requires password confirmation for security.
+    This action cannot be undone.
+    """
+    password = request.data.get('password')
+    
+    if not password:
+        return Response({
+            'error': 'Password is required for account deletion'
+        }, status=status.HTTP_400_BAD_REQUEST)
+    
+    # Verify the user's password
+    user = request.user
+    if not user.check_password(password):
+        return Response({
+            'error': 'Incorrect password'
+        }, status=status.HTTP_400_BAD_REQUEST)
+    
+    # Delete the user account
+    try:
+        # The related models (favorites, watchlist, ratings, profile) 
+        # will be automatically deleted due to CASCADE relationships
+        
+        # Delete the user (this will cascade delete all related data)
+        user.delete()
+        
+        return Response({
+            'message': 'Account deleted successfully'
+        }, status=status.HTTP_200_OK)
+        
+    except Exception as e:
+        return Response({
+            'error': 'Failed to delete account. Please try again.'
+        }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)

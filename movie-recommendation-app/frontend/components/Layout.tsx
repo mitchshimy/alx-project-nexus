@@ -62,14 +62,7 @@ const MainContent = styled.main`
   }
 `;
 
-// Special wrapper for hero sections
-const HeroWrapper = styled.div`
-  width: 100vw;
-  margin-left: calc(-50vw + 50%);
-  margin-right: calc(-50vw + 50%);
-  position: relative;
-  z-index: 1;
-`;
+
 
 const Footer = styled.footer`
   background: rgba(10, 10, 10, 0.95);
@@ -291,6 +284,7 @@ interface LayoutProps {
 export default function Layout({ children }: LayoutProps) {
   const [isSidebarOpen, setSidebarOpen] = useState(false);
   const [isAuthenticated, setIsAuthenticated] = useState(false);
+
   const [footerContent, setFooterContent] = useState({
     description: '',
     explore: '',

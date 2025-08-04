@@ -407,10 +407,9 @@ const AccountIcon = styled(Link)`
   color: #FFFFFF;
   transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
   text-decoration: none;
-  display: none;
+  display: none; /* Hidden by default on desktop */
   backdrop-filter: blur(20px);
   box-shadow: 0 4px 16px rgba(0, 0, 0, 0.3);
-  display: flex;
   align-items: center;
   justify-content: center;
   width: 44px;
@@ -425,13 +424,51 @@ const AccountIcon = styled(Link)`
   }
   
   @media (max-width: 768px) {
-    display: flex;
+    display: flex; /* Show on mobile */
   }
   
   @media (max-width: 480px) {
     width: 40px;
     height: 40px;
     font-size: 1rem;
+  }
+`;
+
+const MobileLogoutButton = styled.button`
+  background: rgba(239, 68, 68, 0.15);
+  border: 1px solid rgba(239, 68, 68, 0.3);
+  border-radius: 12px;
+  font-size: 0.9rem;
+  font-weight: 600;
+  cursor: pointer;
+  padding: 0.75rem 1rem;
+  color: #EF4444;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  display: none; /* Hidden by default on desktop */
+  backdrop-filter: blur(20px);
+  box-shadow: 0 4px 16px rgba(239, 68, 68, 0.2);
+  align-items: center;
+  justify-content: center;
+  min-width: 80px;
+  height: 44px;
+
+  &:hover {
+    background: rgba(239, 68, 68, 0.25);
+    border-color: rgba(239, 68, 68, 0.5);
+    color: #DC2626;
+    transform: translateY(-1px);
+    box-shadow: 0 8px 32px rgba(239, 68, 68, 0.4);
+  }
+  
+  @media (max-width: 768px) {
+    display: flex; /* Show on mobile */
+  }
+  
+  @media (max-width: 480px) {
+    min-width: 70px;
+    height: 40px;
+    font-size: 0.8rem;
+    padding: 0.75rem 0.75rem;
   }
 `;
 
@@ -760,7 +797,7 @@ interface HeaderProps {
   toggleSidebar: () => void;
 }
 
-export default function Header({ isSidebarOpen, toggleSidebar }: HeaderProps) {
+export default function Header({ toggleSidebar }: HeaderProps) {
   const router = useRouter();
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [user, setUser] = useState<any>(null);
@@ -775,7 +812,7 @@ export default function Header({ isSidebarOpen, toggleSidebar }: HeaderProps) {
   const mobileSearchInputRef = useRef<HTMLInputElement>(null);
 
   // Check authentication status
-  const checkAuthStatus = () => {
+  const checkAuthStatus = useCallback(() => {
     // First check if token is expired
     if (checkTokenExpiration()) {
       return; // Token was expired and handled
@@ -791,7 +828,7 @@ export default function Header({ isSidebarOpen, toggleSidebar }: HeaderProps) {
       setIsAuthenticated(false);
       setUser(null);
     }
-  };
+  }, []);
 
   useEffect(() => {
     // Check authentication status on component mount
@@ -810,7 +847,7 @@ export default function Header({ isSidebarOpen, toggleSidebar }: HeaderProps) {
     // Listen for custom auth state change event
     const handleAuthStateChange = (event: Event) => {
       const customEvent = event as CustomEvent;
-      const { isAuthenticated: authState, reason } = customEvent.detail || {};
+      const { reason } = customEvent.detail || {};
       
       if (reason === 'token_expired') {
         // Token expired - clear user state immediately
@@ -848,7 +885,7 @@ export default function Header({ isSidebarOpen, toggleSidebar }: HeaderProps) {
       clearTimeout(timeoutId);
       clearInterval(tokenCheckInterval);
     };
-  }, [router]);
+  }, [router, checkAuthStatus]);
 
   const fetchUserProfile = async () => {
     try {
@@ -1130,14 +1167,16 @@ export default function Header({ isSidebarOpen, toggleSidebar }: HeaderProps) {
                 <LogoutButton onClick={handleLogout}>
                   Logout
                 </LogoutButton>
-                <MobileMenuButton onClick={() => setShowMobileMenu(!showMobileMenu)}>
-                  ⋯
-                </MobileMenuButton>
+                {/* Mobile logout button for authenticated users */}
+                <MobileLogoutButton onClick={handleLogout} title="Logout">
+                  Logout
+                </MobileLogoutButton>
               </>
             ) : (
               <>
                 <AuthButton href="/signin">Sign In</AuthButton>
                 <PrimaryAuthButton href="/signup">Sign Up</PrimaryAuthButton>
+                {/* AccountIcon only shows on mobile for non-authenticated users */}
                 <AccountIcon href="/signin" title="Account">
                   👤
                 </AccountIcon>

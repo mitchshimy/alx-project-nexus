@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/router';
 import styled from 'styled-components';
-import { movieAPI, getAuthToken } from '@/utils/api';
+import { movieAPI, getAuthToken, clearApiCache } from '@/utils/api';
 import MovieCard from '@/components/MovieCard';
 
 const MovieGrid = styled.div`
@@ -152,6 +152,9 @@ export default function Favorites() {
     try {
       setLoading(true);
       
+      // Clear cache to ensure fresh data
+      clearApiCache();
+      
       const data = await movieAPI.getFavorites();
       
       // Handle paginated response from Django REST Framework
@@ -202,13 +205,29 @@ export default function Favorites() {
     }
 
     loadFavorites();
-  }, []);
+    
+    // Add focus event listener to refresh data when user returns to the page
+    const handleFocus = () => {
+      if (isAuthenticated) {
+        loadFavorites();
+      }
+    };
+    
+    window.addEventListener('focus', handleFocus);
+    
+    return () => {
+      window.removeEventListener('focus', handleFocus);
+    };
+  }, [isAuthenticated]);
 
 
 
   const handleFavoriteToggle = () => {
     // Refresh the favorites list when an item is toggled
-    loadFavorites();
+    // Add a small delay to ensure the backend has processed the change
+    setTimeout(() => {
+      loadFavorites();
+    }, 500);
   };
 
   const handleManualRefresh = () => {

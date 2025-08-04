@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import styled from 'styled-components';
 import { movieAPI } from '@/utils/api';
 import MovieCard from '@/components/MovieCard';
@@ -164,7 +164,7 @@ export default function TV({ isSidebarOpen }: { isSidebarOpen?: boolean }) {
   const [genres, setGenres] = useState<any[]>([]);
 
 
-  const loadMoreShows = async () => {
+  const loadMoreShows = useCallback(async () => {
     if (loading || !hasMore) return;
 
     setLoading(true);
@@ -195,11 +195,11 @@ export default function TV({ isSidebarOpen }: { isSidebarOpen?: boolean }) {
       setLoading(false);
       setInitialLoading(false);
     }
-  };
+  }, [loading, hasMore, page]);
 
   useEffect(() => {
     loadMoreShows();
-  }, []); // Only on first load
+  }, [loadMoreShows]); // Include loadMoreShows in dependencies
 
   useEffect(() => {
     const onScroll = () => {

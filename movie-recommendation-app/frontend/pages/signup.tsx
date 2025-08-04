@@ -247,7 +247,7 @@ export default function SignUp() {
       const firstName = nameParts[0] || '';
       const lastName = nameParts.slice(1).join(' ') || '';
       
-      const response = await authAPI.register({
+      const result = await authAPI.register({
         email: formData.email,
         username: formData.email.split('@')[0], // Use email prefix as username
         password: formData.password,
@@ -256,16 +256,30 @@ export default function SignUp() {
         last_name: lastName,
       });
       
+      // Check if the API returned an error
+      if (result && result.error) {
+        setError(result.error);
+        return;
+      }
+      
       setSuccess('Account created successfully! Signing you in...');
       
       // Automatically sign in the user after successful registration
       setTimeout(async () => {
         try {
           // Sign in with the newly created account
-          await authAPI.login({
+          const loginResult = await authAPI.login({
             email: formData.email,
             password: formData.password,
           });
+          
+          // Check if login was successful
+          if (loginResult && loginResult.error) {
+            console.error('Auto-login error:', loginResult.error);
+            // If auto-login fails, redirect to sign in page
+            router.push('/signin');
+            return;
+          }
           
           // Redirect to home page after successful auto-login
           router.push('/');
@@ -280,15 +294,8 @@ export default function SignUp() {
     } catch (err: any) {
       console.error('Sign up error:', err);
       
-      if (err.message.includes('email') && err.message.includes('already')) {
-        setError('This email is already registered. Please use a different email or sign in.');
-      } else if (err.message.includes('username') && err.message.includes('already')) {
-        setError('This username is already taken. Please try a different email.');
-      } else if (err.message.includes('password')) {
-        setError('Password must be at least 8 characters long.');
-      } else if (err.message.includes('email')) {
-        setError('Please enter a valid email address.');
-      } else if (err.message.includes('Network error')) {
+      // Handle network errors or other exceptions
+      if (err.message.includes('Network error')) {
         setError('Connection error. Please check your internet connection and try again.');
       } else if (err.message.includes('500')) {
         setError('Server error. Please try again later.');

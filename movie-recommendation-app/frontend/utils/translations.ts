@@ -65,6 +65,9 @@ const translations: LanguageData = {
     'profile.accountActions': 'Account Actions',
     'profile.changePassword': 'Change Password',
     'profile.deleteAccount': 'Delete Account',
+    'profile.deleteAccountConfirm': 'Confirm Password',
+    'profile.deleteAccountWarning': 'This action cannot be undone and will permanently remove all your data.',
+    'profile.deleteAccountSuccess': 'Account deleted successfully.',
     'profile.editProfile': 'Edit Profile',
     
     // Auth
@@ -73,6 +76,8 @@ const translations: LanguageData = {
     'auth.signOut': 'Sign Out',
     'auth.email': 'Email',
     'auth.password': 'Password',
+    'auth.currentPassword': 'Current Password',
+    'auth.newPassword': 'New Password',
     'auth.confirmPassword': 'Confirm Password',
     'auth.forgotPassword': 'Forgot Password?',
     'auth.rememberMe': 'Remember Me',
@@ -187,6 +192,9 @@ const translations: LanguageData = {
     'profile.accountActions': 'Acciones de Cuenta',
     'profile.changePassword': 'Cambiar Contraseña',
     'profile.deleteAccount': 'Eliminar Cuenta',
+    'profile.deleteAccountConfirm': 'Confirmar Contraseña',
+    'profile.deleteAccountWarning': 'Esta acción no se puede deshacer y eliminará permanentemente todos tus datos.',
+    'profile.deleteAccountSuccess': 'Cuenta eliminada exitosamente.',
     'profile.editProfile': 'Editar Perfil',
     
     // Auth
@@ -195,6 +203,8 @@ const translations: LanguageData = {
     'auth.signOut': 'Cerrar Sesión',
     'auth.email': 'Correo Electrónico',
     'auth.password': 'Contraseña',
+    'auth.currentPassword': 'Contraseña Actual',
+    'auth.newPassword': 'Nueva Contraseña',
     'auth.confirmPassword': 'Confirmar Contraseña',
     'auth.forgotPassword': '¿Olvidaste tu contraseña?',
     'auth.rememberMe': 'Recordarme',
@@ -309,6 +319,9 @@ const translations: LanguageData = {
     'profile.accountActions': 'Actions du compte',
     'profile.changePassword': 'Changer le mot de passe',
     'profile.deleteAccount': 'Supprimer le compte',
+    'profile.deleteAccountConfirm': 'Confirmer le mot de passe',
+    'profile.deleteAccountWarning': 'Cette action ne peut pas être annulée et supprimera définitivement tous vos données.',
+    'profile.deleteAccountSuccess': 'Compte supprimé avec succès.',
     'profile.editProfile': 'Modifier le profil',
     
     // Auth
@@ -317,6 +330,8 @@ const translations: LanguageData = {
     'auth.signOut': 'Se déconnecter',
     'auth.email': 'Email',
     'auth.password': 'Mot de passe',
+    'auth.currentPassword': 'Mot de passe actuel',
+    'auth.newPassword': 'Nouveau mot de passe',
     'auth.confirmPassword': 'Confirmer le mot de passe',
     'auth.forgotPassword': 'Mot de passe oublié ?',
     'auth.rememberMe': 'Se souvenir de moi',

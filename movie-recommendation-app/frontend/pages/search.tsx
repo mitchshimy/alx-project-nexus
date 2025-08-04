@@ -1,10 +1,8 @@
-import { useState, useEffect, useCallback, useRef } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useRouter } from 'next/router';
 import styled from 'styled-components';
 import { movieAPI, clearApiCache } from '@/utils/api';
 import MovieCard from '@/components/MovieCard';
-import { SkeletonBase } from '@/components/Skeleton';
-import { t } from '@/utils/translations';
 
 // Define types locally since we removed the import
 type TMDBMovie = {
@@ -84,54 +82,7 @@ const SearchSubtitle = styled.p`
   }
 `;
 
-const SearchStats = styled.div`
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-  gap: 1rem;
-  margin-bottom: 2rem;
-  
-  @media (max-width: 768px) {
-    grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
-    gap: 0.8rem;
-  }
-`;
 
-const StatCard = styled.div`
-  background: rgba(255, 255, 255, 0.05);
-  backdrop-filter: blur(10px);
-  border: 1px solid rgba(255, 255, 255, 0.1);
-  border-radius: 12px;
-  padding: 1.5rem;
-  text-align: center;
-  transition: all 0.3s ease;
-  
-  &:hover {
-    background: rgba(255, 255, 255, 0.08);
-    border-color: rgba(0, 212, 255, 0.3);
-    transform: translateY(-2px);
-  }
-`;
-
-const StatNumber = styled.div`
-  font-size: 2rem;
-  font-weight: 700;
-  color: #00D4FF;
-  margin-bottom: 0.5rem;
-  
-  @media (max-width: 768px) {
-    font-size: 1.5rem;
-  }
-`;
-
-const StatLabel = styled.div`
-  color: rgba(255, 255, 255, 0.7);
-  font-size: 0.9rem;
-  font-weight: 500;
-  
-  @media (max-width: 768px) {
-    font-size: 0.8rem;
-  }
-`;
 
 const ResultsContainer = styled.div`
   margin-top: 2rem;
@@ -200,37 +151,7 @@ const MovieGrid = styled.div`
   }
 `;
 
-const Loading = styled.div`
-  text-align: center;
-  padding: 2rem;
-  font-size: 1.2rem;
-  color: #A1A1AA;
-  background: rgba(255, 255, 255, 0.03);
-  border-radius: 16px;
-  backdrop-filter: blur(10px);
-  border: 1px solid rgba(255, 255, 255, 0.05);
-  
-  .progress-container {
-    width: 100%;
-    height: 4px;
-    background: rgba(255, 255, 255, 0.1);
-    border-radius: 2px;
-    overflow: hidden;
-    margin: 1rem 0;
-  }
-  
-  .progress-fill {
-    height: 100%;
-    background: linear-gradient(90deg, #00D4FF 0%, #7C3AED 100%);
-    animation: progressAnimation 2s ease-in-out infinite;
-  }
-  
-  @keyframes progressAnimation {
-    0% { width: 0%; }
-    50% { width: 70%; }
-    100% { width: 100%; }
-  }
-`;
+
 
 const SearchProgress = styled.div`
   display: flex;
@@ -439,47 +360,7 @@ const SearchSuggestions = styled.div`
   }
 `;
 
-const LoadMoreButton = styled.button`
-  background: linear-gradient(135deg, #00D4FF 0%, #0099CC 100%);
-  border: none;
-  color: #000;
-  padding: 1rem 2rem;
-  border-radius: 12px;
-  font-size: 1rem;
-  font-weight: 600;
-  cursor: pointer;
-  transition: all 0.3s ease;
-  margin: 2rem auto;
-  display: block;
-  backdrop-filter: blur(10px);
-  
-  &:hover {
-    transform: translateY(-2px);
-    box-shadow: 0 8px 25px rgba(0, 212, 255, 0.4);
-  }
-  
-  &:disabled {
-    opacity: 0.6;
-    cursor: not-allowed;
-    transform: none;
-  }
-  
-  @media (max-width: 768px) {
-    padding: 0.8rem 1.5rem;
-    font-size: 0.9rem;
-  }
-`;
 
-const LoadMoreInfo = styled.div`
-  text-align: center;
-  color: #A1A1AA;
-  font-size: 0.9rem;
-  margin-top: 1rem;
-  
-  @media (max-width: 768px) {
-    font-size: 0.8rem;
-  }
-`;
 
 const PaginationContainer = styled.div`
   display: flex;
@@ -530,40 +411,7 @@ const PageInfo = styled.div`
   }
 `;
 
-const PageJump = styled.div`
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
-  
-  input {
-    width: 60px;
-    padding: 0.5rem;
-    border: 1px solid var(--border-color);
-    border-radius: 4px;
-    text-align: center;
-    background: var(--bg-secondary);
-    color: var(--text-color);
-    
-    &:focus {
-      outline: none;
-      border-color: var(--primary-color);
-    }
-  }
-  
-  button {
-    padding: 0.5rem 1rem;
-    background: var(--primary-color);
-    color: white;
-    border: none;
-    border-radius: 4px;
-    cursor: pointer;
-    font-size: 0.8rem;
-    
-    &:hover {
-      background: var(--primary-hover);
-    }
-  }
-`;
+
 
 // Type for search results that includes media_type
 type SearchResult = TMDBMovie & {

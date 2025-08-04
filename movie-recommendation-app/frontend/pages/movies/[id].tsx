@@ -6,7 +6,7 @@ import { TMDBMovie, TMDBCast } from '@/types/tmdb';
 import { movieAPI } from '@/utils/api';
 import { buildYouTubeEmbedUrl, getOptimalQuality, getQualityDisplayName } from '@/utils/videoPlayer';
 import { FaStar, FaRegStar, FaImdb, FaPlay } from 'react-icons/fa';
-import { MdDateRange, MdAccessTime, MdLanguage, MdMoney, MdPeople } from 'react-icons/md';
+import { MdDateRange, MdAccessTime, MdLanguage, MdMoney } from 'react-icons/md';
 
 const Container = styled.div<{ isSidebarOpen?: boolean }>`
   max-width: ${props => props.isSidebarOpen ? '100%' : '1200px'};
@@ -394,9 +394,7 @@ const InfoCardContent = styled.div`
   line-height: 1.6;
 `;
 
-const CastList = styled.div`
-  margin-top: 2rem;
-`;
+
 
 const CastGrid = styled.div`
   display: grid;

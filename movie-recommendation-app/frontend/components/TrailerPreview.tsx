@@ -90,17 +90,7 @@ const CloseButton = styled.button`
   }
 `;
 
-const QualityBadge = styled.div`
-  position: absolute;
-  top: 10px;
-  left: 10px;
-  background: rgba(0, 0, 0, 0.7);
-  color: white;
-  padding: 4px 8px;
-  border-radius: 4px;
-  font-size: 12px;
-  backdrop-filter: blur(10px);
-`;
+
 
 const QualityInfo = styled.div`
   position: absolute;

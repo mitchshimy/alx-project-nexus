@@ -1,5 +1,5 @@
 // components/Hero.tsx
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useCallback } from 'react';
 import styled from 'styled-components';
 import { movieAPI } from '@/utils/api';
 import { TMDBMovie } from '@/types/tmdb';
@@ -370,15 +370,7 @@ const Indicator = styled.button<{ $isActive: boolean }>`
   }
 `;
 
-const ContentRight = styled.div`
-  flex: 1;
-  display: flex;
-  justify-content: flex-end;
-  align-items: center;
-  height: 100%;
-  position: relative;
-  z-index: 2;
-`;
+
 
 interface HeroProps {
   isSidebarOpen?: boolean;
@@ -413,9 +405,9 @@ const Hero = ({ isSidebarOpen = false }: HeroProps) => {
     fetchTopMovies();
   }, []);
 
-  const nextSlide = () => {
+  const nextSlide = useCallback(() => {
     setCurrentIndex((prev) => (prev + 1) % movies.length);
-  };
+  }, [movies.length]);
 
   const prevSlide = () => {
     setCurrentIndex((prev) => (prev - 1 + movies.length) % movies.length);
@@ -440,7 +432,7 @@ const Hero = ({ isSidebarOpen = false }: HeroProps) => {
 
       return () => clearInterval(interval);
     }
-  }, [movies.length]);
+  }, [movies.length, nextSlide]);
 
   if (loading || movies.length === 0) {
     return (
@@ -463,9 +455,6 @@ const Hero = ({ isSidebarOpen = false }: HeroProps) => {
   }
 
   const currentMovie = movies[currentIndex];
-  const backdropUrl = currentMovie?.backdrop_path
-    ? `https://image.tmdb.org/t/p/original${currentMovie.backdrop_path}`
-    : 'https://images.unsplash.com/photo-1606112219348-204d7d8b94ee?auto=format&fit=crop&w=1920&q=80';
 
   const releaseYear = currentMovie?.release_date 
     ? new Date(currentMovie.release_date).getFullYear() 

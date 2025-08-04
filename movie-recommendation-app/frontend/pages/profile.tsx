@@ -1,9 +1,8 @@
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/router';
 import styled from 'styled-components';
-import { authAPI, getAuthToken } from '@/utils/api';
+import { authAPI, getAuthToken, clearApiCache } from '@/utils/api';
 import { t } from '@/utils/translations';
-import ConfirmationModal from '@/components/ConfirmationModal';
 
 const Container = styled.div<{ isSidebarOpen?: boolean }>`
   padding: 2rem;
@@ -420,12 +419,13 @@ export default function Profile({ isSidebarOpen }: { isSidebarOpen?: boolean }) 
   const [currentPassword, setCurrentPassword] = useState('');
   const [newPassword, setNewPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
-  const [passwordError, setPasswordError] = useState('');
+
   const [currentPasswordError, setCurrentPasswordError] = useState('');
   const [newPasswordError, setNewPasswordError] = useState('');
   const [confirmPasswordError, setConfirmPasswordError] = useState('');
   const [passwordSuccess, setPasswordSuccess] = useState('');
   const [isChangingPassword, setIsChangingPassword] = useState(false);
+  const [passwordError, setPasswordError] = useState('');
   
   // Edit profile modal state
   const [showEditProfileModal, setShowEditProfileModal] = useState(false);
@@ -437,6 +437,11 @@ export default function Profile({ isSidebarOpen }: { isSidebarOpen?: boolean }) 
   const [profileSuccess, setProfileSuccess] = useState('');
   const [isUpdatingProfile, setIsUpdatingProfile] = useState(false);
   const [showDeleteAccountModal, setShowDeleteAccountModal] = useState(false);
+  
+  // Delete account modal state
+  const [deletePassword, setDeletePassword] = useState('');
+  const [deletePasswordError, setDeletePasswordError] = useState('');
+  const [isDeletingAccount, setIsDeletingAccount] = useState(false);
 
   useEffect(() => {
     // Check authentication status
@@ -549,8 +554,8 @@ export default function Profile({ isSidebarOpen }: { isSidebarOpen?: boolean }) 
     setCurrentPassword('');
     setNewPassword('');
     setConfirmPassword('');
-    setPasswordError('');
     setPasswordSuccess('');
+    setPasswordError('');
   };
 
   const handlePasswordSubmit = async (e: React.FormEvent) => {
@@ -587,10 +592,16 @@ export default function Profile({ isSidebarOpen }: { isSidebarOpen?: boolean }) 
         confirm_password: confirmPassword
       });
       
-      // If result is null, it means there was a validation error
-      if (result === null) {
-        // Set specific error message for current password
-        setCurrentPasswordError('Current password is incorrect. Please try again.');
+      // Check if the API returned an error
+      if (result && result.error) {
+        // Handle specific current password error
+        if (result.error.toLowerCase().includes('current password') || 
+            result.error.toLowerCase().includes('incorrect password') ||
+            result.error.toLowerCase().includes('invalid password')) {
+          setCurrentPasswordError('Current password is incorrect.');
+        } else {
+          setPasswordError(result.error);
+        }
         return;
       }
       
@@ -601,7 +612,7 @@ export default function Profile({ isSidebarOpen }: { isSidebarOpen?: boolean }) 
       }, 2000);
       
     } catch (error: any) {
-      // Only handle non-validation errors (401, 500, network errors, etc.)
+      // Handle network errors or other exceptions
       console.error('Password change failed:', error);
       setPasswordError('Failed to change password. Please try again.');
     } finally {
@@ -614,26 +625,71 @@ export default function Profile({ isSidebarOpen }: { isSidebarOpen?: boolean }) 
     setCurrentPassword('');
     setNewPassword('');
     setConfirmPassword('');
-    setPasswordError('');
     setCurrentPasswordError('');
     setNewPasswordError('');
     setConfirmPasswordError('');
     setPasswordSuccess('');
+    setPasswordError('');
   };
 
-  const handlePrivacySettings = () => {
-    setMessage('Privacy settings functionality coming soon!');
-    setTimeout(() => setMessage(null), 3000);
-  };
+
 
   const handleDeleteAccount = () => {
     setShowDeleteAccountModal(true);
+    setDeletePassword('');
+    setDeletePasswordError('');
   };
 
-  const confirmDeleteAccount = () => {
-    setMessage('Delete account functionality coming soon!');
-    setTimeout(() => setMessage(null), 3000);
+  const handleDeleteAccountSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    
+    if (!deletePassword) {
+      setDeletePasswordError('Please enter your password to confirm account deletion.');
+      return;
+    }
+    
+    setIsDeletingAccount(true);
+    setDeletePasswordError('');
+    
+    try {
+      const result = await authAPI.deleteAccount(deletePassword);
+      
+      // Check if the API returned an error
+      if (result && result.error) {
+        if (result.error.toLowerCase().includes('password') || 
+            result.error.toLowerCase().includes('incorrect') ||
+            result.error.toLowerCase().includes('invalid')) {
+          setDeletePasswordError('Incorrect password. Please try again.');
+        } else {
+          setDeletePasswordError(result.error);
+        }
+        return;
+      }
+      
+      // Account deleted successfully
+      setMessage(t('profile.deleteAccountSuccess') + ' You will be redirected to the home page.');
+      
+      // Clear all user data and tokens
+      authAPI.logout();
+      clearApiCache();
+      
+      // Redirect to home page after a short delay
+      setTimeout(() => {
+        router.push('/');
+      }, 2000);
+      
+    } catch (error: any) {
+      console.error('Account deletion failed:', error);
+      setDeletePasswordError('Failed to delete account. Please try again.');
+    } finally {
+      setIsDeletingAccount(false);
+    }
+  };
+
+  const handleCloseDeleteAccountModal = () => {
     setShowDeleteAccountModal(false);
+    setDeletePassword('');
+    setDeletePasswordError('');
   };
 
   const formatDate = (dateString: string) => {
@@ -765,7 +821,7 @@ export default function Profile({ isSidebarOpen }: { isSidebarOpen?: boolean }) 
           <ModalTitle>{t('profile.changePassword')}</ModalTitle>
           <form onSubmit={handlePasswordSubmit}>
             <FormGroup>
-              <FormLabel>{t('auth.password')}</FormLabel>
+              <FormLabel>{t('auth.currentPassword')}</FormLabel>
               <Input
                 type="password"
                 value={currentPassword}
@@ -777,10 +833,9 @@ export default function Profile({ isSidebarOpen }: { isSidebarOpen?: boolean }) 
                 disabled={isChangingPassword}
               />
               {currentPasswordError && <ErrorText>{currentPasswordError}</ErrorText>}
-              {passwordSuccess && <SuccessText>{passwordSuccess}</SuccessText>}
             </FormGroup>
             <FormGroup>
-              <FormLabel>{t('auth.password')}</FormLabel>
+              <FormLabel>{t('auth.newPassword')}</FormLabel>
               <Input
                 type="password"
                 value={newPassword}
@@ -807,6 +862,8 @@ export default function Profile({ isSidebarOpen }: { isSidebarOpen?: boolean }) 
               />
               {confirmPasswordError && <ErrorText>{confirmPasswordError}</ErrorText>}
             </FormGroup>
+            {passwordSuccess && <SuccessText>{passwordSuccess}</SuccessText>}
+            {passwordError && <ErrorText>{passwordError}</ErrorText>}
             <ButtonGroup>
               <CancelButton onClick={handleClosePasswordModal}>{t('common.cancel')}</CancelButton>
               <SubmitButton type="submit" disabled={isChangingPassword}>
@@ -887,16 +944,35 @@ export default function Profile({ isSidebarOpen }: { isSidebarOpen?: boolean }) 
         </ModalContent>
       </Modal>
 
-      <ConfirmationModal
-        isOpen={showDeleteAccountModal}
-        title="Delete Account"
-        message="Are you sure you want to delete your account? This action cannot be undone and will permanently remove all your data."
-        confirmText="Delete Account"
-        cancelText="Cancel"
-        variant="danger"
-        onConfirm={confirmDeleteAccount}
-        onCancel={() => setShowDeleteAccountModal(false)}
-      />
+      {/* Delete Account Modal */}
+      <Modal $isOpen={showDeleteAccountModal}>
+        <ModalContent $isOpen={showDeleteAccountModal}>
+          <ModalTitle>{t('profile.deleteAccount')}</ModalTitle>
+          <div style={{ marginBottom: '1rem', color: '#ff6b6b', fontSize: '0.9rem', textAlign: 'center' }}>
+            {t('profile.deleteAccountWarning')}
+          </div>
+          <form onSubmit={handleDeleteAccountSubmit}>
+            <FormGroup>
+              <FormLabel>{t('profile.deleteAccountConfirm')}</FormLabel>
+              <Input
+                type="password"
+                value={deletePassword}
+                onChange={(e) => setDeletePassword(e.target.value)}
+                placeholder="Enter your password to confirm deletion"
+                required
+                disabled={isDeletingAccount}
+              />
+              {deletePasswordError && <ErrorText>{deletePasswordError}</ErrorText>}
+            </FormGroup>
+            <ButtonGroup>
+              <CancelButton onClick={handleCloseDeleteAccountModal}>{t('common.cancel')}</CancelButton>
+              <SubmitButton type="submit" disabled={isDeletingAccount}>
+                {isDeletingAccount ? 'Deleting...' : t('profile.deleteAccount')}
+              </SubmitButton>
+            </ButtonGroup>
+          </form>
+        </ModalContent>
+      </Modal>
     </Container>
   );
 } 

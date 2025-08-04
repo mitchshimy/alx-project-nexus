@@ -388,7 +388,7 @@ export default function Trending({ isSidebarOpen }: { isSidebarOpen?: boolean })
   // Load initial movies
   useEffect(() => {
     loadMoreMovies();
-  }, [isSearchMode, searchTerm]);
+  }, [loadMoreMovies, isSearchMode, searchTerm]);
 
   const fetchGenres = async () => {
     try {

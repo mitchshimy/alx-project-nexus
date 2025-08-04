@@ -47,10 +47,10 @@ const shouldShowSplash = () => {
         preloadedContent.isPreloaded = true;
         console.log('Using cached content (age:', ageInMinutes, 'minutes) - NO SPLASH');
         return false;
-      } catch (e) {
-        console.log('Failed to parse cached content, showing splash');
-        return true;
-      }
+              } catch {
+          console.log('Failed to parse cached content, showing splash');
+          return true;
+        }
     } else {
       console.log('Cache expired (age:', ageInMinutes, 'minutes), showing splash');
       return true;
@@ -63,7 +63,7 @@ const shouldShowSplash = () => {
 
 export default function App({ Component, pageProps }: AppProps) {
   const [showSplash, setShowSplash] = useState(true); // Always start with true for SSR
-  const [progress, setProgress] = useState(0);
+
   const [status, setStatus] = useState('Initializing...');
   const [preloadProgress, setPreloadProgress] = useState(0);
   const [isClient, setIsClient] = useState(false); // Added for hydration fix
@@ -150,8 +150,8 @@ export default function App({ Component, pageProps }: AppProps) {
   useEffect(() => {
     if (!showSplash || !isClient || !isInitialized) return; // Only run if splash should show
 
-    const startTime = Date.now();
-    const duration = 1500; // Reduced from 3000ms to 1500ms for faster loading
+    // const startTime = Date.now(); // Removed unused variable
+    // const duration = 1500; // Removed unused variable
 
     const preloadContent = async () => {
       try {
@@ -222,9 +222,7 @@ export default function App({ Component, pageProps }: AppProps) {
     };
 
     const interval = setInterval(() => {
-      const elapsed = Date.now() - startTime;
-      const newProgress = Math.min((elapsed / duration) * 100, 100);
-      setProgress(newProgress);
+      // Progress tracking removed as it was unused
     }, 25); // Reduced interval from 50ms to 25ms for smoother animation
 
     preloadContent();

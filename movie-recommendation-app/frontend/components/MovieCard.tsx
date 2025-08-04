@@ -2,7 +2,7 @@ import { useState, useEffect, useRef } from 'react';
 import { useRouter } from 'next/router';
 import styled from 'styled-components';
 import { movieAPI, getAuthToken } from '@/utils/api';
-import { shouldAutoPlayTrailer, buildYouTubeEmbedUrl } from '@/utils/videoPlayer';
+import { shouldAutoPlayTrailer } from '@/utils/videoPlayer';
 import TrailerPreview from './TrailerPreview';
 import { FaHeart, FaRegHeart, FaBookmark, FaRegBookmark } from 'react-icons/fa';
 
@@ -143,93 +143,14 @@ const Rating = styled.div`
   }
 `;
 
-const Star = styled.span`
-  color: #FF6B35;
-  font-size: 1rem;
-`;
 
-const Content = styled.div`
-  padding: 1.25rem;
-  position: relative;
-  z-index: 2;
-`;
 
-const MovieTitle = styled.h3`
-  color: #FFFFFF;
-  font-size: 1rem;
-  font-weight: 600;
-  margin: 0 0 0.75rem 0;
-  line-height: 1.4;
-  display: -webkit-box;
-  -webkit-line-clamp: 2;
-  -webkit-box-orient: vertical;
-  overflow: hidden;
-`;
 
-const MovieInfo = styled.div`
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  margin-bottom: 1rem;
-`;
 
 const Year = styled.span`
   color: rgba(255, 255, 255, 0.6);
   font-size: 0.85rem;
   font-weight: 500;
-`;
-
-const Actions = styled.div`
-  display: flex;
-  gap: 0.75rem;
-`;
-
-const LoadingOverlay = styled.div`
-  position: absolute;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  background: rgba(10, 10, 10, 0.9);
-  backdrop-filter: blur(10px);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  z-index: 10;
-  border-radius: 20px;
-`;
-
-const LoadingSpinner = styled.div`
-  width: 32px;
-  height: 32px;
-  border: 3px solid rgba(0, 212, 255, 0.3);
-  border-top: 3px solid #00D4FF;
-  border-radius: 50%;
-  animation: spin 1s linear infinite;
-
-  @keyframes spin {
-    0% { transform: rotate(0deg); }
-    100% { transform: rotate(360deg); }
-  }
-`;
-
-const Badge = styled.div<{ $type: 'movie' | 'tv' }>`
-  position: absolute;
-  top: 1rem;
-  right: 1rem;
-  background: ${({ $type }) => 
-    $type === 'tv' 
-      ? 'linear-gradient(135deg, #FF6B35 0%, #FF4500 100%)' 
-      : 'linear-gradient(135deg, #7C3AED 0%, #5B21B6 100%)'};
-  color: #FFFFFF;
-  padding: 0.25rem 0.75rem;
-  border-radius: 20px;
-  font-size: 0.75rem;
-  font-weight: 600;
-  text-transform: uppercase;
-  letter-spacing: 0.5px;
-  z-index: 3;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
 `;
 
 const ActionButtons = styled.div`

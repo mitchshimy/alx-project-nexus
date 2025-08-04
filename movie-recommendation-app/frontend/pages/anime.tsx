@@ -2,8 +2,7 @@ import { useState, useEffect, useCallback } from 'react';
 import styled from 'styled-components';
 import { movieAPI } from '@/utils/api';
 import MovieCard from '@/components/MovieCard';
-import { SkeletonBase } from '@/components/Skeleton';
-import { t } from '@/utils/translations';
+
 
 const Section = styled.section<{ isSidebarOpen?: boolean }>`
   padding: 2rem;
