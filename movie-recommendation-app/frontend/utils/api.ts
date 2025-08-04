@@ -1,5 +1,5 @@
 // API base URL for Django backend
-const API_BASE_URL = 'http://localhost:8000/api/v1';
+const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'https://shimy.pythonanywhere.com/api/v1/';
 
 // Increased timeout for preloading (30 seconds)
 const API_TIMEOUT = 25000; // Increased from 15000ms to 25000ms for more patience
