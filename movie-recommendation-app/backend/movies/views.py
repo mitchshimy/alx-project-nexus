@@ -285,6 +285,9 @@ class MovieDetailView(generics.RetrieveAPIView):
                         if field in enhanced_data:
                             setattr(movie, field, enhanced_data[field])
                     
+                    # Save the movie to persist the additional fields
+                    movie.save()
+                    
                     return movie
                 except Exception as e:
                     print(f"MovieDetailView: Error fetching enhanced data from TMDB: {str(e)}")  # Debug
@@ -316,6 +319,9 @@ class MovieDetailView(generics.RetrieveAPIView):
                         for field in additional_fields:
                             if field in enhanced_data:
                                 setattr(movie, field, enhanced_data[field])
+                        
+                        # Save the movie to persist the additional fields
+                        movie.save()
                         
                         return movie
                     else:

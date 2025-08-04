@@ -16,6 +16,19 @@ class Movie(models.Model):
     popularity = models.FloatField(default=0.0)
     genre_ids = models.JSONField(default=list)
     media_type = models.CharField(max_length=10, default='movie')  # movie or tv
+    
+    # Additional fields for detailed movie information
+    tagline = models.TextField(blank=True, null=True)
+    imdb_id = models.CharField(max_length=20, blank=True, null=True)
+    original_language = models.CharField(max_length=10, blank=True, null=True)
+    budget = models.BigIntegerField(default=0)
+    revenue = models.BigIntegerField(default=0)
+    status = models.CharField(max_length=50, blank=True, null=True)
+    runtime = models.IntegerField(default=0)
+    production_companies = models.JSONField(default=list)
+    production_countries = models.JSONField(default=list)
+    spoken_languages = models.JSONField(default=list)
+    
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
     

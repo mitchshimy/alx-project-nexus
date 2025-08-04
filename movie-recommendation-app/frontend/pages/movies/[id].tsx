@@ -670,6 +670,48 @@ const ReadMoreButton = styled.button`
   }
 `;
 
+const LoadMoreContainer = styled.div`
+  display: flex;
+  justify-content: center;
+  margin-top: 20px;
+  
+  @media (max-width: 768px) {
+    margin-top: 15px;
+  }
+  
+  @media (max-width: 480px) {
+    margin-top: 10px;
+  }
+`;
+
+const LoadMoreButton = styled.button`
+  background: rgba(229, 9, 20, 0.1);
+  border: 2px solid #e50914;
+  color: #e50914;
+  font-size: 1rem;
+  font-weight: 600;
+  cursor: pointer;
+  padding: 12px 24px;
+  border-radius: 8px;
+  transition: all 0.3s ease;
+  
+  &:hover {
+    background: #e50914;
+    color: white;
+    transform: translateY(-2px);
+  }
+  
+  @media (max-width: 768px) {
+    font-size: 0.95rem;
+    padding: 10px 20px;
+  }
+  
+  @media (max-width: 480px) {
+    font-size: 0.9rem;
+    padding: 8px 16px;
+  }
+`;
+
 const ReviewText = styled.div<{ isExpanded: boolean }>`
   ${props => !props.isExpanded && `
     overflow: hidden;
@@ -754,6 +796,7 @@ export default function MovieDetailPage({ isSidebarOpen = false }: { isSidebarOp
   const [fullCast, setFullCast] = useState<TMDBCast[]>([]);
   const [reviews, setReviews] = useState<any[]>([]);
   const [expandedReviews, setExpandedReviews] = useState<Set<number>>(new Set());
+  const [visibleReviews, setVisibleReviews] = useState<number>(10);
   const [activeTab, setActiveTab] = useState<'details' | 'cast' | 'reviews'>('details');
   const [videos, setVideos] = useState<any[]>([]);
   const [showTrailerModal, setShowTrailerModal] = useState(false);
@@ -773,6 +816,7 @@ export default function MovieDetailPage({ isSidebarOpen = false }: { isSidebarOp
     setLoading(true);
     setNavigatingToSimilar(false);
     setExpandedReviews(new Set());
+    setVisibleReviews(10);
     
     // Clear any existing timeout
     if (navigatingTimeoutRef.current) {
@@ -870,6 +914,10 @@ export default function MovieDetailPage({ isSidebarOpen = false }: { isSidebarOp
       }
     };
   }, []);
+
+  const handleLoadMoreReviews = () => {
+    setVisibleReviews(prev => Math.min(prev + 5, reviews.length));
+  };
 
   const formatDate = (dateString: string) => {
     if (!dateString) return 'Unknown';
@@ -1172,7 +1220,7 @@ export default function MovieDetailPage({ isSidebarOpen = false }: { isSidebarOp
             $active={activeTab === 'reviews'} 
             onClick={() => setActiveTab('reviews')}
           >
-            Reviews ({reviews.length})
+            Reviews ({reviews.length > 0 ? `${Math.min(visibleReviews, reviews.length)}/${reviews.length}` : '0'})
           </TabButton>
         </TabButtons>
         
@@ -1185,7 +1233,20 @@ export default function MovieDetailPage({ isSidebarOpen = false }: { isSidebarOp
                   <InfoCardContent>
                     {movie.production_companies && movie.production_companies.length > 0 ? (
                       movie.production_companies.map(company => (
-                        <div key={company.id}>{company.name}</div>
+                        <div key={company.id} style={{ marginBottom: '8px' }}>
+                          {company.name}
+                          {company.logo_path && (
+                            <img 
+                              src={`https://image.tmdb.org/t/p/w92${company.logo_path}`}
+                              alt={company.name}
+                              style={{ 
+                                height: '20px', 
+                                marginLeft: '8px',
+                                verticalAlign: 'middle'
+                              }}
+                            />
+                          )}
+                        </div>
                       ))
                     ) : 'No production companies available'}
                   </InfoCardContent>
@@ -1196,7 +1257,9 @@ export default function MovieDetailPage({ isSidebarOpen = false }: { isSidebarOp
                   <InfoCardContent>
                     {movie.production_countries && movie.production_countries.length > 0 ? (
                       movie.production_countries.map(country => (
-                        <div key={country.iso_3166_1}>{country.name}</div>
+                        <div key={country.iso_3166_1} style={{ marginBottom: '4px' }}>
+                          {country.name}
+                        </div>
                       ))
                     ) : 'No production countries available'}
                   </InfoCardContent>
@@ -1207,7 +1270,14 @@ export default function MovieDetailPage({ isSidebarOpen = false }: { isSidebarOp
                   <InfoCardContent>
                     {movie.spoken_languages && movie.spoken_languages.length > 0 ? (
                       movie.spoken_languages.map(language => (
-                        <div key={language.iso_639_1}>{language.english_name}</div>
+                        <div key={language.iso_639_1} style={{ marginBottom: '4px' }}>
+                          {language.english_name || language.name}
+                          {language.iso_639_1 && (
+                            <span style={{ color: 'rgba(255, 255, 255, 0.6)', marginLeft: '8px' }}>
+                              ({language.iso_639_1.toUpperCase()})
+                            </span>
+                          )}
+                        </div>
                       ))
                     ) : 'No language information available'}
                   </InfoCardContent>
@@ -1216,12 +1286,56 @@ export default function MovieDetailPage({ isSidebarOpen = false }: { isSidebarOp
                 <InfoCard>
                   <InfoCardTitle>Status</InfoCardTitle>
                   <InfoCardContent>
-                    {movie.status || 'Unknown'}
+                    <div style={{ 
+                      fontWeight: '600', 
+                      color: movie.status === 'Released' ? '#4ade80' : 
+                             movie.status === 'Post Production' ? '#fbbf24' : 
+                             movie.status === 'In Production' ? '#60a5fa' : '#ffffff'
+                    }}>
+                      {movie.status || 'Unknown'}
+                    </div>
                     {movie.release_date && new Date(movie.release_date) > new Date() && (
-                      <div>Coming soon: {formatDate(movie.release_date)}</div>
+                      <div style={{ 
+                        marginTop: '8px', 
+                        fontSize: '0.9rem',
+                        color: 'rgba(255, 255, 255, 0.8)'
+                      }}>
+                        Coming soon: {formatDate(movie.release_date)}
+                      </div>
                     )}
                   </InfoCardContent>
                 </InfoCard>
+                
+                {movie.budget && movie.budget > 0 && (
+                  <InfoCard>
+                    <InfoCardTitle>Budget</InfoCardTitle>
+                    <InfoCardContent>
+                      <div style={{ fontWeight: '600', color: '#4ade80' }}>
+                        {formatCurrency(movie.budget)}
+                      </div>
+                    </InfoCardContent>
+                  </InfoCard>
+                )}
+                
+                {movie.revenue && movie.revenue > 0 && (
+                  <InfoCard>
+                    <InfoCardTitle>Revenue</InfoCardTitle>
+                    <InfoCardContent>
+                      <div style={{ fontWeight: '600', color: '#60a5fa' }}>
+                        {formatCurrency(movie.revenue)}
+                      </div>
+                      {movie.budget && movie.budget > 0 && (
+                        <div style={{ 
+                          marginTop: '4px', 
+                          fontSize: '0.85rem',
+                          color: 'rgba(255, 255, 255, 0.7)'
+                        }}>
+                          Profit: {formatCurrency(movie.revenue - movie.budget)}
+                        </div>
+                      )}
+                    </InfoCardContent>
+                  </InfoCard>
+                )}
               </InfoGrid>
               
               {cast.length > 0 && (
@@ -1313,7 +1427,7 @@ export default function MovieDetailPage({ isSidebarOpen = false }: { isSidebarOp
               <SectionTitle>User Reviews</SectionTitle>
               {reviews.length > 0 ? (
                 <ReviewsGrid>
-                  {reviews.map((review) => (
+                  {reviews.slice(0, visibleReviews).map((review) => (
                     <ReviewCard key={review.id}>
                       <ReviewHeader>
                         <ReviewAuthorImage
@@ -1352,6 +1466,13 @@ export default function MovieDetailPage({ isSidebarOpen = false }: { isSidebarOp
                       </ReviewContent>
                     </ReviewCard>
                   ))}
+                  {visibleReviews < reviews.length && (
+                    <LoadMoreContainer>
+                      <LoadMoreButton onClick={handleLoadMoreReviews}>
+                        Load More Reviews
+                      </LoadMoreButton>
+                    </LoadMoreContainer>
+                  )}
                 </ReviewsGrid>
               ) : (
                 <NoContentMessage>No reviews available for this movie</NoContentMessage>

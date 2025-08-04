@@ -17,7 +17,9 @@ class MovieDetailSerializer(serializers.ModelSerializer):
         fields = ['id', 'tmdb_id', 'title', 'overview', 'poster_path', 'backdrop_path',
                  'release_date', 'vote_average', 'vote_count', 'popularity', 'genre_ids',
                  'media_type', 'is_favorite', 'is_watchlisted', 'user_rating', 'created_at',
-                 'credits', 'videos', 'reviews', 'similar']
+                 'credits', 'videos', 'reviews', 'similar', 'tagline', 'imdb_id', 
+                 'original_language', 'budget', 'revenue', 'status', 'production_companies',
+                 'production_countries', 'spoken_languages', 'runtime']
         read_only_fields = ['id', 'created_at']
     
     def get_is_favorite(self, obj):

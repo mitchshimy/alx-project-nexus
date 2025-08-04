@@ -524,6 +524,16 @@ class TMDBService:
                 'popularity': tmdb_data.get('popularity', 0.0),
                 'genre_ids': tmdb_data.get('genre_ids', []),
                 'media_type': media_type,
+                'tagline': tmdb_data.get('tagline', ''),
+                'imdb_id': tmdb_data.get('imdb_id', ''),
+                'original_language': tmdb_data.get('original_language', ''),
+                'budget': tmdb_data.get('budget', 0),
+                'revenue': tmdb_data.get('revenue', 0),
+                'status': tmdb_data.get('status', ''),
+                'runtime': tmdb_data.get('runtime', 0),
+                'production_companies': tmdb_data.get('production_companies', []),
+                'production_countries': tmdb_data.get('production_countries', []),
+                'spoken_languages': tmdb_data.get('spoken_languages', []),
             }
             
             # Handle release date
