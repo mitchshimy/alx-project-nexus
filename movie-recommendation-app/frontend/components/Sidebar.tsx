@@ -261,10 +261,10 @@ const SectionTitle = styled.h3<{ isOpen: boolean }>`
 
 export default function Sidebar({ isOpen, onClose }: SidebarProps) {
   const router = useRouter();
-  const [navItems, setNavItems] = useState<Array<{ href: string; icon: JSX.Element; label: string }>>([]);
-  const [personalItems, setPersonalItems] = useState<Array<{ href: string; icon: JSX.Element; label: string }>>([]);
-  const [accountItems, setAccountItems] = useState<Array<{ href: string; icon: JSX.Element; label: string }>>([]);
-  const [profileItems, setProfileItems] = useState<Array<{ href: string; icon: JSX.Element; label: string }>>([]);
+  const [navItems, setNavItems] = useState<Array<{ href: string; icon: React.ReactElement; label: string }>>([]);
+  const [personalItems, setPersonalItems] = useState<Array<{ href: string; icon: React.ReactElement; label: string }>>([]);
+  const [accountItems, setAccountItems] = useState<Array<{ href: string; icon: React.ReactElement; label: string }>>([]);
+  const [profileItems, setProfileItems] = useState<Array<{ href: string; icon: React.ReactElement; label: string }>>([]);
 
   // Initialize navigation items on client-side only to prevent hydration mismatch
   useEffect(() => {
