@@ -157,10 +157,15 @@ const AppTitleLink = styled(Link)`
   text-decoration: none;
   color: inherit;
   transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  outline: none;
   
   &:hover {
     transform: scale(1.02);
     filter: brightness(1.1);
+  }
+  
+  &:focus {
+    outline: none;
   }
 `;
 
@@ -444,6 +449,259 @@ const MobileMenuButton = styled.button`
   }
 `;
 
+// Mobile Search Overlay Components
+const MobileSearchOverlay = styled.div<{ isOpen: boolean }>`
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: linear-gradient(135deg, rgba(0, 0, 0, 0.95) 0%, rgba(20, 20, 40, 0.98) 100%);
+  backdrop-filter: blur(25px);
+  z-index: 2000;
+  display: flex;
+  align-items: flex-start;
+  justify-content: center;
+  padding-top: 80px;
+  opacity: ${props => props.isOpen ? 1 : 0};
+  visibility: ${props => props.isOpen ? 'visible' : 'hidden'};
+  transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+  pointer-events: ${props => props.isOpen ? 'auto' : 'none'};
+`;
+
+const MobileSearchContainer = styled.div`
+  width: 92%;
+  max-width: 480px;
+  background: rgba(255, 255, 255, 0.08);
+  border-radius: 24px;
+  padding: 24px;
+  backdrop-filter: blur(30px);
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  box-shadow: 
+    0 25px 80px rgba(0, 0, 0, 0.6),
+    0 0 0 1px rgba(255, 255, 255, 0.1) inset;
+  position: relative;
+  overflow: hidden;
+  
+  &::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: linear-gradient(135deg, rgba(0, 212, 255, 0.1) 0%, rgba(0, 153, 204, 0.05) 100%);
+    border-radius: 24px;
+    pointer-events: none;
+  }
+`;
+
+const MobileSearchHeader = styled.div`
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 20px;
+`;
+
+const MobileSearchTitle = styled.h2`
+  color: #FFFFFF;
+  font-size: 1.6rem;
+  font-weight: 800;
+  margin: 0;
+  background: linear-gradient(135deg, #FFFFFF 0%, #E0E0E0 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  text-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
+`;
+
+const MobileSearchCloseButton = styled.button`
+  background: rgba(255, 255, 255, 0.08);
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  border-radius: 50%;
+  width: 44px;
+  height: 44px;
+  color: #FFFFFF;
+  font-size: 1.3rem;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  backdrop-filter: blur(10px);
+  
+  &:hover {
+    background: rgba(239, 68, 68, 0.15);
+    border-color: rgba(239, 68, 68, 0.3);
+    color: #EF4444;
+    transform: scale(1.05);
+    box-shadow: 0 4px 12px rgba(239, 68, 68, 0.2);
+  }
+  
+  &:active {
+    transform: scale(0.95);
+  }
+`;
+
+const MobileSearchForm = styled.form`
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+`;
+
+const MobileSearchInput = styled.input`
+  width: 100%;
+  padding: 18px 22px;
+  background: rgba(255, 255, 255, 0.08);
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  border-radius: 18px;
+  color: #FFFFFF;
+  font-size: 1.2rem;
+  outline: none;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  backdrop-filter: blur(10px);
+  
+  &::placeholder {
+    color: rgba(255, 255, 255, 0.5);
+    font-weight: 400;
+  }
+  
+  &:focus {
+    border-color: rgba(0, 212, 255, 0.6);
+    box-shadow: 
+      0 0 25px rgba(0, 212, 255, 0.4),
+      0 0 0 1px rgba(0, 212, 255, 0.2) inset;
+    background: rgba(255, 255, 255, 0.12);
+    transform: scale(1.02);
+  }
+`;
+
+const MobileSearchButton = styled.button`
+  padding: 20px 32px;
+  background: linear-gradient(135deg, #00D4FF 0%, #0099CC 100%);
+  border: none;
+  border-radius: 18px;
+  color: #FFFFFF;
+  font-size: 1.2rem;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  box-shadow: 0 8px 25px rgba(0, 212, 255, 0.3);
+  position: relative;
+  overflow: hidden;
+  min-height: 60px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  
+  &::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: -100%;
+    width: 100%;
+    height: 100%;
+    background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.2), transparent);
+    transition: left 0.5s;
+  }
+  
+  &:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 12px 35px rgba(0, 212, 255, 0.4);
+    
+    &::before {
+      left: 100%;
+    }
+  }
+  
+  &:active {
+    transform: translateY(0);
+    box-shadow: 0 4px 15px rgba(0, 212, 255, 0.3);
+  }
+  
+  &:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+    transform: none;
+    background: rgba(255, 255, 255, 0.2);
+    box-shadow: none;
+  }
+`;
+
+const MobileSearchSuggestions = styled.div`
+  margin-top: 15px;
+  max-height: 300px;
+  overflow-y: auto;
+  border-radius: 15px;
+  background: rgba(255, 255, 255, 0.05);
+  backdrop-filter: blur(10px);
+`;
+
+const MobileSuggestionItem = styled.div`
+  padding: 16px 22px;
+  color: #FFFFFF;
+  cursor: pointer;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+  user-select: none;
+  -webkit-tap-highlight-color: transparent;
+  position: relative;
+  overflow: hidden;
+  
+  &::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: -100%;
+    width: 100%;
+    height: 100%;
+    background: linear-gradient(90deg, transparent, rgba(0, 212, 255, 0.1), transparent);
+    transition: left 0.3s ease;
+  }
+  
+  &:hover {
+    background: rgba(0, 212, 255, 0.08);
+    transform: translateX(4px);
+    
+    &::before {
+      left: 100%;
+    }
+  }
+  
+  &:active {
+    background: rgba(0, 212, 255, 0.15);
+    transform: translateX(2px);
+  }
+  
+  &:last-child {
+    border-bottom: none;
+  }
+`;
+
+const MobileSuggestionTitle = styled.div`
+  font-weight: 700;
+  font-size: 1.1rem;
+  margin-bottom: 6px;
+  color: #FFFFFF;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.3);
+`;
+
+const MobileSuggestionType = styled.div`
+  font-size: 0.95rem;
+  color: rgba(255, 255, 255, 0.8);
+  font-weight: 500;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+`;
+
+const MobileSearchLoading = styled.div`
+  padding: 20px;
+  color: rgba(255, 255, 255, 0.7);
+  text-align: center;
+  font-size: 1rem;
+`;
+
 interface HeaderProps {
   isSidebarOpen: boolean;
   toggleSidebar: () => void;
@@ -458,8 +716,10 @@ export default function Header({ isSidebarOpen, toggleSidebar }: HeaderProps) {
   const [searchSuggestions, setSearchSuggestions] = useState<any[]>([]);
   const [isSearching, setIsSearching] = useState(false);
   const [showSuggestions, setShowSuggestions] = useState(false);
+  const [showMobileSearch, setShowMobileSearch] = useState(false);
   const searchTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const searchInputRef = useRef<HTMLInputElement>(null);
+  const mobileSearchInputRef = useRef<HTMLInputElement>(null);
 
   // Check authentication status
   const checkAuthStatus = () => {
@@ -572,12 +832,13 @@ export default function Header({ isSidebarOpen, toggleSidebar }: HeaderProps) {
       
       if (data?.results?.length) {
         const suggestions = data.results.slice(0, 5).map((item: any) => ({
-          id: item.id,
+          id: item.tmdb_id || item.id, // Use tmdb_id if available, fallback to id
           title: item.title || item.name || 'Unknown Title',
           type: item.media_type || 'movie',
           year: item.release_date ? new Date(item.release_date).getFullYear() : null,
           poster: item.poster_path
         }));
+        console.log('Search suggestions created:', suggestions); // Debug log
         setSearchSuggestions(suggestions);
       } else {
         setSearchSuggestions([]);
@@ -620,27 +881,114 @@ export default function Header({ isSidebarOpen, toggleSidebar }: HeaderProps) {
     }
   };
 
-  const handleSuggestionClick = (suggestion: any) => {
-    if (suggestion.type === 'movie') {
-      router.push(`/movies/${suggestion.id}`);
+  const handleSuggestionClick = async (suggestion: any) => {
+    console.log('Suggestion clicked:', suggestion);
+    
+    // Navigate to movie details page for both movies and TV shows
+    // since the backend handles both types in the same way
+    if (suggestion.id && suggestion.id > 0) {
+      console.log('Navigating to details page:', suggestion.id, 'Type:', suggestion.type);
+      console.log('Router object:', router);
+      try {
+        await router.push(`/movies/${suggestion.id}`);
+        console.log('Navigation successful');
+      } catch (error) {
+        console.error('Navigation failed:', error);
+      }
     } else {
+      console.error('Invalid ID in suggestion:', suggestion);
+      // Fallback to search page
       router.push(`/search?q=${encodeURIComponent(suggestion.title)}`);
     }
+    
     setSearchTerm('');
     setShowSuggestions(false);
     setSearchSuggestions([]);
   };
 
   const handleSearchIconClick = () => {
-    router.push('/search');
+    setShowMobileSearch(true);
+    // Focus the mobile search input after a short delay
+    setTimeout(() => {
+      if (mobileSearchInputRef.current) {
+        mobileSearchInputRef.current.focus();
+      }
+    }, 100);
+  };
+
+  const handleMobileSearchClose = () => {
+    console.log('Closing mobile search overlay');
+    setShowMobileSearch(false);
+    setSearchTerm('');
+    setSearchSuggestions([]);
+    setShowSuggestions(false);
+    console.log('Mobile search overlay closed');
+  };
+
+  const handleMobileSearchInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const value = e.target.value;
+    setSearchTerm(value);
+    
+    // Clear existing timeout
+    if (searchTimeoutRef.current) {
+      clearTimeout(searchTimeoutRef.current);
+    }
+    
+    if (value.trim().length >= 2) {
+      // Set a new timeout for debounced search
+      searchTimeoutRef.current = setTimeout(() => {
+        debouncedSearch(value);
+      }, 300);
+    } else {
+      setSearchSuggestions([]);
+      setShowSuggestions(false);
+    }
+  };
+
+  const handleMobileSearch = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (searchTerm.trim()) {
+      router.push(`/search?q=${encodeURIComponent(searchTerm.trim())}`);
+      handleMobileSearchClose();
+    }
+  };
+
+  const handleMobileSuggestionClick = async (suggestion: any) => {
+    console.log('Mobile suggestion clicked:', suggestion);
+    
+    // Navigate to movie details page for both movies and TV shows
+    // since the backend handles both types in the same way
+    if (suggestion.id && suggestion.id > 0) {
+      console.log('Mobile navigating to details page:', suggestion.id, 'Type:', suggestion.type);
+      console.log('Router object:', router);
+      try {
+        await router.push(`/movies/${suggestion.id}`);
+        console.log('Mobile navigation successful');
+      } catch (error) {
+        console.error('Mobile navigation failed:', error);
+      }
+    } else {
+      console.error('Invalid ID in mobile suggestion:', suggestion);
+      // Fallback to search page
+      router.push(`/search?q=${encodeURIComponent(suggestion.title)}`);
+    }
+    
+    handleMobileSearchClose();
   };
 
   // Close suggestions when clicking outside
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
-      if (searchInputRef.current && !searchInputRef.current.contains(event.target as Node)) {
-        setShowSuggestions(false);
+      const target = event.target as Node;
+      const searchContainer = document.querySelector('[data-search-container]');
+      
+      // Don't close suggestions if clicking on search container or its children
+      if (searchContainer && searchContainer.contains(target)) {
+        return;
       }
+      
+      // Close suggestions if clicking outside
+      setShowSuggestions(false);
     };
 
     document.addEventListener('mousedown', handleClickOutside);
@@ -669,91 +1017,187 @@ export default function Header({ isSidebarOpen, toggleSidebar }: HeaderProps) {
   };
 
   return (
-    <HeaderContainer>
-      <HeaderShadowOverlay />
-      <HeaderContent>
-        <LeftSection>
-          <Hamburger onClick={toggleSidebar}>
-            ☰
-          </Hamburger>
-          <AppTitleLink href="/">
-            <AppTitle>
-              Shimy<AppTitleSpan>Movies</AppTitleSpan>
-            </AppTitle>
-          </AppTitleLink>
-        </LeftSection>
+    <>
+      <HeaderContainer>
+        <HeaderShadowOverlay />
+        <HeaderContent>
+          <LeftSection>
+            <Hamburger onClick={toggleSidebar}>
+              ☰
+            </Hamburger>
+            <AppTitleLink href="/">
+              <AppTitle>
+                Shimy<AppTitleSpan>Movies</AppTitleSpan>
+              </AppTitle>
+            </AppTitleLink>
+          </LeftSection>
 
-        <CenterSection>
-          <SearchContainer>
-            <SearchForm onSubmit={handleSearch}>
-              <SearchInput
-                ref={searchInputRef}
-                type="text"
-                placeholder="Search movies, TV shows..."
-                value={searchTerm}
-                onChange={handleSearchInputChange}
-                onFocus={() => {
-                  if (searchSuggestions.length > 0) {
-                    setShowSuggestions(true);
-                  }
-                }}
-              />
-              <SearchButton type="submit" disabled={!searchTerm.trim()}>
-                {isSearching ? '...' : 'Search'}
-              </SearchButton>
-            </SearchForm>
-            
-            {showSuggestions && (searchSuggestions.length > 0 || isSearching) && (
-              <SearchSuggestions>
-                {isSearching ? (
-                  <SearchLoading>Searching...</SearchLoading>
-                ) : (
-                  searchSuggestions.map((suggestion) => (
-                    <SuggestionItem
-                      key={`${suggestion.type}-${suggestion.id}`}
-                      onClick={() => handleSuggestionClick(suggestion)}
-                    >
-                      <SuggestionTitle>{suggestion.title}</SuggestionTitle>
-                      <SuggestionType>
-                        {suggestion.type === 'movie' ? 'Movie' : 'TV Show'}
-                        {suggestion.year && ` • ${suggestion.year}`}
-                      </SuggestionType>
-                    </SuggestionItem>
-                  ))
-                )}
-              </SearchSuggestions>
+          <CenterSection>
+            <SearchContainer data-search-container>
+              <SearchForm onSubmit={handleSearch}>
+                <SearchInput
+                  ref={searchInputRef}
+                  type="text"
+                  placeholder="Search movies, TV shows..."
+                  value={searchTerm}
+                  onChange={handleSearchInputChange}
+                  onFocus={() => {
+                    if (searchSuggestions.length > 0) {
+                      setShowSuggestions(true);
+                    }
+                  }}
+                />
+                <SearchButton type="submit" disabled={!searchTerm.trim()}>
+                  {isSearching ? '...' : 'Search'}
+                </SearchButton>
+              </SearchForm>
+              
+              {showSuggestions && (searchSuggestions.length > 0 || isSearching) && (
+                <SearchSuggestions>
+                  {isSearching ? (
+                    <SearchLoading>Searching...</SearchLoading>
+                  ) : (
+                    searchSuggestions.map((suggestion) => (
+                      <SuggestionItem
+                        key={`${suggestion.type}-${suggestion.id}`}
+                        onClick={(e) => {
+                          e.preventDefault();
+                          e.stopPropagation();
+                          console.log('Suggestion item clicked:', suggestion);
+                          handleSuggestionClick(suggestion);
+                        }}
+                      >
+                        <SuggestionTitle>{suggestion.title}</SuggestionTitle>
+                        <SuggestionType>
+                          {suggestion.type === 'movie' ? 'Movie' : 'TV Show'}
+                          {suggestion.year && ` • ${suggestion.year}`}
+                        </SuggestionType>
+                      </SuggestionItem>
+                    ))
+                  )}
+                </SearchSuggestions>
+              )}
+            </SearchContainer>
+          </CenterSection>
+
+          <RightSection>
+            <SearchIcon onClick={handleSearchIconClick} title="Search">
+              🔍
+            </SearchIcon>
+            {isAuthenticated ? (
+              <>
+                <UserSection>
+                  <span>{user?.first_name || user?.username || 'User'}</span>
+                  <span>{user?.email}</span>
+                </UserSection>
+                <LogoutButton onClick={handleLogout}>
+                  Logout
+                </LogoutButton>
+                <MobileMenuButton onClick={() => setShowMobileMenu(!showMobileMenu)}>
+                  ⋯
+                </MobileMenuButton>
+              </>
+            ) : (
+              <>
+                <AuthButton href="/signin">Sign In</AuthButton>
+                <PrimaryAuthButton href="/signup">Sign Up</PrimaryAuthButton>
+                <AccountIcon href="/signin" title="Account">
+                  👤
+                </AccountIcon>
+              </>
             )}
-          </SearchContainer>
-        </CenterSection>
+          </RightSection>
+        </HeaderContent>
+      </HeaderContainer>
 
-        <RightSection>
-          <SearchIcon onClick={handleSearchIconClick} title="Search">
-            🔍
-          </SearchIcon>
-          {isAuthenticated ? (
-            <>
-              <UserSection>
-                <span>{user?.first_name || user?.username || 'User'}</span>
-                <span>{user?.email}</span>
-              </UserSection>
-              <LogoutButton onClick={handleLogout}>
-                Logout
-              </LogoutButton>
-              <MobileMenuButton onClick={() => setShowMobileMenu(!showMobileMenu)}>
-                ⋯
-              </MobileMenuButton>
-            </>
-          ) : (
-            <>
-              <AuthButton href="/signin">Sign In</AuthButton>
-              <PrimaryAuthButton href="/signup">Sign Up</PrimaryAuthButton>
-              <AccountIcon href="/signin" title="Account">
-                👤
-              </AccountIcon>
-            </>
+      {/* Mobile Search Overlay */}
+      <MobileSearchOverlay 
+        isOpen={showMobileSearch}
+        onClick={(e) => {
+          // Close overlay if clicking on the background (not the container)
+          if (e.target === e.currentTarget) {
+            handleMobileSearchClose();
+          }
+        }}
+      >
+        <MobileSearchContainer>
+          <MobileSearchHeader>
+            <MobileSearchTitle>Search Movies & TV Shows</MobileSearchTitle>
+            <MobileSearchCloseButton onClick={handleMobileSearchClose}>
+              ✕
+            </MobileSearchCloseButton>
+          </MobileSearchHeader>
+          
+          <MobileSearchForm onSubmit={handleMobileSearch}>
+            <MobileSearchInput
+              ref={mobileSearchInputRef}
+              type="text"
+              placeholder="Search movies, TV shows, actors..."
+              value={searchTerm}
+              onChange={handleMobileSearchInputChange}
+            />
+            <MobileSearchButton type="submit" disabled={!searchTerm.trim()}>
+              {isSearching ? 'Searching...' : 'Search'}
+            </MobileSearchButton>
+          </MobileSearchForm>
+          
+          {showSuggestions && searchSuggestions.length > 0 && (
+            <MobileSearchSuggestions>
+              {searchSuggestions.map((suggestion) => (
+                <MobileSuggestionItem
+                  key={`mobile-${suggestion.type}-${suggestion.id}`}
+                  onClick={(e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    console.log('Mobile suggestion item clicked:', suggestion);
+                    
+                    // Immediate visual feedback
+                    e.currentTarget.style.backgroundColor = 'rgba(0, 212, 255, 0.3)';
+                    
+                    // Close overlay and navigate immediately
+                    handleMobileSearchClose();
+                    
+                    if (suggestion.id && suggestion.id > 0) {
+                      console.log('Mobile navigating to details page:', suggestion.id, 'Type:', suggestion.type);
+                      // Use direct navigation for mobile
+                      window.location.href = `/movies/${suggestion.id}`;
+                    } else {
+                      console.error('Invalid ID in mobile suggestion:', suggestion);
+                      window.location.href = `/search?q=${encodeURIComponent(suggestion.title)}`;
+                    }
+                  }}
+                  onTouchEnd={(e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    console.log('Mobile suggestion item touched:', suggestion);
+                    
+                    // Immediate visual feedback
+                    e.currentTarget.style.backgroundColor = 'rgba(0, 212, 255, 0.3)';
+                    
+                    // Close overlay and navigate immediately
+                    handleMobileSearchClose();
+                    
+                    if (suggestion.id && suggestion.id > 0) {
+                      console.log('Mobile navigating to details page:', suggestion.id, 'Type:', suggestion.type);
+                      // Use direct navigation for mobile
+                      window.location.href = `/movies/${suggestion.id}`;
+                    } else {
+                      console.error('Invalid ID in mobile suggestion:', suggestion);
+                      window.location.href = `/search?q=${encodeURIComponent(suggestion.title)}`;
+                    }
+                  }}
+                >
+                  <MobileSuggestionTitle>{suggestion.title}</MobileSuggestionTitle>
+                  <MobileSuggestionType>
+                    {suggestion.type === 'movie' ? 'Movie' : 'TV Show'}
+                    {suggestion.year && ` • ${suggestion.year}`}
+                  </MobileSuggestionType>
+                </MobileSuggestionItem>
+              ))}
+            </MobileSearchSuggestions>
           )}
-        </RightSection>
-      </HeaderContent>
-    </HeaderContainer>
+        </MobileSearchContainer>
+      </MobileSearchOverlay>
+    </>
   );
 }

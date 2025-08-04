@@ -342,6 +342,7 @@ export const getTranslation = (key: string, language: string = 'en'): string => 
 };
 
 export const getCurrentLanguage = (): string => {
+  // Always return 'en' during SSR to prevent hydration mismatch
   if (typeof window === 'undefined') return 'en';
   
   try {
@@ -358,6 +359,11 @@ export const getCurrentLanguage = (): string => {
 };
 
 export const t = (key: string): string => {
+  // During SSR, always use English to prevent hydration mismatch
+  if (typeof window === 'undefined') {
+    return getTranslation(key, 'en');
+  }
+  
   const currentLanguage = getCurrentLanguage();
   return getTranslation(key, currentLanguage);
 }; 

@@ -714,6 +714,8 @@ export default function MovieDetailPage({ isSidebarOpen = false }: { isSidebarOp
         // Fetch movie details from our backend API
         const movieData = await movieAPI.getMovieDetails(Number(id));
         console.log('Movie data received:', movieData);
+        console.log('Movie poster_path:', movieData?.poster_path);
+        console.log('Movie tmdb_id:', movieData?.tmdb_id);
         
         // Check if API returned an error object
         if (movieData && movieData.error) {
@@ -1021,6 +1023,10 @@ export default function MovieDetailPage({ isSidebarOpen = false }: { isSidebarOp
           <Poster
             src={movie.poster_path ? `https://image.tmdb.org/t/p/w500${movie.poster_path}` : '/no-poster.png'}
             alt={movie.title}
+            onError={(e) => {
+              console.error('Poster image failed to load:', movie.poster_path);
+              e.currentTarget.src = '/no-poster.png';
+            }}
           />
         </PosterContainer>
         <MovieInfo>
