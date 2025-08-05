@@ -98,6 +98,38 @@ const Loading = styled.div`
   color: #666;
 `;
 
+const LoadMoreButton = styled.button`
+  display: block;
+  margin: 2rem auto;
+  padding: 1rem 2rem;
+  font-size: 1.1rem;
+  font-weight: 600;
+  color: #ffffff;
+  background: linear-gradient(135deg, #00D4FF 0%, #0099CC 100%);
+  border: none;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  box-shadow: 0 4px 15px rgba(0, 212, 255, 0.3);
+
+  &:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 6px 20px rgba(0, 212, 255, 0.4);
+    background: linear-gradient(135deg, #00E6FF 0%, #00B3E6 100%);
+  }
+
+  &:active {
+    transform: translateY(0);
+    box-shadow: 0 2px 10px rgba(0, 212, 255, 0.3);
+  }
+
+  &:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+    transform: none;
+  }
+`;
+
 const TipsContainer = styled.div`
   margin-top: 2rem;
   padding: 1rem;
@@ -217,7 +249,7 @@ export default function TopIMDB({ isSidebarOpen }: { isSidebarOpen?: boolean }) 
 
     window.addEventListener('scroll', throttledScroll, { passive: true });
     return () => window.removeEventListener('scroll', throttledScroll);
-  }, [loading, hasMore]); // Remove loadMoreMovies from dependencies
+  }, [loading, hasMore, loadMoreMovies]); // Include loadMoreMovies to ensure it can be called
 
   useEffect(() => {
     const fetchGenres = async () => {
@@ -285,6 +317,12 @@ export default function TopIMDB({ isSidebarOpen }: { isSidebarOpen?: boolean }) 
             </MovieGrid>
 
             {loading && <Loading>Loading more top-rated movies...</Loading>}
+            
+            {!loading && hasMore && (
+              <LoadMoreButton onClick={loadMoreMovies}>
+                Load More Top-Rated Movies
+              </LoadMoreButton>
+            )}
           </>
         )}
 

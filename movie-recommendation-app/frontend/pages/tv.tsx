@@ -242,7 +242,7 @@ export default function TV({ isSidebarOpen }: { isSidebarOpen?: boolean }) {
 
     window.addEventListener('scroll', throttledScroll, { passive: true });
     return () => window.removeEventListener('scroll', throttledScroll);
-  }, [loading, hasMore]); // Remove loadMoreShows from dependencies
+  }, [loading, hasMore, loadMoreShows]); // Include loadMoreShows to ensure it can be called
 
   useEffect(() => {
     const fetchGenres = async () => {

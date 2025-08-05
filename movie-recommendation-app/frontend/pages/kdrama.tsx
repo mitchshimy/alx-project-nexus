@@ -68,6 +68,77 @@ const Loading = styled.div`
   color: #666;
 `;
 
+const LoadMoreButton = styled.button`
+  display: block;
+  margin: 2rem auto;
+  padding: 1rem 2rem;
+  font-size: 1.1rem;
+  font-weight: 600;
+  color: #ffffff;
+  background: linear-gradient(135deg, #00D4FF 0%, #0099CC 100%);
+  border: none;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  box-shadow: 0 4px 15px rgba(0, 212, 255, 0.3);
+
+  &:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 6px 20px rgba(0, 212, 255, 0.4);
+    background: linear-gradient(135deg, #00E6FF 0%, #00B3E6 100%);
+  }
+
+  &:active {
+    transform: translateY(0);
+    box-shadow: 0 2px 10px rgba(0, 212, 255, 0.3);
+  }
+
+  &:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+    transform: none;
+  }
+`;
+
+const TipsContainer = styled.div`
+  margin-top: 3rem;
+  padding: 2rem;
+  background: rgba(255, 255, 255, 0.05);
+  border-radius: 12px;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  backdrop-filter: blur(10px);
+`;
+
+const TipsTitle = styled.h3`
+  font-size: 1.3rem;
+  margin-bottom: 1rem;
+  color: #00D4FF;
+  font-weight: 600;
+`;
+
+const TipsList = styled.ul`
+  list-style: none;
+  padding: 0;
+  margin: 0;
+
+  li {
+    padding: 0.5rem 0;
+    color: #cccccc;
+    font-size: 0.95rem;
+    line-height: 1.5;
+    position: relative;
+    padding-left: 1.5rem;
+
+    &:before {
+      content: '•';
+      color: #00D4FF;
+      font-weight: bold;
+      position: absolute;
+      left: 0;
+    }
+  }
+`;
+
 export default function KDrama({ isSidebarOpen }: { isSidebarOpen?: boolean }) {
   const [shows, setShows] = useState<TMDBMovie[]>([]);
   const [page, setPage] = useState(1);
@@ -156,7 +227,7 @@ export default function KDrama({ isSidebarOpen }: { isSidebarOpen?: boolean }) {
 
     window.addEventListener('scroll', throttledScroll, { passive: true });
     return () => window.removeEventListener('scroll', throttledScroll);
-  }, [loading, hasMore]); // Remove loadMoreShows from dependencies
+  }, [loading, hasMore, loadMoreShows]); // Include loadMoreShows to ensure it can be called
 
   useEffect(() => {
     const fetchGenres = async () => {
@@ -208,7 +279,26 @@ export default function KDrama({ isSidebarOpen }: { isSidebarOpen?: boolean }) {
             </MovieGrid>
 
             {loading && <Loading>Loading more K-Dramas...</Loading>}
+            
+            {!loading && hasMore && (
+              <LoadMoreButton onClick={loadMoreShows}>
+                Load More K-Dramas
+              </LoadMoreButton>
+            )}
           </>
+        )}
+
+        {!initialLoading && shows.length > 0 && (
+          <TipsContainer data-tips-container>
+            <TipsTitle>💡 K-Drama Discovery Tips</TipsTitle>
+            <TipsList>
+              <li>Use the genre filter to explore specific types of K-Dramas</li>
+              <li>Click on any K-Drama card to see detailed information and trailers</li>
+              <li>Add K-Dramas to your favorites or watchlist for later viewing</li>
+              <li>Scroll down to automatically load more K-Dramas</li>
+              <li>Check out the Trending page for what&apos;s popular right now</li>
+            </TipsList>
+          </TipsContainer>
         )}
       </Section>
     </>

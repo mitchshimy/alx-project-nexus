@@ -383,7 +383,7 @@ export default function Trending({ isSidebarOpen }: { isSidebarOpen?: boolean })
 
     window.addEventListener('scroll', throttledScroll, { passive: true });
     return () => window.removeEventListener('scroll', throttledScroll);
-  }, [loading, hasMore]); // Remove loadMoreMovies from dependencies
+  }, [loading, hasMore, loadMoreMovies]); // Include loadMoreMovies to ensure it can be called
 
   // Load initial movies
   useEffect(() => {
