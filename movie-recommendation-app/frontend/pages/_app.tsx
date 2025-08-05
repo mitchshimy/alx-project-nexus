@@ -4,6 +4,7 @@ import type { AppProps } from 'next/app';
 import Layout from '@/components/Layout';
 import SplashScreen from '@/components/SplashScreen';
 import ErrorModal from '@/components/ErrorModal';
+import PerformanceMonitor from '@/components/PerformanceMonitor';
 import { theme } from '@/styles/theme';
 import GlobalStyle from '@/styles/GlobalStyle';
 import { fetchTrendingMovies, fetchTopRatedMovies, fetchPopularMovies } from '@/utils/api';
@@ -233,8 +234,12 @@ export default function App({ Component, pageProps }: AppProps) {
   return (
     <ThemeProvider theme={theme}>
       <GlobalStyle />
-      {showSplash && isClient && isInitialized ? (
-        <SplashScreen progress={preloadProgress} status={status} />
+      <PerformanceMonitor />
+      {showSplash ? (
+        <SplashScreen
+          status={status}
+          progress={preloadProgress}
+        />
       ) : (
         <Layout>
           <Component {...pageProps} />
@@ -242,10 +247,10 @@ export default function App({ Component, pageProps }: AppProps) {
       )}
       <ErrorModal
         isOpen={errorModal.isOpen}
-        onClose={() => setErrorModal(prev => ({ ...prev, isOpen: false }))}
         title={errorModal.title}
         message={errorModal.message}
         type={errorModal.type}
+        onClose={() => setErrorModal({ ...errorModal, isOpen: false })}
       />
     </ThemeProvider>
   );

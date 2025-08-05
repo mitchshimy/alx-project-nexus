@@ -5,6 +5,7 @@ import { movieAPI, getAuthToken } from '@/utils/api';
 import { shouldAutoPlayTrailer } from '@/utils/videoPlayer';
 import { getMobileAutoPlayTrailers } from '@/utils/settings';
 import TrailerPreview from './TrailerPreview';
+import LazyImage from './LazyImage';
 import { FaHeart, FaRegHeart, FaBookmark, FaRegBookmark } from 'react-icons/fa';
 
 interface MovieCardProps {
@@ -46,17 +47,6 @@ const PosterContainer = styled.div`
   aspect-ratio: 2/3;
   overflow: hidden;
   background: linear-gradient(135deg, #1a1a1a 0%, #2a2a2a 100%);
-`;
-
-const Poster = styled.img`
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
-  transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-
-  ${Card}:hover & {
-    transform: scale(1.08);
-  }
 `;
 
 const Skeleton = styled.div`
@@ -468,7 +458,7 @@ const MovieCard = ({ movie, onFavoriteToggle, onWatchlistToggle }: MovieCardProp
     setIsTouching(false);
   };
 
-  const handleTouchMove = (e: React.TouchEvent) => {
+  const handleTouchMove = () => {
     // Cancel long press if user moves finger
     if (longPressTimeoutRef.current) {
       clearTimeout(longPressTimeoutRef.current);
@@ -577,10 +567,9 @@ const MovieCard = ({ movie, onFavoriteToggle, onWatchlistToggle }: MovieCardProp
     >
       <PosterContainer>
         <Skeleton />
-        <Poster 
+        <LazyImage 
           src={posterUrl} 
           alt={movieTitle}
-          loading="lazy"
         />
         <Overlay>
           <Title>{movieTitle}</Title>

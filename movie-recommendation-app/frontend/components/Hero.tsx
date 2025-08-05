@@ -480,11 +480,6 @@ const Hero = ({ isSidebarOpen = false }: HeroProps) => {
     ? currentMovie.vote_average.toFixed(1) 
     : 'N/A';
 
-  // Get real runtime or show N/A if not available
-  const duration = currentMovie?.runtime 
-    ? `${currentMovie.runtime} min` 
-    : 'N/A';
-
   // Convert genre ID to actual genre name
   const getGenreName = (genreId: number) => {
     const genre = genres.find(g => g.id === genreId);

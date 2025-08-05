@@ -509,7 +509,19 @@ export default function Profile({ isSidebarOpen }: { isSidebarOpen?: boolean }) 
     // Add focus event listener to refresh stats when user returns to the page
     const handleFocus = () => {
       if (isAuthenticated) {
-        refreshStats();
+        // Call refreshStats directly without dependency
+        authAPI.getUserStats().then(userStats => {
+          if (userStats && !userStats.error) {
+            setStats({
+              favorites_count: userStats.favorites_count || 0,
+              watchlist_count: userStats.watchlist_count || 0,
+              ratings_count: userStats.ratings_count || 0,
+              member_since: userStats.member_since || user?.date_joined
+            });
+          }
+        }).catch(statsError => {
+          console.error('Error refreshing user stats:', statsError);
+        });
       }
     };
     
@@ -518,7 +530,7 @@ export default function Profile({ isSidebarOpen }: { isSidebarOpen?: boolean }) 
     return () => {
       window.removeEventListener('focus', handleFocus);
     };
-  }, [isAuthenticated]);
+  }, [isAuthenticated, user]);
 
   const refreshStats = useCallback(async () => {
     try {
