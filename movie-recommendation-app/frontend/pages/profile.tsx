@@ -406,7 +406,20 @@ const SuccessText = styled.div`
   text-align: center;
 `;
 
-export default function Profile({ isSidebarOpen }: { isSidebarOpen?: boolean }) {
+// Create a loading component for the profile page
+const ProfileLoading = () => (
+  <div style={{ 
+    padding: '2rem', 
+    textAlign: 'center',
+    color: '#f0f0f0',
+    fontSize: '1.2rem'
+  }}>
+    Loading profile...
+  </div>
+);
+
+// Main profile component
+function ProfileContent({ isSidebarOpen }: { isSidebarOpen?: boolean }) {
   const router = useRouter();
   const [user, setUser] = useState<any>(null);
   const [stats, setStats] = useState<any>(null);
@@ -1032,4 +1045,10 @@ export default function Profile({ isSidebarOpen }: { isSidebarOpen?: boolean }) 
       </Modal>
     </Container>
   );
-} 
+}
+
+// Export the profile page with dynamic loading
+export default dynamic(() => Promise.resolve(ProfileContent), {
+  ssr: true,
+  loading: ProfileLoading
+}); 

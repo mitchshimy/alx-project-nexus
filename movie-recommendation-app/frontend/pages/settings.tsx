@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/router';
 import styled from 'styled-components';
+import dynamic from 'next/dynamic';
 import { getAuthToken, clearApiCache, performComprehensiveLogout } from '@/utils/api';
 import { getSettings, saveSettings, applyTheme, UserSettings } from '@/utils/settings';
 import { t, getTranslation, setLanguage } from '@/utils/translations';
@@ -401,7 +402,20 @@ const QualityInfoDetails = styled.div`
   }
 `;
 
-export default function Settings({ isSidebarOpen }: { isSidebarOpen?: boolean }) {
+// Create a loading component for the settings page
+const SettingsLoading = () => (
+  <div style={{ 
+    padding: '2rem', 
+    textAlign: 'center',
+    color: '#f0f0f0',
+    fontSize: '1.2rem'
+  }}>
+    Loading settings...
+  </div>
+);
+
+// Main settings component
+function SettingsContent({ isSidebarOpen }: { isSidebarOpen?: boolean }) {
   const router = useRouter();
   const [settings, setSettings] = useState<UserSettings>(getSettings());
   const [isAuthenticated, setIsAuthenticated] = useState(false);
@@ -790,4 +804,10 @@ export default function Settings({ isSidebarOpen }: { isSidebarOpen?: boolean })
       />
     </Container>
   );
-} 
+}
+
+// Export the settings page with dynamic loading
+export default dynamic(() => Promise.resolve(SettingsContent), {
+  ssr: true,
+  loading: SettingsLoading
+});

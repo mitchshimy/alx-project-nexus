@@ -1,6 +1,215 @@
 import { useState, useEffect } from 'react';
 import styled from 'styled-components';
 import Link from 'next/link';
+import dynamic from 'next/dynamic';
+import { 
+  MdHelp, 
+  MdSearch, 
+  MdFavorite, 
+  MdBookmark, 
+  MdPerson, 
+  MdSettings,
+  MdMovie,
+  MdTv,
+  MdTrendingUp,
+  MdStar,
+  MdPlayArrow,
+  MdKeyboardArrowDown,
+  MdKeyboardArrowUp
+} from 'react-icons/md';
+
+// Create a loading component for the help page
+const HelpLoading = () => (
+  <div style={{ 
+    padding: '2rem', 
+    textAlign: 'center',
+    color: '#f0f0f0',
+    fontSize: '1.2rem'
+  }}>
+    Loading help...
+  </div>
+);
+
+// Main help component
+function HelpContent({ isSidebarOpen }: { isSidebarOpen?: boolean }) {
+  const [searchTerm, setSearchTerm] = useState('');
+  const [openItems, setOpenItems] = useState<{ [key: string]: boolean }>({});
+
+  const toggleFAQ = (section: string, index: number) => {
+    const key = `${section}-${index}`;
+    setOpenItems(prev => ({
+      ...prev,
+      [key]: !prev[key]
+    }));
+  };
+
+  const filteredFAQ = Object.entries(faqData).reduce((acc, [section, items]) => {
+    if (searchTerm === '') {
+      acc[section] = items;
+    } else {
+      const filtered = items.filter(item => {
+        const searchLower = searchTerm.toLowerCase();
+        const questionMatch = item.question.toLowerCase().includes(searchLower);
+        const answerMatch = typeof item.answer === 'string' && 
+          item.answer.toLowerCase().includes(searchLower);
+        const sectionMatch = section.toLowerCase().includes(searchLower);
+        
+        return questionMatch || answerMatch || sectionMatch;
+      });
+      if (filtered.length > 0) {
+        acc[section] = filtered;
+      }
+    }
+    return acc;
+  }, {} as { [key: string]: FAQItem[] });
+
+  // Auto-expand sections that have search results
+  useEffect(() => {
+    if (searchTerm !== '') {
+      const newOpenItems: { [key: string]: boolean } = {};
+      Object.entries(filteredFAQ).forEach(([section, items]) => {
+        items.forEach((_, index) => {
+          newOpenItems[`${section}-${index}`] = true;
+        });
+      });
+      setOpenItems(newOpenItems);
+    }
+  }, [searchTerm, filteredFAQ]);
+
+  // Calculate total search results
+  const totalResults = Object.values(filteredFAQ).reduce((sum, items) => sum + items.length, 0);
+  const hasResults = Object.keys(filteredFAQ).length > 0;
+
+  const clearSearch = () => {
+    setSearchTerm('');
+    setOpenItems({});
+  };
+
+  const handleKeyPress = (e: React.KeyboardEvent) => {
+    if (e.key === 'Escape') {
+      clearSearch();
+    }
+  };
+
+  return (
+    <>
+      <HelpContainer>
+        <HelpHeader>
+          <h1>Help Center</h1>
+          <p>
+            Find answers to common questions and learn how to make the most of SHIMY. 
+            Can&apos;t find what you&apos;re looking for? Contact our support team.
+          </p>
+        </HelpHeader>
+
+        <SearchContainer>
+          <SearchInputContainer>
+            <SearchInput
+              type="text"
+              placeholder="Search for help articles..."
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              onKeyDown={handleKeyPress}
+            />
+            {searchTerm && (
+              <ClearButton onClick={clearSearch}>
+                <svg viewBox="0 0 20 20" fill="currentColor">
+                  <path fillRule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clipRule="evenodd" />
+                </svg>
+              </ClearButton>
+            )}
+          </SearchInputContainer>
+          {searchTerm && (
+            <SearchResults>
+              {hasResults ? (
+                `Found ${totalResults} result${totalResults !== 1 ? 's' : ''}`
+              ) : (
+                <NoResults>
+                  <h3>No results found</h3>
+                  <p>We couldn&apos;t find any help articles matching &quot;{searchTerm}&quot;. Try different keywords or browse our categories below.</p>
+                  <SearchSuggestions>
+                    <span style={{ color: 'rgba(255, 255, 255, 0.5)', fontSize: '0.9rem', marginBottom: '0.5rem', width: '100%' }}>
+                      Popular searches:
+                    </span>
+                    {searchSuggestions.slice(0, 8).map(suggestion => (
+                      <SuggestionTag
+                        key={suggestion}
+                        onClick={() => setSearchTerm(suggestion)}
+                      >
+                        {suggestion}
+                      </SuggestionTag>
+                    ))}
+                  </SearchSuggestions>
+                  <button onClick={clearSearch}>Clear Search</button>
+                </NoResults>
+              )}
+            </SearchResults>
+          )}
+          {!searchTerm && (
+            <SearchResults>
+              <SearchSuggestions>
+                <span style={{ color: 'rgba(255, 255, 255, 0.5)', fontSize: '0.9rem', marginBottom: '0.5rem', width: '100%' }}>
+                  Try searching for:
+                </span>
+                {searchSuggestions.slice(0, 6).map(suggestion => (
+                  <SuggestionTag
+                    key={suggestion}
+                    onClick={() => setSearchTerm(suggestion)}
+                  >
+                    {suggestion}
+                  </SuggestionTag>
+                ))}
+              </SearchSuggestions>
+            </SearchResults>
+          )}
+        </SearchContainer>
+
+        <QuickActions>
+          <ActionCard onClick={() => window.location.href = '/contact'}>
+            <h3>Contact Support</h3>
+            <p>Get in touch with our support team for personalized help</p>
+          </ActionCard>
+          <ActionCard onClick={() => window.location.href = '/feedback'}>
+            <h3>Send Feedback</h3>
+            <p>Share your suggestions and help us improve SHIMY</p>
+          </ActionCard>
+        </QuickActions>
+
+        {Object.entries(filteredFAQ).map(([section, items]) => (
+          <FAQSection key={section}>
+            <SectionTitle>
+              {section}
+            </SectionTitle>
+            {items.map((item, index) => (
+              <FAQItem key={index} isOpen={openItems[`${section}-${index}`]}>
+                <FAQQuestion
+                  isOpen={openItems[`${section}-${index}`]}
+                  onClick={() => toggleFAQ(section, index)}
+                >
+                  {item.question}
+                  <svg width="20" height="20" viewBox="0 0 20 20" fill="currentColor">
+                    <path fillRule="evenodd" d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z" clipRule="evenodd" />
+                  </svg>
+                </FAQQuestion>
+                <FAQAnswer isOpen={openItems[`${section}-${index}`]}>
+                  {typeof item.answer === 'string' ? <p>{item.answer}</p> : item.answer}
+                </FAQAnswer>
+              </FAQItem>
+            ))}
+          </FAQSection>
+        ))}
+
+        <ContactSection>
+          <h2>Still Need Help?</h2>
+          <p>
+            Can&apos;t find the answer you&apos;re looking for? Our support team is here to help.
+          </p>
+          <Link href="/contact">Contact Support</Link>
+        </ContactSection>
+      </HelpContainer>
+    </>
+  );
+}
 
 const HelpContainer = styled.div`
   max-width: 1000px;
@@ -366,182 +575,8 @@ const faqData: { [key: string]: FAQItem[] } = {
   ]
 };
 
-export default function Help() {
-  const [searchTerm, setSearchTerm] = useState('');
-  const [openItems, setOpenItems] = useState<{ [key: string]: boolean }>({});
-
-  const toggleFAQ = (section: string, index: number) => {
-    const key = `${section}-${index}`;
-    setOpenItems(prev => ({
-      ...prev,
-      [key]: !prev[key]
-    }));
-  };
-
-  const filteredFAQ = Object.entries(faqData).reduce((acc, [section, items]) => {
-    if (searchTerm === '') {
-      acc[section] = items;
-    } else {
-      const filtered = items.filter(item => {
-        const searchLower = searchTerm.toLowerCase();
-        const questionMatch = item.question.toLowerCase().includes(searchLower);
-        const answerMatch = typeof item.answer === 'string' && 
-          item.answer.toLowerCase().includes(searchLower);
-        const sectionMatch = section.toLowerCase().includes(searchLower);
-        
-        return questionMatch || answerMatch || sectionMatch;
-      });
-      if (filtered.length > 0) {
-        acc[section] = filtered;
-      }
-    }
-    return acc;
-  }, {} as { [key: string]: FAQItem[] });
-
-  // Auto-expand sections that have search results
-  useEffect(() => {
-    if (searchTerm !== '') {
-      const newOpenItems: { [key: string]: boolean } = {};
-      Object.entries(filteredFAQ).forEach(([section, items]) => {
-        items.forEach((_, index) => {
-          newOpenItems[`${section}-${index}`] = true;
-        });
-      });
-      setOpenItems(newOpenItems);
-    }
-  }, [searchTerm, filteredFAQ]);
-
-  // Calculate total search results
-  const totalResults = Object.values(filteredFAQ).reduce((sum, items) => sum + items.length, 0);
-  const hasResults = Object.keys(filteredFAQ).length > 0;
-
-  const clearSearch = () => {
-    setSearchTerm('');
-    setOpenItems({});
-  };
-
-  const handleKeyPress = (e: React.KeyboardEvent) => {
-    if (e.key === 'Escape') {
-      clearSearch();
-    }
-  };
-
-  return (
-    <>
-      <HelpContainer>
-        <HelpHeader>
-          <h1>Help Center</h1>
-          <p>
-            Find answers to common questions and learn how to make the most of SHIMY. 
-            Can&apos;t find what you&apos;re looking for? Contact our support team.
-          </p>
-        </HelpHeader>
-
-        <SearchContainer>
-          <SearchInputContainer>
-            <SearchInput
-              type="text"
-              placeholder="Search for help articles..."
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-              onKeyDown={handleKeyPress}
-            />
-            {searchTerm && (
-              <ClearButton onClick={clearSearch}>
-                <svg viewBox="0 0 20 20" fill="currentColor">
-                  <path fillRule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clipRule="evenodd" />
-                </svg>
-              </ClearButton>
-            )}
-          </SearchInputContainer>
-          {searchTerm && (
-            <SearchResults>
-              {hasResults ? (
-                `Found ${totalResults} result${totalResults !== 1 ? 's' : ''}`
-              ) : (
-                <NoResults>
-                  <h3>No results found</h3>
-                  <p>We couldn&apos;t find any help articles matching &quot;{searchTerm}&quot;. Try different keywords or browse our categories below.</p>
-                  <SearchSuggestions>
-                    <span style={{ color: 'rgba(255, 255, 255, 0.5)', fontSize: '0.9rem', marginBottom: '0.5rem', width: '100%' }}>
-                      Popular searches:
-                    </span>
-                    {searchSuggestions.slice(0, 8).map(suggestion => (
-                      <SuggestionTag
-                        key={suggestion}
-                        onClick={() => setSearchTerm(suggestion)}
-                      >
-                        {suggestion}
-                      </SuggestionTag>
-                    ))}
-                  </SearchSuggestions>
-                  <button onClick={clearSearch}>Clear Search</button>
-                </NoResults>
-              )}
-            </SearchResults>
-          )}
-          {!searchTerm && (
-            <SearchResults>
-              <SearchSuggestions>
-                <span style={{ color: 'rgba(255, 255, 255, 0.5)', fontSize: '0.9rem', marginBottom: '0.5rem', width: '100%' }}>
-                  Try searching for:
-                </span>
-                {searchSuggestions.slice(0, 6).map(suggestion => (
-                  <SuggestionTag
-                    key={suggestion}
-                    onClick={() => setSearchTerm(suggestion)}
-                  >
-                    {suggestion}
-                  </SuggestionTag>
-                ))}
-              </SearchSuggestions>
-            </SearchResults>
-          )}
-        </SearchContainer>
-
-        <QuickActions>
-          <ActionCard onClick={() => window.location.href = '/contact'}>
-            <h3>Contact Support</h3>
-            <p>Get in touch with our support team for personalized help</p>
-          </ActionCard>
-          <ActionCard onClick={() => window.location.href = '/feedback'}>
-            <h3>Send Feedback</h3>
-            <p>Share your suggestions and help us improve SHIMY</p>
-          </ActionCard>
-        </QuickActions>
-
-        {Object.entries(filteredFAQ).map(([section, items]) => (
-          <FAQSection key={section}>
-            <SectionTitle>
-              {section}
-            </SectionTitle>
-            {items.map((item, index) => (
-              <FAQItem key={index} isOpen={openItems[`${section}-${index}`]}>
-                <FAQQuestion
-                  isOpen={openItems[`${section}-${index}`]}
-                  onClick={() => toggleFAQ(section, index)}
-                >
-                  {item.question}
-                  <svg width="20" height="20" viewBox="0 0 20 20" fill="currentColor">
-                    <path fillRule="evenodd" d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z" clipRule="evenodd" />
-                  </svg>
-                </FAQQuestion>
-                <FAQAnswer isOpen={openItems[`${section}-${index}`]}>
-                  {typeof item.answer === 'string' ? <p>{item.answer}</p> : item.answer}
-                </FAQAnswer>
-              </FAQItem>
-            ))}
-          </FAQSection>
-        ))}
-
-        <ContactSection>
-          <h2>Still Need Help?</h2>
-          <p>
-            Can&apos;t find the answer you&apos;re looking for? Our support team is here to help.
-          </p>
-          <Link href="/contact">Contact Support</Link>
-        </ContactSection>
-      </HelpContainer>
-    </>
-  );
-} 
+// Export the help page with dynamic loading
+export default dynamic(() => Promise.resolve(HelpContent), {
+  ssr: true,
+  loading: HelpLoading
+});
