@@ -7,7 +7,6 @@ import { movieAPI } from '@/utils/api';
 import { buildYouTubeEmbedUrl, getOptimalQuality, getQualityDisplayName } from '@/utils/videoPlayer';
 import { FaStar, FaRegStar, FaImdb, FaPlay } from 'react-icons/fa';
 import { MdDateRange, MdAccessTime, MdLanguage, MdMoney } from 'react-icons/md';
-import Image from 'next/image';
 
 const Container = styled.div<{ isSidebarOpen?: boolean }>`
   max-width: ${props => props.isSidebarOpen ? '100%' : '1200px'};
@@ -1237,16 +1236,13 @@ export default function MovieDetailPage({ isSidebarOpen = false }: { isSidebarOp
                         <div key={company.id} style={{ marginBottom: '8px' }}>
                           {company.name}
                           {company.logo_path && (
-                            <Image
+                            <img 
                               src={`https://image.tmdb.org/t/p/w92${company.logo_path}`}
                               alt={company.name}
-                              width={92}
-                              height={20}
                               style={{ 
                                 height: '20px', 
                                 marginLeft: '8px',
-                                verticalAlign: 'middle',
-                                objectFit: 'contain'
+                                verticalAlign: 'middle'
                               }}
                             />
                           )}
