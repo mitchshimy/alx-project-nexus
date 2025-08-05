@@ -581,21 +581,47 @@ export default function Search({ isSidebarOpen }: { isSidebarOpen?: boolean }) {
       console.log(`🚀 Changing to page ${page}`);
       // Clear API cache to ensure fresh data
       clearApiCache();
+      
+      // Scroll to top instantly when changing pages
+      window.scrollTo({
+        top: 0,
+        behavior: 'auto'
+      });
+      
       loadSearchResults(page);
     }
   };
 
   const handleFilterChange = (newFilter: 'all' | 'movie' | 'tv') => {
     setFilter(newFilter);
+    
+    // Scroll to top instantly when changing filters
+    window.scrollTo({
+      top: 0,
+      behavior: 'auto'
+    });
   };
 
   const handleSearchTypeChange = (newSearchType: 'general' | 'actor' | 'genre') => {
     setSearchType(newSearchType);
     setCurrentPage(1);
+    
+    // Scroll to top instantly when changing search type
+    window.scrollTo({
+      top: 0,
+      behavior: 'auto'
+    });
+    
     // The useEffect will trigger a new search
   };
 
   const handleSuggestionClick = (suggestion: string) => {
+    // Scroll to top instantly when clicking on suggestions
+    window.scrollTo({
+      top: 0,
+      behavior: 'auto'
+    });
+    
     router.push(`/search?q=${encodeURIComponent(suggestion)}`);
   };
 
