@@ -49,6 +49,17 @@ const PosterContainer = styled.div`
   background: linear-gradient(135deg, #1a1a1a 0%, #2a2a2a 100%);
 `;
 
+const Poster = styled.img`
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+
+  ${Card}:hover & {
+    transform: scale(1.08);
+  }
+`;
+
 const Skeleton = styled.div`
   position: absolute;
   top: 0;
@@ -317,14 +328,6 @@ const MovieCard = ({ movie, onFavoriteToggle, onWatchlistToggle }: MovieCardProp
     
     isHoveringRef.current = true;
     
-    // Start preloading movie details for faster navigation
-    if (movie.tmdb_id) {
-      // Preload movie details in the background
-      movieAPI.getMovieDetails(movie.tmdb_id).catch(() => {
-        // Silently fail - this is just for preloading
-      });
-    }
-    
     // Only start hover timer if auto-play is enabled and user is authenticated
     if (shouldAutoPlayTrailer() && getAuthToken()) {
       hoverTimeoutRef.current = setTimeout(async () => {
@@ -466,7 +469,7 @@ const MovieCard = ({ movie, onFavoriteToggle, onWatchlistToggle }: MovieCardProp
     setIsTouching(false);
   };
 
-  const handleTouchMove = () => {
+  const handleTouchMove = (e: React.TouchEvent) => {
     // Cancel long press if user moves finger
     if (longPressTimeoutRef.current) {
       clearTimeout(longPressTimeoutRef.current);

@@ -4,14 +4,12 @@ import type { AppProps } from 'next/app';
 import Layout from '@/components/Layout';
 import SplashScreen from '@/components/SplashScreen';
 import ErrorModal from '@/components/ErrorModal';
-import PerformanceMonitor from '@/components/PerformanceMonitor';
 import { theme } from '@/styles/theme';
 import GlobalStyle from '@/styles/GlobalStyle';
-import { fetchTrendingMovies, fetchTopRatedMovies, fetchPopularMovies, warmCache } from '@/utils/api';
+import { fetchTrendingMovies, fetchTopRatedMovies, fetchPopularMovies } from '@/utils/api';
 import { setGlobalErrorHandler, checkTokenExpiration } from '@/utils/api';
 import { initializeSettings } from '@/utils/settings';
 import { initializeLanguageSystem } from '@/utils/translations';
-import { registerServiceWorker, addResourceHints, preloadCriticalResources } from '@/utils/performance';
 
 // Global state for preloaded content
 export const preloadedContent = {
@@ -122,18 +120,6 @@ export default function App({ Component, pageProps }: AppProps) {
     
     // Initialize language system
     initializeLanguageSystem();
-    
-    // Register service worker for caching
-    registerServiceWorker();
-    
-    // Add resource hints for better performance
-    addResourceHints();
-    
-    // Preload critical resources
-    preloadCriticalResources();
-    
-    // Warm cache for better performance
-    warmCache();
     
     // Check if we should show splash (only on client)
     const shouldShow = shouldShowSplash();
@@ -247,12 +233,8 @@ export default function App({ Component, pageProps }: AppProps) {
   return (
     <ThemeProvider theme={theme}>
       <GlobalStyle />
-      <PerformanceMonitor />
-      {showSplash ? (
-        <SplashScreen
-          status={status}
-          progress={preloadProgress}
-        />
+      {showSplash && isClient && isInitialized ? (
+        <SplashScreen progress={preloadProgress} status={status} />
       ) : (
         <Layout>
           <Component {...pageProps} />
@@ -260,10 +242,10 @@ export default function App({ Component, pageProps }: AppProps) {
       )}
       <ErrorModal
         isOpen={errorModal.isOpen}
+        onClose={() => setErrorModal(prev => ({ ...prev, isOpen: false }))}
         title={errorModal.title}
         message={errorModal.message}
         type={errorModal.type}
-        onClose={() => setErrorModal({ ...errorModal, isOpen: false })}
       />
     </ThemeProvider>
   );

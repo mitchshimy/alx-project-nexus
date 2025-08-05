@@ -126,7 +126,7 @@ export default function Anime({ isSidebarOpen }: { isSidebarOpen?: boolean }) {
 
   useEffect(() => {
     loadMoreMovies();
-  }, []); // Only run once on mount
+  }, [loadMoreMovies]);
 
   useEffect(() => {
     const onScroll = () => {

@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useRouter } from 'next/router';
 import styled from 'styled-components';
 import { authAPI, getAuthToken, clearApiCache } from '@/utils/api';
@@ -509,19 +509,7 @@ export default function Profile({ isSidebarOpen }: { isSidebarOpen?: boolean }) 
     // Add focus event listener to refresh stats when user returns to the page
     const handleFocus = () => {
       if (isAuthenticated) {
-        // Call getUserStats directly
-        authAPI.getUserStats().then(userStats => {
-          if (userStats && !userStats.error) {
-            setStats({
-              favorites_count: userStats.favorites_count || 0,
-              watchlist_count: userStats.watchlist_count || 0,
-              ratings_count: userStats.ratings_count || 0,
-              member_since: userStats.member_since || user?.date_joined
-            });
-          }
-        }).catch(statsError => {
-          console.error('Error refreshing user stats:', statsError);
-        });
+        refreshStats();
       }
     };
     
@@ -530,7 +518,25 @@ export default function Profile({ isSidebarOpen }: { isSidebarOpen?: boolean }) 
     return () => {
       window.removeEventListener('focus', handleFocus);
     };
-  }, [isAuthenticated, user]);
+  }, [isAuthenticated]);
+
+  const refreshStats = useCallback(async () => {
+    try {
+      const userStats = await authAPI.getUserStats();
+      console.log('Refreshed user stats:', userStats);
+      
+      if (userStats && !userStats.error) {
+        setStats({
+          favorites_count: userStats.favorites_count || 0,
+          watchlist_count: userStats.watchlist_count || 0,
+          ratings_count: userStats.ratings_count || 0,
+          member_since: userStats.member_since || user?.date_joined
+        });
+      }
+    } catch (statsError) {
+      console.error('Error refreshing user stats:', statsError);
+    }
+  }, [user]);
 
   const handleSignIn = () => {
     router.push('/signin');

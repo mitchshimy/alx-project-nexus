@@ -4,26 +4,9 @@ const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL;
 // Increased timeout for preloading (30 seconds)
 const API_TIMEOUT = 25000; // Increased from 15000ms to 25000ms for more patience
 
-// Simple in-memory cache for API responses with different durations
+// Simple in-memory cache for API responses
 const cache = new Map<string, { data: any; timestamp: number }>();
-
-// Cache durations for different types of data
-const CACHE_DURATIONS = {
-  STATIC: 30 * 60 * 1000, // 30 minutes for static data (genres, etc.)
-  TRENDING: 5 * 60 * 1000, // 5 minutes for trending content
-  MOVIE_DETAILS: 10 * 60 * 1000, // 10 minutes for movie details
-  USER_DATA: 2 * 60 * 1000, // 2 minutes for user-specific data
-  DEFAULT: 5 * 60 * 1000 // 5 minutes default
-};
-
-// Get cache duration based on endpoint
-const getCacheDuration = (endpoint: string): number => {
-  if (endpoint.includes('/genres/')) return CACHE_DURATIONS.STATIC;
-  if (endpoint.includes('/trending/')) return CACHE_DURATIONS.TRENDING;
-  if (endpoint.includes('/movies/') && endpoint.includes('/')) return CACHE_DURATIONS.MOVIE_DETAILS;
-  if (endpoint.includes('/favorites/') || endpoint.includes('/watchlist/')) return CACHE_DURATIONS.USER_DATA;
-  return CACHE_DURATIONS.DEFAULT;
-};
+const CACHE_DURATION = 5 * 60 * 1000; // 5 minutes
 
 // Authentication token management
 export const getAuthToken = (): string | null => {
@@ -103,7 +86,7 @@ const getCacheKey = (endpoint: string, options: RequestInit = {}) => {
 
 const getCachedResponse = (cacheKey: string) => {
   const cached = cache.get(cacheKey);
-  if (cached && Date.now() - cached.timestamp < getCacheDuration(cacheKey.split(':')[1])) {
+  if (cached && Date.now() - cached.timestamp < CACHE_DURATION) {
     return cached.data;
   }
   return null;
@@ -111,32 +94,6 @@ const getCachedResponse = (cacheKey: string) => {
 
 const setCachedResponse = (cacheKey: string, data: any) => {
   cache.set(cacheKey, { data, timestamp: Date.now() });
-};
-
-// Cache warming function for critical endpoints
-export const warmCache = async () => {
-  if (typeof window === 'undefined') return; // Only run on client side
-  
-  try {
-    // Preload critical data in the background
-    const criticalEndpoints = [
-      '/movies/trending/',
-      '/movies/top-rated/',
-      '/movies/genres/'
-    ];
-    
-    await Promise.allSettled(
-      criticalEndpoints.map(endpoint => 
-        apiRequest(endpoint).catch(() => {
-          // Silently fail for cache warming
-        })
-      )
-    );
-    
-    console.log('Cache warming completed');
-  } catch (error) {
-    console.error('Cache warming failed:', error);
-  }
 };
 
 // Function to clear the in-memory cache

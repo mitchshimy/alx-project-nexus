@@ -12,7 +12,7 @@ import {
   MdSearch, 
   MdPlayArrow 
 } from 'react-icons/md';
-import { GetStaticProps } from 'next';
+
 
 
 const PageContainer = styled.div`
@@ -512,59 +512,13 @@ const FeatureDescription = styled.p`
   }
 `;
 
-interface HomeProps {
-  isSidebarOpen?: boolean;
-  initialData?: {
-    featured: any[];
-    trending: any[];
-    topRated: any[];
-  };
-}
-
-export const getStaticProps: GetStaticProps = async () => {
-  try {
-    // Pre-fetch data at build time for better performance
-    const [featured, trending, topRated] = await Promise.allSettled([
-      movieAPI.getMovies({ type: 'trending', page: 1 }),
-      movieAPI.getMovies({ type: 'movies', page: 1 }),
-      movieAPI.getMovies({ type: 'top_rated', page: 1 })
-    ]);
-
-    const initialData = {
-      featured: featured.status === 'fulfilled' ? featured.value?.results || [] : [],
-      trending: trending.status === 'fulfilled' ? trending.value?.results || [] : [],
-      topRated: topRated.status === 'fulfilled' ? topRated.value?.results || [] : []
-    };
-
-    return {
-      props: {
-        initialData
-      },
-      // Revalidate every 5 minutes (300 seconds)
-      revalidate: 300
-    };
-  } catch (error) {
-    console.error('Error in getStaticProps:', error);
-    return {
-      props: {
-        initialData: {
-          featured: [],
-          trending: [],
-          topRated: []
-        }
-      },
-      revalidate: 60 // Revalidate every minute on error
-    };
-  }
-};
-
-export default function Home({ isSidebarOpen = false, initialData }: HomeProps) {
-  const router = useRouter();
-  const [featuredMovies, setFeaturedMovies] = useState<any[]>(initialData?.featured || []);
-  const [trendingMovies, setTrendingMovies] = useState<any[]>(initialData?.trending || []);
-  const [topRatedMovies, setTopRatedMovies] = useState<any[]>(initialData?.topRated || []);
-  const [loading, setLoading] = useState(!initialData);
+export default function Home({ isSidebarOpen = false }: { isSidebarOpen?: boolean }) {
+  const [featuredMovies, setFeaturedMovies] = useState<any[]>([]);
+  const [trendingMovies, setTrendingMovies] = useState<any[]>([]);
+  const [topRatedMovies, setTopRatedMovies] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const router = useRouter();
 
   const loadFeaturedContent = async () => {
     try {
@@ -705,7 +659,7 @@ export default function Home({ isSidebarOpen = false, initialData }: HomeProps) 
   return (
     <PageContainer>
       <ContentWrapper id="main-content" role="main">
-        <Hero isSidebarOpen={isSidebarOpen} initialMovies={(initialData?.trending || []).slice(0, 5)} />
+        <Hero isSidebarOpen={isSidebarOpen} />
         
         <WelcomeSection>
           <WelcomeTitle>Discover Shimy Movies</WelcomeTitle>
