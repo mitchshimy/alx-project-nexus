@@ -1,15 +1,21 @@
 import { useState, useEffect } from 'react';
 import { ThemeProvider } from 'styled-components';
 import type { AppProps } from 'next/app';
+import dynamic from 'next/dynamic';
 import Layout from '@/components/Layout';
 import SplashScreen from '@/components/SplashScreen';
-import ErrorModal from '@/components/ErrorModal';
 import { theme } from '@/styles/theme';
 import GlobalStyle from '@/styles/GlobalStyle';
 import { fetchTrendingMovies, fetchTopRatedMovies, fetchPopularMovies } from '@/utils/api';
 import { setGlobalErrorHandler, checkTokenExpiration } from '@/utils/api';
 import { initializeSettings } from '@/utils/settings';
 import { initializeLanguageSystem } from '@/utils/translations';
+
+// Dynamically import ErrorModal to reduce initial bundle size
+const ErrorModal = dynamic(() => import('@/components/ErrorModal'), {
+  ssr: false,
+  loading: () => null
+});
 
 // Global state for preloaded content
 export const preloadedContent = {
@@ -19,8 +25,8 @@ export const preloadedContent = {
   isPreloaded: false
 };
 
-// Cache duration: 15 minutes
-const CACHE_DURATION = 15 * 60 * 1000; // 15 minutes in milliseconds
+// Cache duration: 30 minutes (increased from 15 minutes)
+const CACHE_DURATION = 30 * 60 * 1000; // 30 minutes in milliseconds
 
 // Check if we should show splash screen
 const shouldShowSplash = () => {
@@ -179,7 +185,7 @@ export default function App({ Component, pageProps }: AppProps) {
           setTimeout(() => {
             console.log('API preload timeout - using fallback data');
             resolve([[], [], []]); // Return empty arrays on timeout
-          }, 10000) // 10 second timeout
+          }, 5000) // Reduced from 10 seconds to 5 seconds
         );
 
         const [trending, topRated, popular] = await Promise.race([
@@ -209,7 +215,7 @@ export default function App({ Component, pageProps }: AppProps) {
         // Reduced wait time for completion
         setTimeout(() => {
           setShowSplash(false);
-        }, 200); // Reduced from 500ms to 200ms
+        }, 100); // Reduced from 200ms to 100ms
 
       } catch (error) {
         console.error('Error preloading content:', error);
@@ -223,7 +229,7 @@ export default function App({ Component, pageProps }: AppProps) {
 
     const interval = setInterval(() => {
       // Progress tracking removed as it was unused
-    }, 25); // Reduced interval from 50ms to 25ms for smoother animation
+    }, 16); // Reduced from 25ms to 16ms for 60fps smooth animation
 
     preloadContent();
 

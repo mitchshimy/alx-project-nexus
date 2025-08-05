@@ -31,6 +31,19 @@ export default class MyDocument extends Document {
     return (
       <Html lang="en">
         <Head>
+          {/* Preconnect to external domains for faster resource loading */}
+          <link rel="preconnect" href="https://shimy.pythonanywhere.com" />
+          <link rel="preconnect" href="https://image.tmdb.org" />
+          <link rel="preconnect" href="https://fonts.googleapis.com" />
+          <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
+          
+          {/* Preload critical fonts for faster text rendering */}
+          <link 
+            rel="preload" 
+            href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" 
+            as="style"
+          />
+          
           <script
             dangerouslySetInnerHTML={{
               __html: `
