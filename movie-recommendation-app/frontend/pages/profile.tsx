@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { useRouter } from 'next/router';
 import styled from 'styled-components';
+import dynamic from 'next/dynamic';
 import { authAPI, getAuthToken, clearApiCache } from '@/utils/api';
 import { t } from '@/utils/translations';
 

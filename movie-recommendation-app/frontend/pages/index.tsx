@@ -1,9 +1,15 @@
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/router';
 import styled from 'styled-components';
+import dynamic from 'next/dynamic';
+import { preloadedContent } from './_app';
 import Hero from '@/components/Hero';
-import MovieCard from '@/components/MovieCard';
 import { movieAPI } from '@/utils/api';
+import { 
+  fetchTrendingMovies, 
+  fetchTopRatedMovies, 
+  fetchPopularMovies 
+} from '@/utils/api';
 import { 
   MdMovie, 
   MdTrendingUp, 
@@ -13,7 +19,19 @@ import {
   MdPlayArrow 
 } from 'react-icons/md';
 
-
+// Dynamically import MovieCard to reduce initial bundle size
+const MovieCard = dynamic(() => import('@/components/MovieCard'), {
+  ssr: true,
+  loading: () => (
+    <div style={{ 
+      width: '180px', 
+      height: '270px', 
+      background: 'linear-gradient(90deg, #1E1E1E 25%, #2A2A2A 50%, #1E1E1E 75%)',
+      borderRadius: '8px',
+      animation: 'shimmer 1.5s infinite'
+    }} />
+  )
+});
 
 const PageContainer = styled.div`
   min-height: 100vh;

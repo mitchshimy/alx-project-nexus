@@ -1,8 +1,23 @@
 import { useState, useEffect, useCallback } from 'react';
 import { useRouter } from 'next/router';
 import styled from 'styled-components';
+import dynamic from 'next/dynamic';
 import { movieAPI, clearApiCache } from '@/utils/api';
-import MovieCard from '@/components/MovieCard';
+import { MdSearch, MdClear, MdFilterList } from 'react-icons/md';
+
+// Dynamically import heavy components to reduce initial bundle size
+const MovieCard = dynamic(() => import('@/components/MovieCard'), {
+  ssr: true,
+  loading: () => (
+    <div style={{ 
+      width: '180px', 
+      height: '270px', 
+      background: 'linear-gradient(90deg, #1E1E1E 25%, #2A2A2A 50%, #1E1E1E 75%)',
+      borderRadius: '8px',
+      animation: 'shimmer 1.5s infinite'
+    }} />
+  )
+});
 
 // Define types locally since we removed the import
 type TMDBMovie = {

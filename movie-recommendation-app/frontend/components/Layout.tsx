@@ -2,11 +2,17 @@ import { useState, ReactNode, useEffect } from 'react';
 import styled from 'styled-components';
 import Head from 'next/head';
 import Link from 'next/link';
+import dynamic from 'next/dynamic';
 import Header from './Header';
-import Sidebar from './Sidebar';
 import { t, tWithParams } from '@/utils/translations';
 import React from 'react';
 import { getAuthToken } from '@/utils/api';
+
+// Dynamically import Sidebar to reduce initial bundle size
+const Sidebar = dynamic(() => import('./Sidebar'), {
+  ssr: false,
+  loading: () => <div style={{ width: '280px', background: '#0A0A0A' }} />
+});
 
 const LayoutWrapper = styled.div`
   display: flex;
