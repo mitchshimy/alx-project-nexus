@@ -188,11 +188,11 @@ export default function Movies({ isSidebarOpen }: { isSidebarOpen?: boolean }) {
       setLoading(false);
       setInitialLoading(false);
     }
-  }, [loading, hasMore, page]);
+  }, [page]); // Only depend on page, not loading/hasMore to prevent cycles
 
   useEffect(() => {
     loadMoreMovies();
-  }, [loadMoreMovies]); // Include loadMoreMovies in dependencies
+  }, []); // Only run once on mount
 
   useEffect(() => {
     const onScroll = () => {
@@ -235,7 +235,7 @@ export default function Movies({ isSidebarOpen }: { isSidebarOpen?: boolean }) {
 
     window.addEventListener('scroll', throttledScroll, { passive: true });
     return () => window.removeEventListener('scroll', throttledScroll);
-  }, [loadMoreMovies, loading, hasMore]);
+  }, [loading, hasMore]); // Remove loadMoreMovies from dependencies
 
   useEffect(() => {
     const fetchGenres = async () => {

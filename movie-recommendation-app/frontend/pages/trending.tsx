@@ -343,7 +343,7 @@ export default function Trending({ isSidebarOpen }: { isSidebarOpen?: boolean })
       setLoading(false);
       setInitialLoading(false);
     }
-  }, [loading, hasMore, page, isSearchMode, searchTerm]);
+  }, [page, isSearchMode, searchTerm]); // Only depend on stable values to prevent cycles
 
   // Infinite scroll effect
   useEffect(() => {
@@ -383,7 +383,7 @@ export default function Trending({ isSidebarOpen }: { isSidebarOpen?: boolean })
 
     window.addEventListener('scroll', throttledScroll, { passive: true });
     return () => window.removeEventListener('scroll', throttledScroll);
-  }, [loadMoreMovies, loading, hasMore]);
+  }, [loading, hasMore]); // Remove loadMoreMovies from dependencies
 
   // Load initial movies
   useEffect(() => {

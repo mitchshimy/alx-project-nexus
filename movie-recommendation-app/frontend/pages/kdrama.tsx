@@ -110,11 +110,11 @@ export default function KDrama({ isSidebarOpen }: { isSidebarOpen?: boolean }) {
       setLoading(false);
       setInitialLoading(false);
     }
-  }, [loading, hasMore, page]);
+  }, [page]); // Only depend on page, not loading/hasMore to prevent cycles
 
   useEffect(() => {
     loadMoreShows();
-  }, [loadMoreShows]); // Include loadMoreShows in dependencies
+  }, []); // Only run once on mount
 
   useEffect(() => {
     const onScroll = () => {
@@ -156,7 +156,7 @@ export default function KDrama({ isSidebarOpen }: { isSidebarOpen?: boolean }) {
 
     window.addEventListener('scroll', throttledScroll, { passive: true });
     return () => window.removeEventListener('scroll', throttledScroll);
-  }, [loadMoreShows, loading, hasMore]);
+  }, [loading, hasMore]); // Remove loadMoreShows from dependencies
 
   useEffect(() => {
     const fetchGenres = async () => {
