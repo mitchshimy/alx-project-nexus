@@ -114,7 +114,7 @@ export default function KDrama({ isSidebarOpen }: { isSidebarOpen?: boolean }) {
 
   useEffect(() => {
     loadMoreShows();
-  }, [loadMoreShows]); // Include loadMoreShows in dependencies
+  }, []); // Only run once on mount
 
   useEffect(() => {
     const onScroll = () => {

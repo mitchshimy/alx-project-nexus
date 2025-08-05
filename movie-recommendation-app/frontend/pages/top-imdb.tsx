@@ -171,11 +171,11 @@ export default function TopIMDB({ isSidebarOpen }: { isSidebarOpen?: boolean }) 
       setLoading(false);
       setInitialLoading(false);
     }
-  }, [loading, hasMore, page]);
+  }, [hasMore, page]);
 
   useEffect(() => {
     loadMoreMovies();
-  }, [loadMoreMovies]); // Include loadMoreMovies in dependencies
+  }, []); // Only run once on mount
 
   useEffect(() => {
     const onScroll = () => {

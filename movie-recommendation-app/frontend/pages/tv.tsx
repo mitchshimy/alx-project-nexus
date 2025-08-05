@@ -195,11 +195,11 @@ export default function TV({ isSidebarOpen }: { isSidebarOpen?: boolean }) {
       setLoading(false);
       setInitialLoading(false);
     }
-  }, [loading, hasMore, page]);
+  }, [hasMore, page]);
 
   useEffect(() => {
     loadMoreShows();
-  }, [loadMoreShows]); // Include loadMoreShows in dependencies
+  }, []); // Only run once on mount
 
   useEffect(() => {
     const onScroll = () => {

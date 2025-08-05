@@ -343,7 +343,7 @@ export default function Trending({ isSidebarOpen }: { isSidebarOpen?: boolean })
       setLoading(false);
       setInitialLoading(false);
     }
-  }, [loading, hasMore, page, isSearchMode, searchTerm]);
+  }, [hasMore, page, isSearchMode, searchTerm]);
 
   // Infinite scroll effect
   useEffect(() => {
@@ -388,7 +388,7 @@ export default function Trending({ isSidebarOpen }: { isSidebarOpen?: boolean })
   // Load initial movies
   useEffect(() => {
     loadMoreMovies();
-  }, [loadMoreMovies, isSearchMode, searchTerm]);
+  }, [isSearchMode, searchTerm]);
 
   const fetchGenres = async () => {
     try {
