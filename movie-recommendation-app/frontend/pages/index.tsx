@@ -2,14 +2,8 @@ import { useState, useEffect } from 'react';
 import { useRouter } from 'next/router';
 import styled from 'styled-components';
 import dynamic from 'next/dynamic';
-import { preloadedContent } from './_app';
 import Hero from '@/components/Hero';
 import { movieAPI } from '@/utils/api';
-import { 
-  fetchTrendingMovies, 
-  fetchTopRatedMovies, 
-  fetchPopularMovies 
-} from '@/utils/api';
 import { 
   MdMovie, 
   MdTrendingUp, 

@@ -6,7 +6,7 @@ import Layout from '@/components/Layout';
 import SplashScreen from '@/components/SplashScreen';
 import { theme } from '@/styles/theme';
 import GlobalStyle from '@/styles/GlobalStyle';
-import { fetchTrendingMovies, fetchTopRatedMovies, fetchPopularMovies } from '@/utils/api';
+import { fetchTrendingMovies, fetchTopRatedMovies, fetchPopularMovies, warmCache } from '@/utils/api';
 import { setGlobalErrorHandler, checkTokenExpiration } from '@/utils/api';
 import { initializeSettings } from '@/utils/settings';
 import { initializeLanguageSystem } from '@/utils/translations';
@@ -166,6 +166,11 @@ export default function App({ Component, pageProps }: AppProps) {
         const trendingPromise = fetchTrendingMovies();
         const topRatedPromise = fetchTopRatedMovies();
         const popularPromise = fetchPopularMovies();
+        
+        // Also warm the cache for better performance
+        warmCache().catch(error => {
+          console.error('Cache warming failed:', error);
+        });
 
         setStatus('Loading top rated movies...');
         setPreloadProgress(70);

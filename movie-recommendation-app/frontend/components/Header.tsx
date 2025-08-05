@@ -472,31 +472,7 @@ const MobileLogoutButton = styled.button`
   }
 `;
 
-const MobileMenuButton = styled.button`
-  background: rgba(255, 255, 255, 0.1);
-  border: 1px solid rgba(255, 255, 255, 0.2);
-  border-radius: 12px;
-  font-size: 1.2rem;
-  cursor: pointer;
-  padding: 0.75rem;
-  color: #FFFFFF;
-  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-  display: none;
-  backdrop-filter: blur(20px);
-  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.3);
 
-  &:hover {
-    background: rgba(0, 212, 255, 0.15);
-    border-color: rgba(0, 212, 255, 0.4);
-    color: #00D4FF;
-    transform: translateY(-1px);
-    box-shadow: 0 8px 32px rgba(0, 212, 255, 0.3);
-  }
-  
-  @media (max-width: 768px) {
-    display: block;
-  }
-`;
 
 // Mobile Search Overlay Components
 const MobileSearchOverlay = styled.div<{ isOpen: boolean }>`

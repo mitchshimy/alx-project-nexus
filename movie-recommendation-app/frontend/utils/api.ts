@@ -4,10 +4,12 @@ const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL;
 // Increased timeout for preloading (30 seconds)
 const API_TIMEOUT = 25000; // Increased from 15000ms to 25000ms for more patience
 
-// Simple in-memory cache for API responses
-const cache = new Map<string, { data: any; timestamp: number }>();
+// Enhanced in-memory cache for API responses with different strategies
+const cache = new Map<string, { data: any; timestamp: number; strategy: 'memory' | 'session' }>();
 const CACHE_DURATION = 5 * 60 * 1000; // 5 minutes
 const USER_CACHE_DURATION = 2 * 60 * 1000; // 2 minutes for user-specific data
+const STATIC_CACHE_DURATION = 15 * 60 * 1000; // 15 minutes for static data (movies, TV shows)
+const SEARCH_CACHE_DURATION = 1 * 60 * 1000; // 1 minute for search results
 
 // Authentication token management
 export const getAuthToken = (): string | null => {
@@ -82,16 +84,38 @@ const createTimeoutPromise = (timeout: number) => {
 const getCacheKey = (endpoint: string, options: RequestInit = {}) => {
   const method = options.method || 'GET';
   const body = options.body ? JSON.stringify(options.body) : '';
-  return `${method}:${endpoint}:${body}`;
+  
+  // Add prefix based on endpoint type for better cache management
+  let prefix = 'api';
+  
+  if (endpoint.includes('search')) {
+    prefix = 'search';
+  } else if (endpoint.includes('movies') || endpoint.includes('trending') || endpoint.includes('top-rated')) {
+    prefix = 'movies';
+  } else if (endpoint.includes('tv') || endpoint.includes('shows')) {
+    prefix = 'tv';
+  } else if (endpoint.includes('favorites')) {
+    prefix = 'favorites';
+  } else if (endpoint.includes('watchlist')) {
+    prefix = 'watchlist';
+  }
+  
+  return `${prefix}:${method}:${endpoint}:${body}`;
 };
 
 const getCachedResponse = (cacheKey: string) => {
   const cached = cache.get(cacheKey);
   if (cached) {
-    // Use shorter cache duration for user-specific data
-    const duration = cacheKey.includes('favorites:') || cacheKey.includes('watchlist:') 
-      ? USER_CACHE_DURATION 
-      : CACHE_DURATION;
+    // Determine cache duration based on endpoint type
+    let duration = CACHE_DURATION;
+    
+    if (cacheKey.includes('favorites:') || cacheKey.includes('watchlist:')) {
+      duration = USER_CACHE_DURATION;
+    } else if (cacheKey.includes('search:')) {
+      duration = SEARCH_CACHE_DURATION;
+    } else if (cacheKey.includes('movies:') || cacheKey.includes('tv:')) {
+      duration = STATIC_CACHE_DURATION;
+    }
     
     if (Date.now() - cached.timestamp < duration) {
       return cached.data;
@@ -100,13 +124,63 @@ const getCachedResponse = (cacheKey: string) => {
   return null;
 };
 
-const setCachedResponse = (cacheKey: string, data: any) => {
-  cache.set(cacheKey, { data, timestamp: Date.now() });
+const setCachedResponse = (cacheKey: string, data: any, strategy: 'memory' | 'session' = 'memory') => {
+  cache.set(cacheKey, { data, timestamp: Date.now(), strategy });
 };
 
 // Function to clear the in-memory cache
 export const clearApiCache = () => {
   cache.clear();
+};
+
+// Cache warming function to preload popular data
+export const warmCache = async () => {
+  try {
+    // Preload trending movies
+    await fetchTrendingMovies();
+    
+    // Preload top rated movies
+    await fetchTopRatedMovies();
+    
+    // Preload popular movies
+    await fetchPopularMovies();
+    
+    console.log('Cache warmed successfully');
+  } catch (error) {
+    console.error('Cache warming failed:', error);
+  }
+};
+
+// Cache statistics for monitoring
+export const getCacheStats = () => {
+  const stats = {
+    totalEntries: cache.size,
+    memoryUsage: 0,
+    oldestEntry: null as Date | null,
+    newestEntry: null as Date | null,
+  };
+  
+  let totalSize = 0;
+  let oldest = Date.now();
+  let newest = 0;
+  
+  for (const [key, value] of cache.entries()) {
+    const entrySize = JSON.stringify(value.data).length;
+    totalSize += entrySize;
+    
+    if (value.timestamp < oldest) {
+      oldest = value.timestamp;
+      stats.oldestEntry = new Date(value.timestamp);
+    }
+    
+    if (value.timestamp > newest) {
+      newest = value.timestamp;
+      stats.newestEntry = new Date(value.timestamp);
+    }
+  }
+  
+  stats.memoryUsage = totalSize;
+  return stats;
 };
 
 // Comprehensive logout function that clears all user data and cache

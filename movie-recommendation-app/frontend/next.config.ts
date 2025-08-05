@@ -86,12 +86,26 @@ const nextConfig: NextConfig = {
             test: /[\\/]node_modules[\\/]/,
             name: 'vendors',
             chunks: 'all',
+            priority: 10,
+          },
+          reactIcons: {
+            test: /[\\/]node_modules[\\/]react-icons[\\/]/,
+            name: 'react-icons',
+            chunks: 'all',
+            priority: 20,
+          },
+          styledComponents: {
+            test: /[\\/]node_modules[\\/]styled-components[\\/]/,
+            name: 'styled-components',
+            chunks: 'all',
+            priority: 15,
           },
           common: {
             name: 'common',
             minChunks: 2,
             chunks: 'all',
             enforce: true,
+            priority: 5,
           },
         },
       };

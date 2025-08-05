@@ -3,7 +3,7 @@ import { useRouter } from 'next/router';
 import styled from 'styled-components';
 import dynamic from 'next/dynamic';
 import { movieAPI, clearApiCache } from '@/utils/api';
-import { MdSearch, MdClear, MdFilterList } from 'react-icons/md';
+
 
 // Dynamically import heavy components to reduce initial bundle size
 const MovieCard = dynamic(() => import('@/components/MovieCard'), {

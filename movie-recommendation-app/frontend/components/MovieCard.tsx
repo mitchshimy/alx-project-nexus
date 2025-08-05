@@ -49,16 +49,7 @@ const PosterContainer = styled.div`
   background: linear-gradient(135deg, #1a1a1a 0%, #2a2a2a 100%);
 `;
 
-const Poster = styled.img`
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
-  transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
 
-  ${Card}:hover & {
-    transform: scale(1.08);
-  }
-`;
 
 const Skeleton = styled.div`
   position: absolute;
@@ -469,7 +460,7 @@ const MovieCard = ({ movie, onFavoriteToggle, onWatchlistToggle }: MovieCardProp
     setIsTouching(false);
   };
 
-  const handleTouchMove = (e: React.TouchEvent) => {
+  const handleTouchMove = () => {
     // Cancel long press if user moves finger
     if (longPressTimeoutRef.current) {
       clearTimeout(longPressTimeoutRef.current);

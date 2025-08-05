@@ -2,21 +2,7 @@ import { useState, useEffect } from 'react';
 import styled from 'styled-components';
 import Link from 'next/link';
 import dynamic from 'next/dynamic';
-import { 
-  MdHelp, 
-  MdSearch, 
-  MdFavorite, 
-  MdBookmark, 
-  MdPerson, 
-  MdSettings,
-  MdMovie,
-  MdTv,
-  MdTrendingUp,
-  MdStar,
-  MdPlayArrow,
-  MdKeyboardArrowDown,
-  MdKeyboardArrowUp
-} from 'react-icons/md';
+
 
 // Create a loading component for the help page
 const HelpLoading = () => (
