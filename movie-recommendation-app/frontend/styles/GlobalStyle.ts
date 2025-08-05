@@ -163,61 +163,18 @@ const GlobalStyle = createGlobalStyle`
     border: 0;
   }
 
-  /* Animation keyframes */
+  /* Optimized animation keyframes - only keep what's actually used */
   @keyframes fadeIn {
-    from {
-      opacity: 0;
-      transform: translateY(20px);
-    }
-    to {
-      opacity: 1;
-      transform: translateY(0);
-    }
-  }
-
-  @keyframes slideInLeft {
-    from {
-      opacity: 0;
-      transform: translateX(-30px);
-    }
-    to {
-      opacity: 1;
-      transform: translateX(0);
-    }
-  }
-
-  @keyframes slideInRight {
-    from {
-      opacity: 0;
-      transform: translateX(30px);
-    }
-    to {
-      opacity: 1;
-      transform: translateX(0);
-    }
-  }
-
-  @keyframes scaleIn {
-    from {
-      opacity: 0;
-      transform: scale(0.9);
-    }
-    to {
-      opacity: 1;
-      transform: scale(1);
-    }
+    from { opacity: 0; transform: translateY(20px); }
+    to { opacity: 1; transform: translateY(0); }
   }
 
   @keyframes glow {
-    0%, 100% {
-      box-shadow: 0 0 20px rgba(0, 212, 255, 0.3);
-    }
-    50% {
-      box-shadow: 0 0 40px rgba(0, 212, 255, 0.5);
-    }
+    0%, 100% { box-shadow: 0 0 20px rgba(0, 212, 255, 0.3); }
+    50% { box-shadow: 0 0 40px rgba(0, 212, 255, 0.5); }
   }
 
-  /* Responsive utilities */
+  /* Optimized utility classes */
   .container {
     max-width: 1400px;
     margin: 0 auto;
@@ -225,27 +182,15 @@ const GlobalStyle = createGlobalStyle`
   }
 
   @media (max-width: 768px) {
-    .container {
-      padding: 0 1rem;
-    }
+    .container { padding: 0 1rem; }
   }
 
-  /* Glass morphism utility */
   .glass {
     background: rgba(255, 255, 255, 0.05);
     backdrop-filter: blur(20px);
     border: 1px solid rgba(255, 255, 255, 0.1);
   }
 
-  /* Gradient text utility */
-  .gradient-text {
-    background: linear-gradient(135deg, #FFFFFF 0%, #00D4FF 50%, #FFFFFF 100%);
-    -webkit-background-clip: text;
-    -webkit-text-fill-color: transparent;
-    background-clip: text;
-  }
-
-  /* Loading animation */
   .loading {
     display: inline-block;
     width: 20px;
@@ -257,9 +202,7 @@ const GlobalStyle = createGlobalStyle`
   }
 
   @keyframes spin {
-    to {
-      transform: rotate(360deg);
-    }
+    to { transform: rotate(360deg); }
   }
 `;
 

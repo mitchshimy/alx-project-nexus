@@ -26,7 +26,7 @@ const nextConfig: NextConfig = {
   
   // Experimental features for performance
   experimental: {
-    optimizeCss: false,
+    optimizeCss: false, // Disabled due to critters module issues
     optimizePackageImports: ['react-icons'],
   },
   
@@ -35,6 +35,15 @@ const nextConfig: NextConfig = {
     return [
       {
         source: '/images/:path*',
+        headers: [
+          {
+            key: 'Cache-Control',
+            value: 'public, max-age=31536000, immutable',
+          },
+        ],
+      },
+      {
+        source: '/_next/static/css/:path*',
         headers: [
           {
             key: 'Cache-Control',
@@ -109,6 +118,9 @@ const nextConfig: NextConfig = {
           },
         },
       };
+      
+      // CSS optimization
+      config.optimization.minimize = true;
     }
     
     return config;

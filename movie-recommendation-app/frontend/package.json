@@ -24,8 +24,10 @@
     "@types/react-dom": "^19",
     "@types/styled-components": "^5.1.34",
     "babel-plugin-styled-components": "^2.1.4",
+    "cssnano": "^7.1.0",
     "eslint": "^9",
     "eslint-config-next": "15.4.4",
+    "postcss-preset-env": "^10.2.4",
     "tailwindcss": "^4",
     "typescript": "^5"
   }

@@ -5,104 +5,99 @@ declare module 'styled-components' {
     colors: {
       primary: string;
       secondary: string;
-      accent: string;
+      background: string;
+      surface: string;
+      text: string;
+      textSecondary: string;
+      border: string;
+      overlay: string;
       success: string;
       warning: string;
       error: string;
-      background: string;
-      surface: string;
-      card: string;
-      border: string;
-      text: string;
-      textSecondary: string;
-      textMuted: string;
-      textInverse: string;
-      glass: string;
-      glassHover: string;
-      glassBorder: string;
-      gradientPrimary: string;
-      gradientSecondary: string;
-      gradientAccent: string;
-      gradientBackground: string;
-      gradientCard: string;
-      gradientGlass: string;
-      gradientText: string;
-      gradientGlow: string;
+      info: string;
     };
-    shadows: {
-      small: string;
-      medium: string;
-      large: string;
-      glow: string;
-      glowStrong: string;
-      card: string;
-      text: string;
-      glass: string;
+    fonts: {
+      body: string;
+      heading: string;
+    };
+    fontSizes: {
+      xs: string;
+      sm: string;
+      base: string;
+      lg: string;
+      xl: string;
+      '2xl': string;
+      '3xl': string;
+      '4xl': string;
+      '5xl': string;
+    };
+    fontWeights: {
+      light: number;
+      normal: number;
+      medium: number;
+      semibold: number;
+      bold: number;
+    };
+    spacing: {
+      0: string;
+      1: string;
+      2: string;
+      3: string;
+      4: string;
+      5: string;
+      6: string;
+      8: string;
+      10: string;
+      12: string;
+      16: string;
+      20: string;
+      24: string;
+      32: string;
     };
     borderRadius: {
       none: string;
-      small: string;
-      medium: string;
-      large: string;
+      sm: string;
+      base: string;
+      md: string;
+      lg: string;
       xl: string;
-      round: string;
+      '2xl': string;
+      full: string;
     };
-    spacing: {
-      xs: string;
+    shadows: {
+      sm: string;
+      base: string;
+      md: string;
+      lg: string;
+      xl: string;
+      glow: string;
+    };
+    transitions: {
+      fast: string;
+      base: string;
+      slow: string;
+    };
+    breakpoints: {
       sm: string;
       md: string;
       lg: string;
       xl: string;
-      xxl: string;
-      xxxl: string;
+      '2xl': string;
     };
-    typography: {
-      fontFamily: string;
-      fontSize: {
-        xs: string;
-        sm: string;
-        md: string;
-        lg: string;
-        xl: string;
-        xxl: string;
-        xxxl: string;
-        hero: string;
-        mega: string;
-        display: string;
-      };
-      fontWeight: {
-        light: number;
-        normal: number;
-        medium: number;
-        semibold: number;
-        bold: number;
-        extrabold: number;
-        black: number;
-      };
-      lineHeight: {
-        tight: number;
-        normal: number;
-        relaxed: number;
-      };
-    };
-    breakpoints: {
-      mobile: string;
-      tablet: string;
-      desktop: string;
-      wide: string;
-      ultra: string;
-    };
-    transitions: {
-      fast: string;
-      normal: string;
-      slow: string;
-      bounce: string;
-    };
-    effects: {
-      glass: string;
-      glassHover: string;
-      glow: string;
-      glowStrong: string;
+    zIndex: {
+      hide: number;
+      auto: string;
+      base: number;
+      docked: number;
+      dropdown: number;
+      sticky: number;
+      banner: number;
+      overlay: number;
+      modal: number;
+      popover: number;
+      skipLink: number;
+      toast: number;
+      tooltip: number;
     };
   }
 }
