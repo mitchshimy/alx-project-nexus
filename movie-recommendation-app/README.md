@@ -1,269 +1,456 @@
-# Movie Recommendation App
+# 🎬 Shimy Movies - Advanced Movie Recommendation Platform
 
-A modern, responsive movie and TV show recommendation application built with Next.js, Django, and TMDB API.
+A modern, full-stack movie recommendation application built with React/Next.js frontend and Django REST API backend, featuring real-time movie data from TMDB, advanced search capabilities, user authentication, and personalized recommendations.
 
-## Features
+![Shimy Movies](https://img.shields.io/badge/Shimy-Movies-purple?style=for-the-badge&logo=react)
+![React](https://img.shields.io/badge/React-18.0+-blue?style=for-the-badge&logo=react)
+![Next.js](https://img.shields.io/badge/Next.js-14.0+-black?style=for-the-badge&logo=next.js)
+![Django](https://img.shields.io/badge/Django-4.2+-green?style=for-the-badge&logo=django)
+![TypeScript](https://img.shields.io/badge/TypeScript-5.0+-blue?style=for-the-badge&logo=typescript)
 
-### Frontend (Next.js)
-- **Modern UI/UX**: Beautiful, responsive design with smooth animations
-- **Movie Discovery**: Browse trending, top-rated, and genre-specific content
-- **Search Functionality**: Search across movies and TV shows
-- **User Authentication**: Sign up, sign in, and profile management
-- **Favorites & Watchlist**: Save and manage your favorite content
-- **Responsive Design**: Works perfectly on desktop, tablet, and mobile
-- **Enhanced Mobile Touch**: Improved touch sensitivity with scroll detection to prevent accidental clicks
+## 📋 Table of Contents
 
-### Backend (Django)
-- **RESTful API**: Complete API with authentication and data management
-- **TMDB Integration**: Real-time movie data from The Movie Database
-- **User Management**: JWT-based authentication with user profiles
-- **Database**: PostgreSQL with optimized models and relationships
-- **Caching**: Redis-based caching for improved performance
-- **API Documentation**: Swagger/OpenAPI documentation
+- [Features](#-features)
+- [Technology Stack](#-technology-stack)
+- [Screenshots](#-screenshots)
+- [Getting Started](#-getting-started)
+- [API Documentation](#-api-documentation)
+- [Architecture](#-architecture)
+- [Contributing](#-contributing)
+- [License](#-license)
 
-## 🛠️ Tech Stack
+## ✨ Features
+
+### 🎯 Core Functionality
+- **Real-time Movie Data**: Live integration with TMDB API for up-to-date movie information
+- **Advanced Search**: Multi-type search (General, Actor, Genre) with intelligent suggestions
+- **User Authentication**: Secure JWT-based authentication with user profiles
+- **Personalized Experience**: User-specific favorites, watchlist, and ratings
+- **Responsive Design**: Mobile-first design with touch-optimized interactions
+
+### 🎬 Movie Discovery
+- **Hero Carousel**: Auto-advancing featured movies with trailer previews
+- **Multiple Categories**: Movies, TV Shows, Anime, K-Drama, Trending, Top Rated
+- **Smart Filtering**: Genre-based filtering and sorting options
+- **Movie Details**: Comprehensive movie information with cast, reviews, and similar movies
+- **Trailer Integration**: YouTube trailer integration with custom controls
+
+### 🔍 Advanced Search System
+- **Multi-Type Search**:
+  - **General Search**: Search across movies, TV shows, and people
+  - **Actor Search**: Find movies by specific actors
+  - **Genre Search**: Discover content by genre preferences
+- **Real-time Suggestions**: Intelligent search suggestions as you type
+- **Mobile Search Overlay**: Full-screen search experience on mobile devices
+- **Search History**: Remember recent searches for quick access
+
+### 👤 User Features
+- **User Profiles**: Detailed user profiles with activity statistics
+- **Favorites System**: Save and manage favorite movies/shows
+- **Watchlist Management**: Create and organize watchlists
+- **Rating System**: Rate movies with 1-5 star system and reviews
+- **Account Management**: Password changes, account deletion, preferences
+
+### 📱 Mobile Experience
+- **Touch-Optimized**: Enhanced touch sensitivity for mobile scrolling
+- **Mobile Autoplay**: Long-press for trailer preview, short-tap for navigation
+- **Responsive Navigation**: Collapsible sidebar and mobile menu
+- **Mobile Search**: Full-screen search overlay with type selection
+- **Touch Feedback**: Visual feedback for touch interactions
+
+### 🎨 UI/UX Features
+- **Modern Design**: Glassmorphism and neumorphism design elements
+- **Dark Theme**: Eye-friendly dark theme with purple accents
+- **Smooth Animations**: CSS animations and transitions
+- **Loading States**: Skeleton loading and progress indicators
+- **Error Handling**: User-friendly error messages and fallbacks
+
+### 🌐 Internationalization
+- **Multi-language Support**: English and Spanish language options
+- **Language Persistence**: Remember user language preferences
+- **Responsive Text**: Footer and navigation adapt to language changes
+
+### ⚙️ Settings & Preferences
+- **Video Quality**: Configurable video quality settings (360p, 480p, 720p, 1080p)
+- **Mobile Autoplay**: Toggle mobile trailer autoplay functionality
+- **Language Settings**: Change application language
+- **Account Settings**: Manage user account and preferences
+
+## 🛠 Technology Stack
 
 ### Frontend
-- **Framework**: Next.js 13+ with TypeScript
-- **Styling**: Styled Components
-- **State Management**: React Hooks
-- **Routing**: Next.js Router
-- **API Integration**: Fetch API with JWT authentication
+- **React 18**: Modern React with hooks and functional components
+- **Next.js 14**: Full-stack React framework with SSR/SSG
+- **TypeScript**: Type-safe JavaScript development
+- **Styled Components**: CSS-in-JS styling with theme support
+- **React Icons**: Comprehensive icon library
+- **React Router**: Client-side routing and navigation
 
 ### Backend
-- **Framework**: Django 4.2 with Django REST Framework
-- **Database**: PostgreSQL
-- **Caching**: Redis
-- **Authentication**: JWT (Simple JWT)
-- **Documentation**: Swagger/OpenAPI (drf-yasg)
-- **External API**: TMDB (The Movie Database)
+- **Django 4.2**: High-level Python web framework
+- **Django REST Framework**: Powerful API development toolkit
+- **PostgreSQL**: Robust relational database
+- **JWT Authentication**: Secure token-based authentication
+- **Celery**: Asynchronous task processing
+- **Redis**: Caching and session storage
 
-## 🚀 Quick Start
+### APIs & Services
+- **TMDB API**: Comprehensive movie and TV show database
+- **YouTube API**: Trailer and video integration
+- **Cloudinary**: Image optimization and CDN
+
+### Development Tools
+- **ESLint**: Code linting and formatting
+- **Prettier**: Code formatting
+- **TypeScript**: Static type checking
+- **Git**: Version control
+- **Docker**: Containerization (optional)
+
+## 📸 Screenshots
+
+### Desktop Experience
+- **Home Page**: Hero carousel with trending movies
+- **Movie Details**: Comprehensive movie information with tabs
+- **Search Results**: Advanced search with type filtering
+- **User Profile**: Personal dashboard with statistics
+
+### Mobile Experience
+- **Mobile Navigation**: Touch-optimized navigation menu
+- **Search Overlay**: Full-screen mobile search experience
+- **Movie Cards**: Touch-sensitive movie cards with autoplay
+- **Responsive Design**: Optimized for all screen sizes
+
+## 🚀 Getting Started
 
 ### Prerequisites
-- Node.js 16+ and npm/yarn
-- Python 3.8+
-- PostgreSQL
-- Redis
-- TMDB API Key
+- **Node.js** (v18 or higher)
+- **Python** (v3.10 or higher)
+- **PostgreSQL** (v13 or higher)
+- **Redis** (for caching and sessions)
+- **Git**
 
-### 1. Clone the Repository
+### Installation
+
+#### 1. Clone the Repository
 ```bash
-git clone <repository-url>
+git clone https://github.com/yourusername/movie-recommendation-app.git
 cd movie-recommendation-app
 ```
 
-### 2. Backend Setup
+#### 2. Backend Setup
 
-#### Navigate to backend directory
 ```bash
+# Navigate to backend directory
 cd backend
-```
 
-#### Create and activate virtual environment
-```bash
+# Create virtual environment
 python -m venv venv
-source venv/Scripts/activate  # Windows
-# or
-source venv/bin/activate      # Linux/Mac
-```
 
-#### Install dependencies
-```bash
+# Activate virtual environment
+# On Windows:
+venv\Scripts\activate
+# On macOS/Linux:
+source venv/bin/activate
+
+# Install dependencies
 pip install -r requirements.txt
-```
 
-#### Set up environment variables
-```bash
+# Set up environment variables
 cp env.example .env
 # Edit .env with your configuration
 ```
 
-#### Configure database
+#### 3. Database Setup
+
 ```bash
 # Create PostgreSQL database
-createdb movie_db
+createdb movie_recommendation_db
 
 # Run migrations
 python manage.py makemigrations
 python manage.py migrate
-```
 
-#### Create superuser
-```bash
+# Create superuser (optional)
 python manage.py createsuperuser
 ```
 
-#### Sync initial data
-```bash
-python manage.py sync_movies --type trending --pages 5
-```
+#### 4. Frontend Setup
 
-#### Start the backend server
 ```bash
-python manage.py runserver
-```
-
-### 3. Frontend Setup
-
-#### Navigate to frontend directory
-```bash
+# Navigate to frontend directory
 cd ../frontend
-```
 
-#### Install dependencies
-```bash
+# Install dependencies
 npm install
-```
 
-#### Set up environment variables
-```bash
-cp env.example .env.local
+# Set up environment variables
+cp .env.example .env.local
 # Edit .env.local with your configuration
 ```
 
-#### Start the development server
+#### 5. Environment Variables
+
+**Backend (.env)**
+```env
+DEBUG=True
+SECRET_KEY=your-secret-key-here
+DATABASE_URL=postgresql://user:password@localhost:5432/movie_recommendation_db
+TMDB_API_KEY=your-tmdb-api-key
+TMDB_READ_TOKEN=your-tmdb-read-token
+REDIS_URL=redis://localhost:6379
+```
+
+**Frontend (.env.local)**
+```env
+NEXT_PUBLIC_API_URL=http://localhost:8000/api
+NEXT_PUBLIC_TMDB_API_KEY=your-tmdb-api-key
+```
+
+#### 6. Run the Application
+
+**Backend (Terminal 1)**
 ```bash
+cd backend
+python manage.py runserver
+```
+
+**Frontend (Terminal 2)**
+```bash
+cd frontend
 npm run dev
 ```
 
-### 4. Access the Application
+**Background Tasks (Terminal 3)**
+```bash
+cd backend
+celery -A movie_api worker --loglevel=info
+```
+
+### Access the Application
 - **Frontend**: http://localhost:3000
-- **Backend API**: http://localhost:8000/api/v1
-- **API Documentation**: http://localhost:8000/swagger/
-- **Admin Panel**: http://localhost:8000/admin/
+- **Backend API**: http://localhost:8000/api
+- **Admin Panel**: http://localhost:8000/admin
 
-## 📁 Project Structure
+## 📚 API Documentation
 
+### Authentication Endpoints
+
+#### POST /api/users/register/
+Register a new user account.
+```json
+{
+  "username": "user@example.com",
+  "password": "securepassword123",
+  "confirm_password": "securepassword123"
+}
 ```
-movie-recommendation-app/
-├── frontend/                 # Next.js frontend
-│   ├── components/          # React components
-│   ├── pages/              # Next.js pages
-│   ├── utils/              # Utility functions
-│   ├── styles/             # Global styles
-│   ├── hooks/              # Custom React hooks
-│   ├── types/              # TypeScript type definitions
-│   ├── public/             # Static assets
-│   ├── package.json        # Frontend dependencies
+
+#### POST /api/users/login/
+Authenticate user and receive JWT token.
+```json
+{
+  "username": "user@example.com",
+  "password": "securepassword123"
+}
+```
+
+#### POST /api/users/change-password/
+Change user password (requires authentication).
+```json
+{
+  "current_password": "oldpassword",
+  "new_password": "newpassword123",
+  "confirm_password": "newpassword123"
+}
+```
+
+#### DELETE /api/users/delete-account/
+Delete user account and all associated data.
+```json
+{
+  "password": "currentpassword"
+}
+```
+
+### Movie Endpoints
+
+#### GET /api/movies/
+Get list of movies with filtering options.
+```
+Parameters:
+- type: trending, top_rated, movies, tv
+- page: page number (default: 1)
+```
+
+#### GET /api/movies/{tmdb_id}/
+Get detailed movie information.
+```
+Response includes:
+- Basic movie info
+- Cast and crew
+- Videos and trailers
+- Reviews and ratings
+- Similar movies
+- User-specific data (if authenticated)
+```
+
+#### GET /api/movies/search/
+Search movies and TV shows.
+```
+Parameters:
+- q: search query (required)
+- type: general, actor, genre (default: general)
+- page: page number (default: 1)
+```
+
+### User Features Endpoints
+
+#### GET /api/users/favorites/
+Get user's favorite movies (requires authentication).
+
+#### POST /api/users/favorites/
+Add movie to favorites (requires authentication).
+```json
+{
+  "movie_id": 12345
+}
+```
+
+#### DELETE /api/users/favorites/{movie_id}/
+Remove movie from favorites (requires authentication).
+
+#### GET /api/users/watchlist/
+Get user's watchlist (requires authentication).
+
+#### POST /api/users/watchlist/
+Add movie to watchlist (requires authentication).
+```json
+{
+  "movie_id": 12345
+}
+```
+
+#### DELETE /api/users/watchlist/{movie_id}/
+Remove movie from watchlist (requires authentication).
+
+#### POST /api/users/ratings/
+Rate a movie (requires authentication).
+```json
+{
+  "movie_id": 12345,
+  "rating": 5,
+  "review": "Excellent movie!"
+}
+```
+
+#### GET /api/users/stats/
+Get user statistics (requires authentication).
+```json
+{
+  "favorites_count": 15,
+  "watchlist_count": 8,
+  "ratings_count": 12,
+  "member_since": "2024-01-15"
+}
+```
+
+### Utility Endpoints
+
+#### GET /api/genres/
+Get list of available movie genres.
+
+#### GET /api/health/
+Health check endpoint.
+
+## 🏗 Architecture
+
+### Frontend Architecture
+```
+frontend/
+├── components/          # Reusable UI components
+│   ├── Header.tsx      # Navigation and search
+│   ├── Sidebar.tsx     # Navigation menu
+│   ├── MovieCard.tsx   # Movie display component
+│   ├── Hero.tsx        # Hero carousel
 │   └── ...
-├── backend/                 # Django backend
-│   ├── movie_api/          # Django project settings
-│   ├── users/              # User authentication & profiles
-│   ├── movies/             # Movie data & user interactions
-│   ├── api/                # Main API endpoints
-│   ├── management/         # Custom management commands
-│   ├── manage.py           # Django management script
+├── pages/              # Next.js pages
+│   ├── index.tsx       # Home page
+│   ├── movies/         # Movie-related pages
+│   ├── search.tsx      # Search results
 │   └── ...
-└── README.md              # This file
+├── utils/              # Utility functions
+│   ├── api.ts          # API integration
+│   ├── translations.ts # Internationalization
+│   └── ...
+└── styles/             # Global styles and themes
 ```
 
-## 🔧 Configuration
-
-### Environment Variables
-
-#### Backend (.env)
-```env
-# Django Settings
-SECRET_KEY=your-secret-key
-DEBUG=True
-
-# Database Settings
-DB_NAME=movie_db
-DB_USER=postgres
-DB_PASSWORD=your-password
-DB_HOST=localhost
-DB_PORT=5432
-
-# Redis Settings
-REDIS_HOST=localhost
-REDIS_PORT=6379
-REDIS_DB=0
-
-# TMDB API Settings
-TMDB_API_KEY=your-tmdb-api-key
+### Backend Architecture
+```
+backend/
+├── movies/             # Movie-related models and views
+│   ├── models.py       # Movie, Favorite, Watchlist models
+│   ├── views.py        # API endpoints
+│   ├── services.py     # TMDB integration
+│   └── serializers.py  # Data serialization
+├── users/              # User-related functionality
+│   ├── models.py       # User and UserProfile models
+│   ├── views.py        # Authentication endpoints
+│   └── serializers.py  # User data serialization
+├── movie_api/          # Django project settings
+│   ├── settings.py     # Application settings
+│   ├── urls.py         # URL routing
+│   └── wsgi.py         # WSGI configuration
+└── requirements.txt    # Python dependencies
 ```
 
-#### Frontend (.env.local)
-```env
-# Django Backend API URL
-NEXT_PUBLIC_API_URL=http://localhost:8000/api/v1
+### Data Flow
+1. **User Request**: Frontend makes API request
+2. **Authentication**: JWT token validation
+3. **TMDB Integration**: Backend fetches data from TMDB
+4. **Database**: Store/retrieve user-specific data
+5. **Response**: Return formatted data to frontend
+6. **Rendering**: Frontend displays data with React
+
+## 🔧 Development
+
+### Code Style
+- **Frontend**: ESLint + Prettier configuration
+- **Backend**: PEP 8 Python style guide
+- **TypeScript**: Strict type checking enabled
+
+### Testing
+```bash
+# Frontend tests
+npm run test
+
+# Backend tests
+python manage.py test
 ```
 
-## 📚 API Endpoints
+### Building for Production
+```bash
+# Frontend build
+npm run build
 
-### Authentication
-- `POST /api/v1/users/register/` - User registration
-- `POST /api/v1/users/login/` - User login
-- `GET /api/v1/users/profile/` - Get user profile
-- `PUT /api/v1/users/profile/` - Update user profile
+# Backend collect static
+python manage.py collectstatic
+```
 
-### Movies
-- `GET /api/v1/movies/` - List movies with filtering
-- `GET /api/v1/movies/search/` - Search movies and TV shows
-- `GET /api/v1/movies/{tmdb_id}/` - Get movie details
-- `POST /api/v1/movies/favorites/` - Add to favorites
-- `DELETE /api/v1/movies/favorites/{id}/` - Remove from favorites
-- `POST /api/v1/movies/watchlist/` - Add to watchlist
-- `DELETE /api/v1/movies/watchlist/{id}/` - Remove from watchlist
+### Deployment
+- **Frontend**: Vercel, Netlify, or any static hosting
+- **Backend**: Heroku, DigitalOcean, AWS, or any Python hosting
+- **Database**: PostgreSQL hosting (Heroku Postgres, AWS RDS)
+- **Cache**: Redis hosting (Redis Cloud, AWS ElastiCache)
 
-## 🎯 Key Features
 
-### User Experience
-- **Seamless Authentication**: JWT-based auth with automatic token refresh
-- **Real-time Search**: Instant search results with backend integration
-- **Personalized Content**: User-specific favorites and watchlist
-- **Responsive Design**: Beautiful UI that works on all devices
 
-### Developer Experience
-- **Type Safety**: Full TypeScript support
-- **API Documentation**: Interactive Swagger documentation
-- **Hot Reloading**: Fast development with Next.js
-- **Database Management**: Django admin interface
-- **Caching**: Redis-based performance optimization
 
-## 🔄 Data Flow
-
-1. **User Registration/Login**: Frontend → Django Backend → JWT Token
-2. **Movie Discovery**: Frontend → Django Backend → TMDB API → Cached Response
-3. **User Actions**: Frontend → Django Backend → Database Storage
-4. **Search**: Frontend → Django Backend → TMDB Search API → Filtered Results
-
-## 🚀 Deployment
-
-### Backend Deployment
-1. Set `DEBUG=False` in settings
-2. Configure production database
-3. Set up Redis for caching
-4. Configure static files
-5. Set up HTTPS
-6. Configure CORS for your domain
-
-### Frontend Deployment
-1. Build the application: `npm run build`
-2. Deploy to Vercel, Netlify, or your preferred platform
-3. Configure environment variables
-4. Set up custom domain
-
-## 🤝 Contributing
-
-1. Fork the repository
-2. Create a feature branch
-3. Make your changes
-4. Add tests
-5. Submit a pull request
-
-## 📄 License
-
-This project is licensed under the MIT License.
 
 ## 🙏 Acknowledgments
 
-- [TMDB](https://www.themoviedb.org/) for providing the movie database API
-- [Next.js](https://nextjs.org/) for the amazing React framework
-- [Django](https://www.djangoproject.com/) for the robust backend framework
-- [Styled Components](https://styled-components.com/) for the beautiful styling solution
-
-## 📞 Support
-
-If you have any questions or need help, please open an issue on GitHub or contact the development team. 
+- **TMDB**: For providing comprehensive movie and TV show data
+- **React/Next.js**: For the excellent frontend framework
+- **Django**: For the robust backend framework
+- **Styled Components**: For the excellent styling solution
+- **React Icons**: For the comprehensive icon library
