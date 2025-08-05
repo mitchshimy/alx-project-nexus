@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
+import Image from 'next/image';
 import styled from 'styled-components';
 
 interface LazyImageProps {
@@ -29,10 +30,7 @@ const ImageContainer = styled.div<{ isLoaded: boolean }>`
   }
 `;
 
-const StyledImage = styled.img<{ isLoaded: boolean }>`
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
+const StyledNextImage = styled(Image)<{ isLoaded: boolean }>`
   opacity: ${props => props.isLoaded ? 1 : 0};
   transition: opacity 0.3s ease-in-out;
 `;
@@ -49,7 +47,6 @@ const LazyImage: React.FC<LazyImageProps> = ({
 }) => {
   const [isLoaded, setIsLoaded] = useState(false);
   const [isInView, setIsInView] = useState(priority);
-  const imageRef = useRef<HTMLImageElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -93,14 +90,23 @@ const LazyImage: React.FC<LazyImageProps> = ({
       style={{ width, height }}
     >
       {isInView && (
-        <StyledImage
-          ref={imageRef}
+        <StyledNextImage
           src={src}
           alt={alt}
+          width={width || 300}
+          height={height || 450}
           isLoaded={isLoaded}
           onLoad={handleLoad}
           onError={handleError}
+          priority={priority}
           loading={priority ? 'eager' : 'lazy'}
+          placeholder="blur"
+          blurDataURL="data:image/jpeg;base64,/9j/4AAQSkZJRgABAQAAAQABAAD/2wBDAAYEBQYFBAYGBQYHBwYIChAKCgkJChQODwwQFxQYGBcUFhYaHSUfGhsjHBYWICwgIyYnKSopGR8tMC0oMCUoKSj/2wBDAQcHBwoIChMKChMoGhYaKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCj/wAARCAAIAAoDASIAAhEBAxEB/8QAFQABAQAAAAAAAAAAAAAAAAAAAAv/xAAhEAACAQMDBQAAAAAAAAAAAAABAgMABAUGIWGRkqGx0f/EABUBAQEAAAAAAAAAAAAAAAAAAAMF/8QAGhEAAgIDAAAAAAAAAAAAAAAAAAECEgMRkf/aAAwDAQACEQMRAD8AltJagyeH0AthI5xdrLcNM91BF5pX2HaH9bcfaSXWGaRmknyJckliyjqTzSlT54b6bk+h0R//2Q=="
+          style={{
+            width: '100%',
+            height: '100%',
+            objectFit: 'cover',
+          }}
         />
       )}
     </ImageContainer>

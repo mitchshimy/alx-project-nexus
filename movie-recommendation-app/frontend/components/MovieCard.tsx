@@ -317,6 +317,14 @@ const MovieCard = ({ movie, onFavoriteToggle, onWatchlistToggle }: MovieCardProp
     
     isHoveringRef.current = true;
     
+    // Start preloading movie details for faster navigation
+    if (movie.tmdb_id) {
+      // Preload movie details in the background
+      movieAPI.getMovieDetails(movie.tmdb_id).catch(() => {
+        // Silently fail - this is just for preloading
+      });
+    }
+    
     // Only start hover timer if auto-play is enabled and user is authenticated
     if (shouldAutoPlayTrailer() && getAuthToken()) {
       hoverTimeoutRef.current = setTimeout(async () => {

@@ -1,7 +1,7 @@
 // components/Hero.tsx
-import React, { useEffect, useState, useCallback } from 'react';
+import React, { useEffect, useState, useCallback, useMemo } from 'react';
 import styled from 'styled-components';
-import { movieAPI } from '@/utils/api';
+import { movieAPI, getTrendingMovies } from '@/utils/api';
 import { TMDBMovie } from '@/types/tmdb';
 import Link from 'next/link';
 import { MdChevronLeft, MdChevronRight, MdPlayArrow } from 'react-icons/md';
@@ -374,31 +374,35 @@ const Indicator = styled.button<{ $isActive: boolean }>`
 
 interface HeroProps {
   isSidebarOpen?: boolean;
+  initialMovies?: TMDBMovie[];
 }
 
-const Hero = ({ isSidebarOpen = false }: HeroProps) => {
-  const [movies, setMovies] = useState<TMDBMovie[]>([]);
+const Hero = ({ isSidebarOpen = false, initialMovies = [] }: HeroProps) => {
+  const [movies, setMovies] = useState<TMDBMovie[]>(initialMovies);
   const [currentIndex, setCurrentIndex] = useState(0);
-  const [loading, setLoading] = useState(true);
-  const [genres, setGenres] = useState<any[]>([]);
+  const [loading, setLoading] = useState(initialMovies.length === 0);
+  const [genres, setGenres] = useState<{ [key: number]: string }>({});
+
+  // Memoize current movie to prevent unnecessary re-renders
+  const currentMovie = useMemo(() => movies[currentIndex], [movies, currentIndex]);
 
   useEffect(() => {
     const fetchTopMovies = async () => {
+      if (initialMovies.length > 0) {
+        setMovies(initialMovies);
+        setLoading(false);
+        return;
+      }
+
       try {
         setLoading(true);
-        const res = await movieAPI.getMovies({ type: 'trending', page: 1 });
+        const trendingMovies = await movieAPI.getMovies({ type: 'trending', page: 1 });
         
-        // Check if response has error property
-        if (res && res.error) {
-          console.error('Error fetching movies:', res.error);
-          return;
+        if (trendingMovies && !trendingMovies.error && trendingMovies.results) {
+          setMovies(trendingMovies.results.slice(0, 5)); // Limit to top 5 movies for Hero
         }
-        
-        if (res?.results?.length > 0) {
-          setMovies(res.results.slice(0, 5)); // Get top 5 movies
-        }
-      } catch (err) {
-        console.error('Error fetching movies:', err);
+      } catch (error) {
+        console.error('Error fetching trending movies:', error);
       } finally {
         setLoading(false);
       }
@@ -407,10 +411,12 @@ const Hero = ({ isSidebarOpen = false }: HeroProps) => {
     const fetchGenres = async () => {
       try {
         const genresData = await movieAPI.getGenres();
-        if (Array.isArray(genresData)) {
-          setGenres(genresData);
-        } else if (genresData && Array.isArray(genresData.genres)) {
-          setGenres(genresData.genres);
+        if (genresData && Array.isArray(genresData)) {
+          const genresMap: { [key: number]: string } = {};
+          genresData.forEach((genre: any) => {
+            genresMap[genre.id] = genre.name;
+          });
+          setGenres(genresMap);
         }
       } catch (error) {
         console.error('Error fetching genres:', error);
@@ -419,7 +425,7 @@ const Hero = ({ isSidebarOpen = false }: HeroProps) => {
 
     fetchTopMovies();
     fetchGenres();
-  }, []);
+  }, [initialMovies]);
 
   const nextSlide = useCallback(() => {
     setCurrentIndex((prev) => (prev + 1) % movies.length);
@@ -470,8 +476,6 @@ const Hero = ({ isSidebarOpen = false }: HeroProps) => {
     );
   }
 
-  const currentMovie = movies[currentIndex];
-
   const releaseYear = currentMovie?.release_date 
     ? new Date(currentMovie.release_date).getFullYear() 
     : 'N/A';
@@ -482,8 +486,7 @@ const Hero = ({ isSidebarOpen = false }: HeroProps) => {
 
   // Convert genre ID to actual genre name
   const getGenreName = (genreId: number) => {
-    const genre = genres.find(g => g.id === genreId);
-    return genre ? genre.name : 'Unknown';
+    return genres[genreId] || 'Unknown';
   };
 
   const genre = currentMovie?.genre_ids?.[0] 

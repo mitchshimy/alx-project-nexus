@@ -1,6 +1,7 @@
 import { useRouter } from 'next/router';
 import { useEffect, useState, useRef } from 'react';
 import styled from 'styled-components';
+import Image from 'next/image';
 import { SkeletonPoster, SkeletonTitle, SkeletonText } from '@/components/Skeleton';
 import { TMDBMovie, TMDBCast } from '@/types/tmdb';
 import { movieAPI } from '@/utils/api';
@@ -804,9 +805,18 @@ export default function MovieDetailPage({ isSidebarOpen = false }: { isSidebarOp
   const [navigatingToSimilar, setNavigatingToSimilar] = useState(false);
   const [currentVideoQuality, setCurrentVideoQuality] = useState<string>('720p');
   const navigatingTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const abortControllerRef = useRef<AbortController | null>(null);
 
   useEffect(() => {
     if (!id) return;
+    
+    // Cancel any ongoing request
+    if (abortControllerRef.current) {
+      abortControllerRef.current.abort();
+    }
+    
+    // Create new abort controller for this request
+    abortControllerRef.current = new AbortController();
     
     // Reset state when ID changes
     setMovie(null);
@@ -829,8 +839,14 @@ export default function MovieDetailPage({ isSidebarOpen = false }: { isSidebarOp
         setLoading(true);
         console.log(`Fetching movie details for ID: ${id}`);
         
-        // Fetch movie details from our backend API
-        const movieData = await movieAPI.getMovieDetails(Number(id));
+        // Fetch movie details from our backend API with timeout
+        const movieData = await Promise.race([
+          movieAPI.getMovieDetails(Number(id)),
+          new Promise((_, reject) => 
+            setTimeout(() => reject(new Error('Request timeout')), 10000)
+          )
+        ]);
+        
         console.log('Movie data received:', movieData);
         console.log('Movie poster_path:', movieData?.poster_path);
         console.log('Movie tmdb_id:', movieData?.tmdb_id);
@@ -883,21 +899,27 @@ export default function MovieDetailPage({ isSidebarOpen = false }: { isSidebarOp
           const validSimilarMovies = movieData.similar.results.filter((movie: any) => movie.tmdb_id || movie.id);
           setSimilarMovies(validSimilarMovies.slice(0, 10));
         }
+
+        setLoading(false);
+      } catch (error: any) {
+        console.error('Error fetching movie details:', error);
         
-      } catch (err: any) {
-        console.error('Error fetching movie details:', err);
-        console.error('Error details:', {
-          message: err.message,
-          stack: err.stack,
-          id: id
-        });
-        setError(err.message || 'Failed to fetch movie details');
-      } finally {
+        // Only set error if the request wasn't aborted
+        if (error.name !== 'AbortError') {
+          setError('Failed to load movie details. Please try again.');
+        }
         setLoading(false);
       }
     };
 
     fetchData();
+
+    // Cleanup function
+    return () => {
+      if (abortControllerRef.current) {
+        abortControllerRef.current.abort();
+      }
+    };
   }, [id]);
 
   useEffect(() => {
@@ -1236,9 +1258,11 @@ export default function MovieDetailPage({ isSidebarOpen = false }: { isSidebarOp
                         <div key={company.id} style={{ marginBottom: '8px' }}>
                           {company.name}
                           {company.logo_path && (
-                            <img 
+                            <Image 
                               src={`https://image.tmdb.org/t/p/w92${company.logo_path}`}
                               alt={company.name}
+                              width={92}
+                              height={20}
                               style={{ 
                                 height: '20px', 
                                 marginLeft: '8px',

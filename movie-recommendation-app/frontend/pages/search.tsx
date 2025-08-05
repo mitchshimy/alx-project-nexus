@@ -20,6 +20,26 @@ type TMDBSearchResult = TMDBMovie & {
   media_type?: 'movie' | 'tv' | 'person';
 };
 
+// Simple cache for search results
+const searchCache = new Map<string, { data: any; timestamp: number }>();
+const CACHE_DURATION = 2 * 60 * 1000; // 2 minutes
+
+// Cache helper functions
+const getCacheKey = (query: string, page: number, searchType: string) => {
+  return `${query}:${page}:${searchType}`;
+};
+
+const getCachedSearch = (cacheKey: string) => {
+  const cached = searchCache.get(cacheKey);
+  if (cached && Date.now() - cached.timestamp < CACHE_DURATION) {
+    return cached.data;
+  }
+  return null;
+};
+
+const setCachedSearch = (cacheKey: string, data: any) => {
+  searchCache.set(cacheKey, { data, timestamp: Date.now() });
+};
 
 
 const SearchContainer = styled.div<{ isSidebarOpen?: boolean }>`
@@ -510,6 +530,37 @@ export default function Search({ isSidebarOpen }: { isSidebarOpen?: boolean }) {
       const startTime = Date.now();
       console.log(`📡 Making API call for "${searchQuery}" page ${page} with type: ${searchType}`);
       
+      const cacheKey = getCacheKey(searchQuery, page, searchType);
+      const cachedData = getCachedSearch(cacheKey);
+
+      if (cachedData) {
+        console.log('💾 Using cached search results');
+        const transformedResults = cachedData.results.map((item: TMDBSearchResult) => ({
+          ...item,
+          title: item.title || item.name || 'Unknown Title',
+          release_date: item.release_date || item.first_air_date || '',
+        })) as SearchResult[];
+
+        console.log(`🔄 Setting ${transformedResults.length} new results for page ${page}`);
+        console.log('📊 First 3 movies:', transformedResults.slice(0, 3).map(m => m.title));
+        
+        // Always replace results for pagination (don't accumulate)
+        setSearchResults(transformedResults);
+        
+        setCurrentPage(page);
+        setTotalPages(cachedData.total_pages || 1);
+        setTotalResults(cachedData.total_results || 0);
+        
+        const endTime = Date.now();
+        setSearchTime(endTime - startTime);
+        
+        // Force a re-render
+        setForceUpdate(prev => prev + 1);
+        
+        console.log(`✅ Successfully loaded ${transformedResults.length} results. Total: ${cachedData.total_results}, Pages: ${cachedData.total_pages}, Current page: ${page}`);
+        return;
+      }
+
       const data = await movieAPI.searchMovies(searchQuery, page, searchType);
       
       if (data?.error) {
@@ -541,6 +592,9 @@ export default function Search({ isSidebarOpen }: { isSidebarOpen?: boolean }) {
         
         // Force a re-render
         setForceUpdate(prev => prev + 1);
+        
+        // Cache the results for future use
+        setCachedSearch(cacheKey, data);
         
         console.log(`✅ Successfully loaded ${transformedResults.length} results. Total: ${data.total_results}, Pages: ${data.total_pages}, Current page: ${page}`);
       } else {
@@ -579,6 +633,10 @@ export default function Search({ isSidebarOpen }: { isSidebarOpen?: boolean }) {
   const handlePageChange = (page: number) => {
     if (page >= 1 && page <= totalPages && page !== currentPage) {
       console.log(`🚀 Changing to page ${page}`);
+      
+      // Scroll to top instantly
+      window.scrollTo({ top: 0, behavior: 'instant' });
+      
       // Clear API cache to ensure fresh data
       clearApiCache();
       loadSearchResults(page);

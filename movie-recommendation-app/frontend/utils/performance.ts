@@ -1,6 +1,7 @@
 // Performance optimization utilities
+import { useCallback, useRef, useEffect } from 'react';
 
-// Debounce function for expensive operations
+// Debounce function for performance
 export const debounce = <T extends (...args: any[]) => any>(
   func: T,
   wait: number
@@ -12,7 +13,7 @@ export const debounce = <T extends (...args: any[]) => any>(
   };
 };
 
-// Throttle function for scroll events
+// Throttle function for performance
 export const throttle = <T extends (...args: any[]) => any>(
   func: T,
   limit: number
@@ -29,7 +30,7 @@ export const throttle = <T extends (...args: any[]) => any>(
 
 // Intersection Observer for lazy loading
 export const createIntersectionObserver = (
-  callback: (entries: IntersectionObserverEntry[]) => void,
+  callback: IntersectionObserverCallback,
   options: IntersectionObserverInit = {}
 ) => {
   if (typeof window === 'undefined') return null;
@@ -44,44 +45,35 @@ export const createIntersectionObserver = (
 // Preload critical resources
 export const preloadCriticalResources = () => {
   if (typeof window === 'undefined') return;
-
-  // Preload critical fonts
-  const link = document.createElement('link');
-  link.rel = 'preload';
-  link.as = 'font';
-  link.href = '/fonts/inter-var.woff2';
-  link.crossOrigin = 'anonymous';
-  document.head.appendChild(link);
-
-  // Preload critical images
-  const criticalImages = [
-    '/images/shimy.png',
-    // Add other critical images here
+  
+  // Preload critical API endpoints
+  const criticalEndpoints = [
+    '/api/movies/trending',
+    '/api/movies/discover',
+    '/api/movies/search',
   ];
-
-  criticalImages.forEach(src => {
-    const img = new Image();
-    img.src = src;
+  
+  criticalEndpoints.forEach(endpoint => {
+    const link = document.createElement('link');
+    link.rel = 'prefetch';
+    link.href = endpoint;
+    document.head.appendChild(link);
   });
 };
 
-// Optimize images based on device
-export const getOptimizedImageUrl = (
-  baseUrl: string,
-  width: number,
-  quality: number = 80
-): string => {
-  if (!baseUrl) return '';
+// Get optimized image URL
+export const getOptimizedImageUrl = (src: string, width: number = 300): string => {
+  if (!src) return '';
   
-  // Use TMDB's image optimization
-  if (baseUrl.includes('image.tmdb.org')) {
-    return `${baseUrl}?w=${width}&q=${quality}`;
+  // If it's already a TMDB image, return as is
+  if (src.includes('image.tmdb.org')) {
+    return src;
   }
   
-  return baseUrl;
+  return src;
 };
 
-// Memory management for large lists
+// Create virtualized list for large datasets
 export const createVirtualizedList = <T>(
   items: T[],
   itemHeight: number,
@@ -91,36 +83,34 @@ export const createVirtualizedList = <T>(
   const startIndex = Math.floor(window.scrollY / itemHeight);
   const endIndex = Math.min(startIndex + visibleCount, items.length);
   
-  return {
-    visibleItems: items.slice(startIndex, endIndex),
-    startIndex,
-    endIndex,
-    totalHeight: items.length * itemHeight,
-  };
+  return items.slice(startIndex, endIndex);
 };
 
-// Performance monitoring
+// Measure performance metrics
 export const measurePerformance = (name: string, fn: () => void) => {
-  if (process.env.NODE_ENV === 'development') {
-    const start = performance.now();
-    fn();
-    const end = performance.now();
-    console.log(`${name} took ${end - start}ms`);
-  } else {
-    fn();
-  }
+  const start = performance.now();
+  fn();
+  const end = performance.now();
+  console.log(`${name} took ${end - start}ms`);
 };
 
-// Cache management
-export const createCache = <T>(maxSize: number = 100) => {
-  const cache = new Map<string, T>();
+// Create LRU cache
+export const createCache = <K, V>(maxSize: number = 100) => {
+  const cache = new Map<K, V>();
   
   return {
-    get: (key: string): T | undefined => {
-      return cache.get(key);
+    get: (key: K): V | undefined => {
+      const value = cache.get(key);
+      if (value !== undefined) {
+        cache.delete(key);
+        cache.set(key, value);
+      }
+      return value;
     },
-    set: (key: string, value: T): void => {
-      if (cache.size >= maxSize) {
+    set: (key: K, value: V): void => {
+      if (cache.has(key)) {
+        cache.delete(key);
+      } else if (cache.size >= maxSize) {
         const firstKey = cache.keys().next().value;
         if (firstKey) {
           cache.delete(firstKey);
@@ -128,16 +118,128 @@ export const createCache = <T>(maxSize: number = 100) => {
       }
       cache.set(key, value);
     },
-    clear: (): void => {
-      cache.clear();
-    },
+    has: (key: K): boolean => cache.has(key),
+    delete: (key: K): boolean => cache.delete(key),
+    clear: (): void => cache.clear(),
+    size: (): number => cache.size,
   };
 };
 
-// Bundle size optimization
-export const dynamicImport = (importFn: () => Promise<any>) => {
-  return importFn().catch(err => {
-    console.error('Dynamic import failed:', err);
+// Dynamic import with error handling
+export const dynamicImport = async (modulePath: string) => {
+  try {
+    const module = await import(modulePath);
+    return module.default || module;
+  } catch (error) {
+    console.error(`Failed to load module: ${modulePath}`, error);
     return null;
+  }
+};
+
+// Get memory usage
+export const getMemoryUsage = () => {
+  if (typeof window === 'undefined' || !('performance' in window)) {
+    return null;
+  }
+  
+  const memory = (performance as any).memory;
+  if (!memory) return null;
+  
+  return {
+    used: memory.usedJSHeapSize,
+    total: memory.totalJSHeapSize,
+    limit: memory.jsHeapSizeLimit,
+  };
+};
+
+// Optimize imports for better tree shaking
+export const optimizeImports = () => {
+  // This function can be used to dynamically import heavy components
+  // when they're actually needed
+};
+
+// Service Worker registration
+export const registerServiceWorker = async () => {
+  if (typeof window === 'undefined' || !('serviceWorker' in navigator)) {
+    return;
+  }
+  
+  try {
+    const registration = await navigator.serviceWorker.register('/sw.js');
+    console.log('SW registered: ', registration);
+  } catch (error) {
+    console.log('SW registration failed: ', error);
+  }
+};
+
+// Add resource hints
+export const addResourceHints = () => {
+  if (typeof window === 'undefined') return;
+  
+  // Add DNS prefetch for external domains
+  const domains = ['image.tmdb.org', 'fonts.googleapis.com'];
+  
+  domains.forEach(domain => {
+    const link = document.createElement('link');
+    link.rel = 'dns-prefetch';
+    link.href = `//${domain}`;
+    document.head.appendChild(link);
   });
-}; 
+};
+
+// Get optimal image format
+export const getOptimalImageFormat = (): string => {
+  if (typeof window === 'undefined') return 'webp';
+  
+  const canvas = document.createElement('canvas');
+  canvas.width = 1;
+  canvas.height = 1;
+  
+  try {
+    canvas.toDataURL('image/avif');
+    return 'avif';
+  } catch {
+    try {
+      canvas.toDataURL('image/webp');
+      return 'webp';
+    } catch {
+      return 'jpeg';
+    }
+  }
+};
+
+// Performance Monitor class
+class PerformanceMonitor {
+  private static instance: PerformanceMonitor;
+  private metrics: Map<string, number[]> = new Map();
+  
+  private constructor() {}
+  
+  static getInstance(): PerformanceMonitor {
+    if (!PerformanceMonitor.instance) {
+      PerformanceMonitor.instance = new PerformanceMonitor();
+    }
+    return PerformanceMonitor.instance;
+  }
+  
+  recordMetric(name: string, value: number) {
+    if (!this.metrics.has(name)) {
+      this.metrics.set(name, []);
+    }
+    this.metrics.get(name)!.push(value);
+  }
+  
+  getAverageMetric(name: string): number {
+    const values = this.metrics.get(name);
+    if (!values || values.length === 0) return 0;
+    
+    const sum = values.reduce((acc, val) => acc + val, 0);
+    return sum / values.length;
+  }
+  
+  logMetrics() {
+    console.log('Performance Metrics:', Object.fromEntries(this.metrics));
+  }
+}
+
+export const performanceMonitor = PerformanceMonitor.getInstance(); 
