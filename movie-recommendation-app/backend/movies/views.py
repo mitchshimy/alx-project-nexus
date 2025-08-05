@@ -353,7 +353,7 @@ class SearchView(generics.ListAPIView):
     
     This endpoint allows searching through movies and TV shows using:
     - **q**: Search query (required)
-    - **type**: Search type - 'general', 'actor', or 'genre' (optional, defaults to 'general')
+    - **type**: Search type - 'actor', or 'genre' (optional, defaults to 'general')
     - **page**: Page number for pagination
     
     The search is performed against TMDB's database and returns matching results.
@@ -617,7 +617,8 @@ class FavoriteListView(generics.ListCreateAPIView):
     
     def get_queryset(self):
         print(f"FavoriteListView: User {self.request.user.email} requesting favorites")
-        favorites = Favorite.objects.filter(user=self.request.user)
+        # Use select_related to fetch movie data in a single query
+        favorites = Favorite.objects.filter(user=self.request.user).select_related('movie')
         print(f"FavoriteListView: Found {favorites.count()} favorites for user")
         for fav in favorites:
             print(f"FavoriteListView: Favorite - {fav.movie.title} (ID: {fav.movie.tmdb_id})")
@@ -703,7 +704,8 @@ class WatchlistListView(generics.ListCreateAPIView):
     
     def get_queryset(self):
         print(f"WatchlistListView: User {self.request.user.email} requesting watchlist")
-        watchlist = Watchlist.objects.filter(user=self.request.user)
+        # Use select_related to fetch movie data in a single query
+        watchlist = Watchlist.objects.filter(user=self.request.user).select_related('movie')
         print(f"WatchlistListView: Found {watchlist.count()} items in watchlist for user")
         for item in watchlist:
             print(f"WatchlistListView: Watchlist Item - {item.movie.title} (ID: {item.movie.tmdb_id})")

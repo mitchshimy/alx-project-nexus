@@ -152,8 +152,8 @@ export default function Favorites() {
     try {
       setLoading(true);
       
-      // Clear cache to ensure fresh data
-      clearApiCache();
+      // Don't clear cache every time - only clear if there's an error
+      // clearApiCache();
       
       const data = await movieAPI.getFavorites();
       
@@ -189,6 +189,8 @@ export default function Favorites() {
     } catch (err: unknown) {
       console.error('Error loading favorites:', err);
       setFavorites([]);
+      // Only clear cache on error
+      clearApiCache();
     } finally {
       setLoading(false);
     }
@@ -207,9 +209,15 @@ export default function Favorites() {
     loadFavorites();
     
     // Add focus event listener to refresh data when user returns to the page
+    // Use a debounced approach to prevent excessive API calls
+    let focusTimeout: NodeJS.Timeout;
     const handleFocus = () => {
       if (isAuthenticated) {
-        loadFavorites();
+        // Debounce the focus event to prevent multiple rapid calls
+        clearTimeout(focusTimeout);
+        focusTimeout = setTimeout(() => {
+          loadFavorites();
+        }, 1000); // Wait 1 second before making the API call
       }
     };
     
@@ -217,6 +225,7 @@ export default function Favorites() {
     
     return () => {
       window.removeEventListener('focus', handleFocus);
+      clearTimeout(focusTimeout);
     };
   }, [isAuthenticated]);
 
@@ -224,10 +233,10 @@ export default function Favorites() {
 
   const handleFavoriteToggle = () => {
     // Refresh the favorites list when an item is toggled
-    // Add a small delay to ensure the backend has processed the change
+    // Reduce delay for better responsiveness
     setTimeout(() => {
       loadFavorites();
-    }, 500);
+    }, 200); // Reduced from 500ms to 200ms
   };
 
   const handleManualRefresh = () => {

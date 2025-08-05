@@ -146,8 +146,8 @@ export default function Watchlist() {
     try {
       setLoading(true);
       
-      // Clear cache to ensure fresh data
-      clearApiCache();
+      // Don't clear cache every time - only clear if there's an error
+      // clearApiCache();
       
       const data = await movieAPI.getWatchlist();
       
@@ -183,6 +183,8 @@ export default function Watchlist() {
     } catch (err: unknown) {
       console.error('Error loading watchlist:', err);
       setWatchlist([]);
+      // Only clear cache on error
+      clearApiCache();
     } finally {
       setLoading(false);
     }
@@ -190,10 +192,10 @@ export default function Watchlist() {
 
   const handleWatchlistToggle = () => {
     // Refresh the watchlist when an item is toggled
-    // Add a small delay to ensure the backend has processed the change
+    // Reduce delay for better responsiveness
     setTimeout(() => {
       loadWatchlist();
-    }, 500);
+    }, 200); // Reduced from 500ms to 200ms
   };
 
   const handleManualRefresh = () => {
@@ -213,9 +215,15 @@ export default function Watchlist() {
     loadWatchlist();
     
     // Add focus event listener to refresh data when user returns to the page
+    // Use a debounced approach to prevent excessive API calls
+    let focusTimeout: NodeJS.Timeout;
     const handleFocus = () => {
       if (isAuthenticated) {
-        loadWatchlist();
+        // Debounce the focus event to prevent multiple rapid calls
+        clearTimeout(focusTimeout);
+        focusTimeout = setTimeout(() => {
+          loadWatchlist();
+        }, 1000); // Wait 1 second before making the API call
       }
     };
     
@@ -223,6 +231,7 @@ export default function Watchlist() {
     
     return () => {
       window.removeEventListener('focus', handleFocus);
+      clearTimeout(focusTimeout);
     };
   }, [isAuthenticated]);
 

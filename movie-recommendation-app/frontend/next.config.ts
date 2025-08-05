@@ -18,9 +18,6 @@ const nextConfig: NextConfig = {
   // Enable compression
   compress: true,
   
-  // Enable SWC minification
-  swcMinify: true,
-  
   // Compiler options
   compiler: {
     styledComponents: true,

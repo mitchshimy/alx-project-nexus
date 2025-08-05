@@ -7,6 +7,7 @@ const API_TIMEOUT = 25000; // Increased from 15000ms to 25000ms for more patienc
 // Simple in-memory cache for API responses
 const cache = new Map<string, { data: any; timestamp: number }>();
 const CACHE_DURATION = 5 * 60 * 1000; // 5 minutes
+const USER_CACHE_DURATION = 2 * 60 * 1000; // 2 minutes for user-specific data
 
 // Authentication token management
 export const getAuthToken = (): string | null => {
@@ -86,8 +87,15 @@ const getCacheKey = (endpoint: string, options: RequestInit = {}) => {
 
 const getCachedResponse = (cacheKey: string) => {
   const cached = cache.get(cacheKey);
-  if (cached && Date.now() - cached.timestamp < CACHE_DURATION) {
-    return cached.data;
+  if (cached) {
+    // Use shorter cache duration for user-specific data
+    const duration = cacheKey.includes('favorites:') || cacheKey.includes('watchlist:') 
+      ? USER_CACHE_DURATION 
+      : CACHE_DURATION;
+    
+    if (Date.now() - cached.timestamp < duration) {
+      return cached.data;
+    }
   }
   return null;
 };
@@ -519,12 +527,22 @@ export const movieAPI = {
   // Get favorites
   getFavorites: async () => {
     try {
+      // Use a shorter cache duration for user-specific data
+      const cacheKey = `favorites:${getAuthToken()}`;
+      const cached = getCachedResponse(cacheKey);
+      if (cached) {
+        return cached;
+      }
+      
       const response = await apiRequest('/movies/favorites/');
       
       // Return empty array if there was an error
       if (response && response.error) {
         return [];
       }
+      
+      // Cache the response for 2 minutes (shorter than general cache)
+      setCachedResponse(cacheKey, response);
       
       return response;
     } catch (error) {
@@ -545,6 +563,10 @@ export const movieAPI = {
       if (response && response.error) {
         return { error: response.error, errorTitle: response.errorTitle };
       }
+      
+      // Invalidate favorites cache when adding
+      const cacheKey = `favorites:${getAuthToken()}`;
+      cache.delete(cacheKey);
       
       return response;
     } catch (error) {
@@ -568,6 +590,10 @@ export const movieAPI = {
         return { error: response.error, errorTitle: response.errorTitle };
       }
       
+      // Invalidate favorites cache when removing
+      const cacheKey = `favorites:${getAuthToken()}`;
+      cache.delete(cacheKey);
+      
       return response;
     } catch (error) {
       // Handle any thrown errors and return them as error objects
@@ -590,6 +616,10 @@ export const movieAPI = {
         return { error: response.error, errorTitle: response.errorTitle };
       }
       
+      // Invalidate favorites cache when removing
+      const cacheKey = `favorites:${getAuthToken()}`;
+      cache.delete(cacheKey);
+      
       return response;
     } catch (error) {
       // Handle any thrown errors and return them as error objects
@@ -604,12 +634,22 @@ export const movieAPI = {
   // Watchlist
   getWatchlist: async () => {
     try {
+      // Use a shorter cache duration for user-specific data
+      const cacheKey = `watchlist:${getAuthToken()}`;
+      const cached = getCachedResponse(cacheKey);
+      if (cached) {
+        return cached;
+      }
+      
       const response = await apiRequest('/movies/watchlist/');
       
       // Return empty array if there was an error
       if (response && response.error) {
         return [];
       }
+      
+      // Cache the response for 2 minutes (shorter than general cache)
+      setCachedResponse(cacheKey, response);
       
       return response;
     } catch (error) {
@@ -629,6 +669,10 @@ export const movieAPI = {
       if (response && response.error) {
         return { error: response.error, errorTitle: response.errorTitle };
       }
+      
+      // Invalidate watchlist cache when adding
+      const cacheKey = `watchlist:${getAuthToken()}`;
+      cache.delete(cacheKey);
       
       return response;
     } catch (error) {
@@ -652,6 +696,10 @@ export const movieAPI = {
         return { error: response.error, errorTitle: response.errorTitle };
       }
       
+      // Invalidate watchlist cache when removing
+      const cacheKey = `watchlist:${getAuthToken()}`;
+      cache.delete(cacheKey);
+      
       return response;
     } catch (error) {
       // Handle any thrown errors and return them as error objects
@@ -673,6 +721,10 @@ export const movieAPI = {
       if (response && response.error) {
         return { error: response.error, errorTitle: response.errorTitle };
       }
+      
+      // Invalidate watchlist cache when removing
+      const cacheKey = `watchlist:${getAuthToken()}`;
+      cache.delete(cacheKey);
       
       return response;
     } catch (error) {

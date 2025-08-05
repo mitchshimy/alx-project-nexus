@@ -91,9 +91,20 @@ class MovieSerializer(serializers.ModelSerializer):
         return None
 
 
+class SimpleMovieSerializer(serializers.ModelSerializer):
+    """Simplified movie serializer for favorites and watchlist to avoid N+1 queries"""
+    
+    class Meta:
+        model = Movie
+        fields = ['id', 'tmdb_id', 'title', 'overview', 'poster_path', 'backdrop_path',
+                 'release_date', 'vote_average', 'vote_count', 'popularity', 'genre_ids',
+                 'media_type', 'created_at', 'runtime']
+        read_only_fields = ['id', 'created_at']
+
+
 class FavoriteSerializer(serializers.ModelSerializer):
     """Serializer for user favorites"""
-    movie = MovieSerializer(read_only=True)
+    movie = SimpleMovieSerializer(read_only=True)
     movie_id = serializers.IntegerField(write_only=True)
     
     class Meta:
@@ -103,51 +114,59 @@ class FavoriteSerializer(serializers.ModelSerializer):
     
     def create(self, validated_data):
         movie_id = validated_data.pop('movie_id')
-        print(f"FavoriteSerializer: Creating favorite for movie_id: {movie_id}")
+        user = self.context['request'].user
         
-        # Try to get existing movie first
-        try:
-            movie = Movie.objects.get(tmdb_id=movie_id)
-            print(f"FavoriteSerializer: Found existing movie: {movie.title}")
-        except Movie.DoesNotExist:
-            print(f"FavoriteSerializer: Movie with tmdb_id {movie_id} not found, creating...")
-            # If movie doesn't exist, we need to fetch it from TMDB
-            from .services import TMDBService
-            tmdb_service = TMDBService()
-            try:
-                movie_data = tmdb_service.get_movie_details(movie_id)
-                movie = Movie.objects.create(
-                    tmdb_id=movie_id,
-                    title=movie_data.get('title', ''),
-                    overview=movie_data.get('overview', ''),
-                    poster_path=movie_data.get('poster_path'),
-                    backdrop_path=movie_data.get('backdrop_path'),
-                    release_date=movie_data.get('release_date'),
-                    vote_average=movie_data.get('vote_average', 0.0),
-                    vote_count=movie_data.get('vote_count', 0),
-                    popularity=movie_data.get('popularity', 0.0),
-                    genre_ids=movie_data.get('genre_ids', []),
-                    media_type=movie_data.get('media_type', 'movie')
-                )
-                print(f"FavoriteSerializer: Created new movie: {movie.title}")
-            except Exception as e:
-                print(f"FavoriteSerializer: Error fetching movie from TMDB: {e}")
-                # Create a minimal movie record
-                movie = Movie.objects.create(
-                    tmdb_id=movie_id,
-                    title=f'Movie {movie_id}',
-                    overview='',
-                    media_type='movie'
-                )
+        # Get or create the movie
+        movie, created = Movie.objects.get_or_create(
+            tmdb_id=movie_id,
+            defaults={
+                'title': f'Movie {movie_id}',  # Placeholder title
+                'overview': '',
+                'poster_path': '',
+                'backdrop_path': '',
+                'vote_average': 0.0,
+                'vote_count': 0,
+                'popularity': 0.0,
+                'genre_ids': [],
+                'media_type': 'movie'
+            }
+        )
         
-        favorite = Favorite.objects.create(movie=movie, **validated_data)
-        print(f"FavoriteSerializer: Created favorite: {favorite.user.email} - {favorite.movie.title}")
+        # Create the favorite
+        favorite, created = Favorite.objects.get_or_create(
+            user=user,
+            movie=movie,
+            defaults=validated_data
+        )
+        
+        if not created:
+            # If favorite already exists, update the created_at timestamp
+            favorite.save()
+        
         return favorite
+    
+    def validate_movie_id(self, value):
+        """Validate that the movie_id is a positive integer"""
+        if not isinstance(value, int) or value <= 0:
+            raise serializers.ValidationError("movie_id must be a positive integer")
+        return value
+    
+    def validate(self, data):
+        """Validate that the user hasn't already favorited this movie"""
+        user = self.context['request'].user
+        movie_id = data.get('movie_id')
+        
+        if movie_id:
+            # Check if user already has this movie in favorites
+            if Favorite.objects.filter(user=user, movie__tmdb_id=movie_id).exists():
+                raise serializers.ValidationError("This movie is already in your favorites")
+        
+        return data
 
 
 class WatchlistSerializer(serializers.ModelSerializer):
     """Serializer for user watchlist"""
-    movie = MovieSerializer(read_only=True)
+    movie = SimpleMovieSerializer(read_only=True)
     movie_id = serializers.IntegerField(write_only=True)
     
     class Meta:
@@ -157,46 +176,54 @@ class WatchlistSerializer(serializers.ModelSerializer):
     
     def create(self, validated_data):
         movie_id = validated_data.pop('movie_id')
-        print(f"WatchlistSerializer: Creating watchlist item for movie_id: {movie_id}")
+        user = self.context['request'].user
         
-        # Try to get existing movie first
-        try:
-            movie = Movie.objects.get(tmdb_id=movie_id)
-            print(f"WatchlistSerializer: Found existing movie: {movie.title}")
-        except Movie.DoesNotExist:
-            print(f"WatchlistSerializer: Movie with tmdb_id {movie_id} not found, creating...")
-            # If movie doesn't exist, we need to fetch it from TMDB
-            from .services import TMDBService
-            tmdb_service = TMDBService()
-            try:
-                movie_data = tmdb_service.get_movie_details(movie_id)
-                movie = Movie.objects.create(
-                    tmdb_id=movie_id,
-                    title=movie_data.get('title', ''),
-                    overview=movie_data.get('overview', ''),
-                    poster_path=movie_data.get('poster_path'),
-                    backdrop_path=movie_data.get('backdrop_path'),
-                    release_date=movie_data.get('release_date'),
-                    vote_average=movie_data.get('vote_average', 0.0),
-                    vote_count=movie_data.get('vote_count', 0),
-                    popularity=movie_data.get('popularity', 0.0),
-                    genre_ids=movie_data.get('genre_ids', []),
-                    media_type=movie_data.get('media_type', 'movie')
-                )
-                print(f"WatchlistSerializer: Created new movie: {movie.title}")
-            except Exception as e:
-                print(f"WatchlistSerializer: Error fetching movie from TMDB: {e}")
-                # Create a minimal movie record
-                movie = Movie.objects.create(
-                    tmdb_id=movie_id,
-                    title=f'Movie {movie_id}',
-                    overview='',
-                    media_type='movie'
-                )
+        # Get or create the movie
+        movie, created = Movie.objects.get_or_create(
+            tmdb_id=movie_id,
+            defaults={
+                'title': f'Movie {movie_id}',
+                'overview': '',
+                'poster_path': '',
+                'backdrop_path': '',
+                'vote_average': 0.0,
+                'vote_count': 0,
+                'popularity': 0.0,
+                'genre_ids': [],
+                'media_type': 'movie'
+            }
+        )
         
-        watchlist_item = Watchlist.objects.create(movie=movie, **validated_data)
-        print(f"WatchlistSerializer: Created watchlist item: {watchlist_item.user.email} - {watchlist_item.movie.title}")
+        # Create the watchlist item
+        watchlist_item, created = Watchlist.objects.get_or_create(
+            user=user,
+            movie=movie,
+            defaults=validated_data
+        )
+        
+        if not created:
+            # If watchlist item already exists, update the created_at timestamp
+            watchlist_item.save()
+        
         return watchlist_item
+    
+    def validate_movie_id(self, value):
+        """Validate that the movie_id is a positive integer"""
+        if not isinstance(value, int) or value <= 0:
+            raise serializers.ValidationError("movie_id must be a positive integer")
+        return value
+    
+    def validate(self, data):
+        """Validate that the user hasn't already added this movie to watchlist"""
+        user = self.context['request'].user
+        movie_id = data.get('movie_id')
+        
+        if movie_id:
+            # Check if user already has this movie in watchlist
+            if Watchlist.objects.filter(user=user, movie__tmdb_id=movie_id).exists():
+                raise serializers.ValidationError("This movie is already in your watchlist")
+        
+        return data
 
 
 class MovieRatingSerializer(serializers.ModelSerializer):
@@ -211,10 +238,54 @@ class MovieRatingSerializer(serializers.ModelSerializer):
     
     def create(self, validated_data):
         movie_id = validated_data.pop('movie_id')
-        movie, created = Movie.objects.get_or_create(tmdb_id=movie_id)
-        return MovieRating.objects.create(movie=movie, **validated_data)
+        user = self.context['request'].user
+        
+        # Get or create the movie
+        movie, created = Movie.objects.get_or_create(
+            tmdb_id=movie_id,
+            defaults={
+                'title': f'Movie {movie_id}',  # Placeholder title
+                'overview': '',
+                'poster_path': '',
+                'backdrop_path': '',
+                'vote_average': 0.0,
+                'vote_count': 0,
+                'popularity': 0.0,
+                'genre_ids': [],
+                'media_type': 'movie'
+            }
+        )
+        
+        # Create or update the rating
+        rating, created = MovieRating.objects.get_or_create(
+            user=user,
+            movie=movie,
+            defaults=validated_data
+        )
+        
+        if not created:
+            # Update existing rating
+            for attr, value in validated_data.items():
+                setattr(rating, attr, value)
+            rating.save()
+        
+        return rating
     
     def update(self, instance, validated_data):
-        if 'movie_id' in validated_data:
-            validated_data.pop('movie_id')
-        return super().update(instance, validated_data) 
+        """Update an existing rating"""
+        for attr, value in validated_data.items():
+            setattr(instance, attr, value)
+        instance.save()
+        return instance
+    
+    def validate_rating(self, value):
+        """Validate that rating is between 1 and 5"""
+        if not isinstance(value, int) or value < 1 or value > 5:
+            raise serializers.ValidationError("Rating must be between 1 and 5")
+        return value
+    
+    def validate_movie_id(self, value):
+        """Validate that the movie_id is a positive integer"""
+        if not isinstance(value, int) or value <= 0:
+            raise serializers.ValidationError("movie_id must be a positive integer")
+        return value 
