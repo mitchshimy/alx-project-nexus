@@ -1,6 +1,6 @@
 import React from 'react';
 import styled, { keyframes } from 'styled-components';
-
+import Image from 'next/image';
 
 
 const lightSweep = keyframes`
@@ -68,10 +68,10 @@ const LogoContainer = styled.div`
   z-index: 1;
 `;
 
-const ShimyImage = styled.img`
+const ShimyImage = styled.div`
   width: 90%;
   height: 90%;
-  object-fit: contain;
+  position: relative;
   filter: drop-shadow(0 0 30px rgba(0, 212, 255, 0.5));
 `;
 
@@ -173,7 +173,16 @@ const SplashScreen: React.FC<SplashScreenProps> = ({ progress, status }) => {
   return (
     <SplashContainer>
       <LogoContainer>
-        <ShimyImage src="/images/shimy.png" alt="Shimy Movies" />
+        <ShimyImage>
+          <Image
+            src="/images/shimy.png"
+            alt="Shimy Movies"
+            fill
+            style={{ objectFit: 'contain' }}
+            priority
+            sizes="90vw"
+          />
+        </ShimyImage>
       </LogoContainer>
       
       <ContentOverlay>
