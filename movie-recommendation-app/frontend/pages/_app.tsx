@@ -156,74 +156,68 @@ export default function App({ Component, pageProps }: AppProps) {
   useEffect(() => {
     if (!showSplash || !isClient || !isInitialized) return; // Only run if splash should show
 
-    // const startTime = Date.now(); // Removed unused variable
-    // const duration = 1500; // Removed unused variable
-
     const preloadContent = async () => {
       try {
-        // Start preloading content with faster progress updates
+        // Start preloading content immediately but don't wait for completion
         setStatus('Loading trending movies...');
         setPreloadProgress(40);
 
+        // Start all API calls in parallel but don't await them
         const trendingPromise = fetchTrendingMovies();
+        const topRatedPromise = fetchTopRatedMovies();
+        const popularPromise = fetchPopularMovies();
 
         setStatus('Loading top rated movies...');
         setPreloadProgress(70);
 
-        const topRatedPromise = fetchTopRatedMovies();
-
         setStatus('Loading popular movies...');
         setPreloadProgress(90);
-
-        const popularPromise = fetchPopularMovies();
 
         setStatus('Preparing your experience...');
         setPreloadProgress(95);
 
-        // Wait for all API calls to complete with timeout
-        const timeoutPromise = new Promise<[any, any, any]>((resolve) => 
-          setTimeout(() => {
-            console.log('API preload timeout - using fallback data');
-            resolve([[], [], []]); // Return empty arrays on timeout
-          }, 5000) // Reduced from 10 seconds to 5 seconds
-        );
-
-        const [trending, topRated, popular] = await Promise.race([
-          Promise.all([trendingPromise, topRatedPromise, popularPromise]),
-          timeoutPromise
-        ]) as [any, any, any];
-
-        // Store preloaded content globally and in session storage
-        preloadedContent.trending = trending;
-        preloadedContent.topRated = topRated;
-        preloadedContent.popular = popular;
-        preloadedContent.isPreloaded = true;
-
-        // Cache in session storage with timestamp
-        if (typeof window !== 'undefined') {
-          sessionStorage.setItem('shimy_last_preload', Date.now().toString());
-          sessionStorage.setItem('shimy_cached_content', JSON.stringify({
-            trending,
-            topRated,
-            popular
-          }));
-        }
-
-        setStatus('Welcome to Shimy!');
-        setPreloadProgress(100);
-
-        // Reduced wait time for completion
+        // Show splash for a minimum time (1.5 seconds) then hide it
         setTimeout(() => {
-          setShowSplash(false);
-        }, 100); // Reduced from 200ms to 100ms
+          setStatus('Welcome to Shimy!');
+          setPreloadProgress(100);
+          
+          // Hide splash screen after minimum time
+          setTimeout(() => {
+            setShowSplash(false);
+          }, 100);
+        }, 1500); // Show splash for at least 1.5 seconds
+
+        // Continue loading content in background
+        Promise.all([trendingPromise, topRatedPromise, popularPromise])
+          .then(([trending, topRated, popular]) => {
+            // Store preloaded content globally and in session storage
+            preloadedContent.trending = trending;
+            preloadedContent.topRated = topRated;
+            preloadedContent.popular = popular;
+            preloadedContent.isPreloaded = true;
+
+            // Cache in session storage with timestamp
+            if (typeof window !== 'undefined') {
+              sessionStorage.setItem('shimy_last_preload', Date.now().toString());
+              sessionStorage.setItem('shimy_cached_content', JSON.stringify({
+                trending,
+                topRated,
+                popular
+              }));
+            }
+            console.log('Content loaded in background');
+          })
+          .catch((error) => {
+            console.error('Error loading content in background:', error);
+          });
 
       } catch (error) {
-        console.error('Error preloading content:', error);
+        console.error('Error in preload setup:', error);
         setStatus('Ready to explore!');
         setPreloadProgress(100);
         setTimeout(() => {
           setShowSplash(false);
-        }, 200);
+        }, 100);
       }
     };
 
