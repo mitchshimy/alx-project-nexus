@@ -7,18 +7,7 @@ import { movieAPI, clearApiCache, clearMovieDetailsCache } from '@/utils/api';
 import { buildYouTubeEmbedUrl, getOptimalQuality, getQualityDisplayName } from '@/utils/videoPlayer';
 import { FaStar, FaRegStar, FaImdb, FaPlay } from 'react-icons/fa';
 import { MdDateRange, MdAccessTime, MdLanguage, MdMoney } from 'react-icons/md';
-import dynamic from 'next/dynamic';
 
-// Dynamically import heavy components to reduce initial bundle size
-const TrailerPreview = dynamic(() => import('@/components/TrailerPreview'), {
-  ssr: false,
-  loading: () => <div style={{ height: '400px', background: '#1a1a1a' }} />
-});
-
-const ConfirmationModal = dynamic(() => import('@/components/ConfirmationModal'), {
-  ssr: false,
-  loading: () => null
-});
 
 const Container = styled.div<{ isSidebarOpen?: boolean }>`
   max-width: ${props => props.isSidebarOpen ? '100%' : '1200px'};

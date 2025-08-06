@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/router';
 import styled from 'styled-components';
-import { movieAPI, getAuthToken, clearApiCache, clearWatchlistCache } from '@/utils/api';
+import { movieAPI, getAuthToken, clearWatchlistCache } from '@/utils/api';
 import MovieCard from '@/components/MovieCard';
 
 const MovieGrid = styled.div`
@@ -232,7 +232,7 @@ export default function Watchlist() {
     };
     
     // Listen for global watchlist update events
-    const handleWatchlistUpdated = (event: Event) => {
+    const handleWatchlistUpdated = () => {
       console.log('Watchlist updated globally, refreshing watchlist page');
       // Update immediately without showing loading state
       setTimeout(() => {
@@ -252,9 +252,9 @@ export default function Watchlist() {
 
   
 
-  const handleSignIn = () => {
+  const handleSignIn = async () => {
     // Store current path and redirect to sign-in page
-    const { redirectToSignIn } = require('@/utils/api');
+    const { redirectToSignIn } = await import('@/utils/api');
     redirectToSignIn(router.asPath);
   };
 

@@ -552,9 +552,9 @@ function ProfileContent({ isSidebarOpen }: { isSidebarOpen?: boolean }) {
     }
   }, [user]);
 
-  const handleSignIn = () => {
+  const handleSignIn = async () => {
     // Store current path and redirect to sign-in page
-    const { redirectToSignIn } = require('@/utils/api');
+    const { redirectToSignIn } = await import('@/utils/api');
     redirectToSignIn(router.asPath);
   };
 

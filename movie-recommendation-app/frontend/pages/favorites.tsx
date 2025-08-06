@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/router';
 import styled from 'styled-components';
-import { movieAPI, getAuthToken, clearApiCache, clearFavoritesCache } from '@/utils/api';
+import { movieAPI, getAuthToken, clearFavoritesCache } from '@/utils/api';
 import MovieCard from '@/components/MovieCard';
 
 const MovieGrid = styled.div`
@@ -226,7 +226,7 @@ export default function Favorites() {
     };
     
     // Listen for global favorites update events
-    const handleFavoritesUpdated = (event: Event) => {
+    const handleFavoritesUpdated = () => {
       console.log('Favorites updated globally, refreshing favorites page');
       // Update immediately without showing loading state
       setTimeout(() => {
@@ -258,9 +258,9 @@ export default function Favorites() {
     loadFavorites(true);
   };
 
-  const handleSignIn = () => {
+  const handleSignIn = async () => {
     // Store current path and redirect to sign-in page
-    const { redirectToSignIn } = require('@/utils/api');
+    const { redirectToSignIn } = await import('@/utils/api');
     redirectToSignIn(router.asPath);
   };
 

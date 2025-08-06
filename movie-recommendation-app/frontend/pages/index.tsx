@@ -571,37 +571,7 @@ export default function Home({ isSidebarOpen = false }: { isSidebarOpen?: boolea
     }
   };
 
-  const loadTrendingContent = async () => {
-    try {
-      console.log('Loading trending content...');
-      const data = await movieAPI.getMovies({ type: 'trending', page: 1 });
-      console.log('Trending content response:', data);
-      if (data?.results?.length) {
-        setTrendingMovies(data.results.slice(0, 21));
-        console.log('Set trending movies:', data.results.slice(0, 21));
-      } else {
-        console.log('No trending movies data');
-      }
-    } catch (err) {
-      console.error('Error loading trending content:', err);
-    }
-  };
 
-  const loadTopRatedContent = async () => {
-    try {
-      console.log('Loading top rated content...');
-      const data = await movieAPI.getMovies({ type: 'top_rated', page: 1 });
-      console.log('Top rated content response:', data);
-      if (data?.results?.length) {
-        setTopRatedMovies(data.results.slice(0, 21));
-        console.log('Set top rated movies:', data.results.slice(0, 21));
-      } else {
-        console.log('No top rated movies data');
-      }
-    } catch (err) {
-      console.error('Error loading top rated content:', err);
-    }
-  };
 
   // Optimized content loading - use single trending call for both featured and trending
   const loadAllContentOptimized = async () => {

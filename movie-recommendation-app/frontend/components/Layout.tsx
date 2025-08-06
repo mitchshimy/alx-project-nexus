@@ -289,7 +289,6 @@ interface LayoutProps {
 
 export default function Layout({ children }: LayoutProps) {
   const [isSidebarOpen, setSidebarOpen] = useState(false);
-  const [isAuthenticated, setIsAuthenticated] = useState(false);
 
   const [footerContent, setFooterContent] = useState({
     description: '',
@@ -316,14 +315,9 @@ export default function Layout({ children }: LayoutProps) {
 
   // Handle authentication state changes
   useEffect(() => {
-    // Check initial auth state
-    const token = getAuthToken();
-    setIsAuthenticated(!!token);
-
     // Listen for auth state changes
     const handleAuthStateChange = (event: CustomEvent) => {
-      const { isAuthenticated: authState, reason } = event.detail || {};
-      setIsAuthenticated(authState);
+      const { reason } = event.detail || {};
       
       // If token expired, we might want to redirect to login
       if (reason === 'token_expired') {

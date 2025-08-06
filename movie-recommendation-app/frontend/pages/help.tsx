@@ -17,7 +17,7 @@ const HelpLoading = () => (
 );
 
 // Main help component
-function HelpContent({ isSidebarOpen }: { isSidebarOpen?: boolean }) {
+function HelpContent() {
   const [searchTerm, setSearchTerm] = useState('');
   const [openItems, setOpenItems] = useState<{ [key: string]: boolean }>({});
 

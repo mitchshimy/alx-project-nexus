@@ -138,44 +138,7 @@ const Button = styled.button`
   }
 `;
 
-const Divider = styled.div`
-  text-align: center;
-  margin: 1.5rem 0;
-  color: #ccc;
-  position: relative;
 
-  &::before {
-    content: '';
-    position: absolute;
-    top: 50%;
-    left: 0;
-    right: 0;
-    height: 1px;
-    background: rgba(255, 255, 255, 0.2);
-  }
-
-  span {
-    background: rgba(255, 255, 255, 0.05);
-    padding: 0 1rem;
-    position: relative;
-  }
-`;
-
-const SocialButton = styled.button`
-  width: 100%;
-  padding: 0.75rem;
-  border-radius: 8px;
-  border: 1px solid rgba(255, 255, 255, 0.2);
-  background: rgba(255, 255, 255, 0.1);
-  color: #f0f0f0;
-  font-size: 1rem;
-  cursor: pointer;
-  transition: background 0.2s ease;
-
-  &:hover {
-    background: rgba(255, 255, 255, 0.15);
-  }
-`;
 
 const Footer = styled.div`
   text-align: center;
