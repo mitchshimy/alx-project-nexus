@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import styled, { keyframes } from 'styled-components';
 
 
@@ -170,13 +170,47 @@ interface SplashScreenProps {
 }
 
 const SplashScreen: React.FC<SplashScreenProps> = ({ progress, status }) => {
+  // Start with PNG in production, WebP in development
+  const isProduction = process.env.NODE_ENV === 'production';
+  const [imageSrc, setImageSrc] = useState(isProduction ? '/images/shimy.png' : '/images/shimy.webp');
+  const [hasWebPError, setHasWebPError] = useState(false);
+
+  useEffect(() => {
+    // Only test WebP in development or if we want to try it in production
+    if (!isProduction) {
+      const testWebP = () => {
+        const img = new Image();
+        img.onload = () => {
+          // WebP loads successfully, use it
+          setImageSrc('/images/shimy.webp');
+        };
+        img.onerror = () => {
+          // WebP failed, use PNG
+          setImageSrc('/images/shimy.png');
+          setHasWebPError(true);
+        };
+        img.src = '/images/shimy.webp';
+      };
+
+      testWebP();
+    }
+  }, [isProduction]);
+
+  const handleImageError = () => {
+    if (!hasWebPError) {
+      setImageSrc('/images/shimy.png');
+      setHasWebPError(true);
+    }
+  };
+
   return (
     <SplashContainer>
       <LogoContainer>
-        <picture>
-          <source srcSet="/images/shimy.webp" type="image/webp" />
-          <ShimyImage src="/images/shimy.png" alt="Shimy Movies" />
-        </picture>
+        <ShimyImage 
+          src={imageSrc} 
+          alt="Shimy Movies" 
+          onError={handleImageError}
+        />
       </LogoContainer>
       
       <ContentOverlay>
