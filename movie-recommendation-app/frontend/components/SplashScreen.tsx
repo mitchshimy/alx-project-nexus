@@ -173,7 +173,10 @@ const SplashScreen: React.FC<SplashScreenProps> = ({ progress, status }) => {
   return (
     <SplashContainer>
       <LogoContainer>
-        <ShimyImage src="/images/shimy.png" alt="Shimy Movies" />
+        <picture>
+          <source srcSet="/images/shimy.webp" type="image/webp" />
+          <ShimyImage src="/images/shimy.png" alt="Shimy Movies" />
+        </picture>
       </LogoContainer>
       
       <ContentOverlay>
