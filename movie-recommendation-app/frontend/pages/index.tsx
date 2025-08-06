@@ -532,6 +532,29 @@ export default function Home({ isSidebarOpen = false }: { isSidebarOpen?: boolea
   const [error, setError] = useState<string | null>(null);
   const router = useRouter();
 
+  // Check for preloaded content first
+  const checkPreloadedContent = () => {
+    if (typeof window !== 'undefined') {
+      const cachedContent = sessionStorage.getItem('shimy_cached_content');
+      if (cachedContent) {
+        try {
+          const cached = JSON.parse(cachedContent);
+          if (cached.trending?.results && cached.topRated?.results && cached.popular?.results) {
+            console.log('Using preloaded content from cache');
+            setFeaturedMovies(cached.trending.results.slice(0, 21));
+            setTrendingMovies(cached.trending.results.slice(0, 21));
+            setTopRatedMovies(cached.topRated.results.slice(0, 21));
+            setLoading(false);
+            return true;
+          }
+        } catch (e) {
+          console.error('Failed to parse cached content:', e);
+        }
+      }
+    }
+    return false;
+  };
+
   const loadFeaturedContent = async () => {
     try {
       console.log('Loading featured content...');
@@ -580,13 +603,51 @@ export default function Home({ isSidebarOpen = false }: { isSidebarOpen?: boolea
     }
   };
 
+  // Optimized content loading - use single trending call for both featured and trending
+  const loadAllContentOptimized = async () => {
+    try {
+      console.log('Loading all content with optimization...');
+      
+      // Load trending and top rated in parallel
+      const [trendingData, topRatedData] = await Promise.all([
+        movieAPI.getMovies({ type: 'trending', page: 1 }),
+        movieAPI.getMovies({ type: 'top_rated', page: 1 })
+      ]);
+      
+      if (trendingData?.results?.length) {
+        const trendingMovies = trendingData.results.slice(0, 21);
+        setFeaturedMovies(trendingMovies);
+        setTrendingMovies(trendingMovies);
+        console.log('Set featured and trending movies from single API call');
+      }
+      
+      if (topRatedData?.results?.length) {
+        setTopRatedMovies(topRatedData.results.slice(0, 21));
+        console.log('Set top rated movies');
+      }
+      
+    } catch (err) {
+      console.error('Error loading optimized content:', err);
+      throw err;
+    }
+  };
+
   useEffect(() => {
     const loadAllContent = async () => {
+      const startTime = performance.now();
+      
       try {
         setLoading(true);
         setError(null);
         
         console.log('Starting to load all content...');
+        
+        // First, check if we have preloaded content
+        if (checkPreloadedContent()) {
+          const endTime = performance.now();
+          console.log(`Content loaded from cache in ${(endTime - startTime).toFixed(2)}ms`);
+          return; // Content already loaded from cache
+        }
         
         // Test API connectivity first
         try {
@@ -602,14 +663,11 @@ export default function Home({ isSidebarOpen = false }: { isSidebarOpen?: boolea
           return;
         }
         
-        // Load all content in parallel
-        await Promise.all([
-          loadFeaturedContent(),
-          loadTrendingContent(),
-          loadTopRatedContent()
-        ]);
+        // Use optimized content loading
+        await loadAllContentOptimized();
         
-        console.log('All content loaded successfully');
+        const endTime = performance.now();
+        console.log(`All content loaded successfully in ${(endTime - startTime).toFixed(2)}ms`);
       } catch (err) {
         console.error('Error loading content:', err);
         setError('Failed to load content. Please try again.');

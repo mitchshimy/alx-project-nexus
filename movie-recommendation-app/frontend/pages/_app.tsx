@@ -25,8 +25,8 @@ export const preloadedContent = {
   isPreloaded: false
 };
 
-// Cache duration: 30 minutes (increased from 15 minutes)
-const CACHE_DURATION = 30 * 60 * 1000; // 30 minutes in milliseconds
+// Cache duration: 15 minutes (reduced from 30 minutes for more responsive updates)
+const CACHE_DURATION = 15 * 60 * 1000; // 15 minutes in milliseconds
 
 // Check if we should show splash screen
 const shouldShowSplash = () => {
@@ -53,10 +53,10 @@ const shouldShowSplash = () => {
         preloadedContent.isPreloaded = true;
         console.log('Using cached content (age:', ageInMinutes, 'minutes) - NO SPLASH');
         return false;
-              } catch {
-          console.log('Failed to parse cached content, showing splash');
-          return true;
-        }
+      } catch {
+        console.log('Failed to parse cached content, showing splash');
+        return true;
+      }
     } else {
       console.log('Cache expired (age:', ageInMinutes, 'minutes), showing splash');
       return true;
@@ -181,7 +181,7 @@ export default function App({ Component, pageProps }: AppProps) {
         setStatus('Preparing your experience...');
         setPreloadProgress(95);
 
-        // Show splash for a minimum time (1.5 seconds) then hide it
+        // Show splash for a minimum time (1 second) then hide it
         setTimeout(() => {
           setStatus('Welcome to Shimy!');
           setPreloadProgress(100);
@@ -190,7 +190,7 @@ export default function App({ Component, pageProps }: AppProps) {
           setTimeout(() => {
             setShowSplash(false);
           }, 100);
-        }, 1500); // Show splash for at least 1.5 seconds
+        }, 1000); // Reduced from 1.5 seconds to 1 second for better perceived performance
 
         // Continue loading content in background
         Promise.all([trendingPromise, topRatedPromise, popularPromise])

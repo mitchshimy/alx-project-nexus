@@ -128,9 +128,74 @@ const setCachedResponse = (cacheKey: string, data: any, strategy: 'memory' | 'se
   cache.set(cacheKey, { data, timestamp: Date.now(), strategy });
 };
 
+// Debug function to log cache state
+export const debugCache = () => {
+  console.log('=== CACHE DEBUG ===');
+  console.log('Cache size:', cache.size);
+  console.log('Cache keys:', Array.from(cache.keys()));
+  console.log('Auth token:', getAuthToken());
+  console.log('==================');
+};
+
 // Function to clear the in-memory cache
 export const clearApiCache = () => {
+  console.log('Clearing entire API cache...');
   cache.clear();
+  console.log('API cache cleared');
+};
+
+// Function to clear specific cache entries for user-specific data
+export const clearUserCache = () => {
+  const keysToDelete: string[] = [];
+  
+  for (const [key] of cache.entries()) {
+    if (key.includes('favorites:') || key.includes('watchlist:')) {
+      keysToDelete.push(key);
+    }
+  }
+  
+  keysToDelete.forEach(key => cache.delete(key));
+  console.log(`Cleared ${keysToDelete.length} user-specific cache entries`);
+};
+
+// Function to clear favorites cache specifically
+export const clearFavoritesCache = () => {
+  const keysToDelete: string[] = [];
+  const authToken = getAuthToken();
+  
+  console.log('Current cache keys:', Array.from(cache.keys()));
+  
+  for (const [key] of cache.entries()) {
+    if (key.startsWith('favorites:')) {
+      keysToDelete.push(key);
+    }
+  }
+  
+  keysToDelete.forEach(key => {
+    cache.delete(key);
+    console.log(`Deleted cache key: ${key}`);
+  });
+  console.log(`Cleared ${keysToDelete.length} favorites cache entries`);
+};
+
+// Function to clear watchlist cache specifically
+export const clearWatchlistCache = () => {
+  const keysToDelete: string[] = [];
+  const authToken = getAuthToken();
+  
+  console.log('Current cache keys:', Array.from(cache.keys()));
+  
+  for (const [key] of cache.entries()) {
+    if (key.startsWith('watchlist:')) {
+      keysToDelete.push(key);
+    }
+  }
+  
+  keysToDelete.forEach(key => {
+    cache.delete(key);
+    console.log(`Deleted cache key: ${key}`);
+  });
+  console.log(`Cleared ${keysToDelete.length} watchlist cache entries`);
 };
 
 // Cache warming function to preload popular data

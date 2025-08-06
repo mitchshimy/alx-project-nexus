@@ -3,7 +3,7 @@ import { useEffect, useState, useRef } from 'react';
 import styled from 'styled-components';
 import { SkeletonPoster, SkeletonTitle, SkeletonText } from '@/components/Skeleton';
 import { TMDBMovie, TMDBCast } from '@/types/tmdb';
-import { movieAPI } from '@/utils/api';
+import { movieAPI, clearApiCache } from '@/utils/api';
 import { buildYouTubeEmbedUrl, getOptimalQuality, getQualityDisplayName } from '@/utils/videoPlayer';
 import { FaStar, FaRegStar, FaImdb, FaPlay } from 'react-icons/fa';
 import { MdDateRange, MdAccessTime, MdLanguage, MdMoney } from 'react-icons/md';
@@ -844,8 +844,6 @@ export default function MovieDetailPage({ isSidebarOpen = false }: { isSidebarOp
         // Fetch movie details from our backend API
         const movieData = await movieAPI.getMovieDetails(Number(id));
         console.log('Movie data received:', movieData);
-        console.log('Movie poster_path:', movieData?.poster_path);
-        console.log('Movie tmdb_id:', movieData?.tmdb_id);
         
         // Check if API returned an error object
         if (movieData && movieData.error) {
@@ -859,15 +857,50 @@ export default function MovieDetailPage({ isSidebarOpen = false }: { isSidebarOp
         
         setMovie(movieData);
         
-        // Check if movie is in favorites
-        if (movieData.is_favorite) {
-          setIsFavoriteMovie(true);
-        }
-
-        // Check if movie is in watchlist
-        if (movieData.is_watchlisted) {
-          setIsWatchlistedMovie(true);
-        }
+        // Check if movie is in favorites and watchlist using the same logic as MovieCard
+        const checkUserLists = async () => {
+          try {
+            // Check favorites
+            const favorites = await movieAPI.getFavorites();
+            let favoritesArray: any[] = [];
+            if (favorites && favorites.results && Array.isArray(favorites.results)) {
+              favoritesArray = favorites.results;
+            } else if (Array.isArray(favorites)) {
+              favoritesArray = favorites;
+            }
+            
+            const isInFavorites = favoritesArray.some((fav: any) => {
+              const favMovie = fav.movie || fav;
+              return favMovie.tmdb_id === movieData.tmdb_id;
+            });
+            setIsFavoriteMovie(isInFavorites);
+            
+            // Check watchlist
+            const watchlist = await movieAPI.getWatchlist();
+            let watchlistArray: any[] = [];
+            if (watchlist && watchlist.results && Array.isArray(watchlist.results)) {
+              watchlistArray = watchlist.results;
+            } else if (Array.isArray(watchlist)) {
+              watchlistArray = watchlist;
+            }
+            
+            const isInWatchlist = watchlistArray.some((item: any) => {
+              const watchlistMovie = item.movie || item;
+              return watchlistMovie.tmdb_id === movieData.tmdb_id;
+            });
+            setIsWatchlistedMovie(isInWatchlist);
+            
+            console.log('Movie details page - Favorites check:', { isInFavorites, movieId: movieData.tmdb_id });
+            console.log('Movie details page - Watchlist check:', { isInWatchlist, movieId: movieData.tmdb_id });
+          } catch (error) {
+            console.error('Error checking user lists:', error);
+            // Fallback to backend data if API calls fail
+            setIsFavoriteMovie(movieData.is_favorite || false);
+            setIsWatchlistedMovie(movieData.is_watchlisted || false);
+          }
+        };
+        
+        checkUserLists();
 
         // Set cast if available
         if (movieData.credits?.cast) {
@@ -984,70 +1017,120 @@ export default function MovieDetailPage({ isSidebarOpen = false }: { isSidebarOp
   const handleFavorite = async () => {
     if (!movie) return;
     
-    if (isFavoriteMovie) {
-      // Remove from favorites
-      let result;
-      if (movie.favorite_id) {
-        result = await movieAPI.removeFromFavorites(movie.favorite_id);
+    // Update local state immediately for instant feedback
+    const newFavoriteState = !isFavoriteMovie;
+    setIsFavoriteMovie(newFavoriteState);
+    
+    try {
+      if (isFavoriteMovie) {
+        // Remove from favorites
+        let result;
+        if (movie.favorite_id) {
+          result = await movieAPI.removeFromFavorites(movie.favorite_id);
+        } else {
+          result = await movieAPI.removeFromFavoritesByMovie(movie.tmdb_id || movie.id);
+        }
+        
+        // Check if API returned an error object
+        if (result && result.error) {
+          const { showError } = await import('@/utils/api');
+          showError('Error', result.error);
+          // Revert local state if API call failed
+          setIsFavoriteMovie(!newFavoriteState);
+          return;
+        }
       } else {
-        result = await movieAPI.removeFromFavoritesByMovie(movie.tmdb_id || movie.id);
+        // Add to favorites
+        const result = await movieAPI.addToFavorites(movie.tmdb_id || movie.id);
+        
+        // Check if API returned an error object
+        if (result && result.error) {
+          const { showError } = await import('@/utils/api');
+          showError('Error', result.error);
+          // Revert local state if API call failed
+          setIsFavoriteMovie(!newFavoriteState);
+          return;
+        }
       }
       
-      // Check if API returned an error object
-      if (result && result.error) {
-        const { showError } = await import('@/utils/api');
-        showError('Error', result.error);
-        return;
+      // Clear cache and dispatch global event
+      clearApiCache();
+      
+      // Dispatch global event to notify other components
+      if (typeof window !== 'undefined') {
+        window.dispatchEvent(new CustomEvent('favoritesUpdated', { 
+          detail: { 
+            movieId: movie.tmdb_id || movie.id,
+            action: isFavoriteMovie ? 'removed' : 'added',
+            forceRefresh: true
+          } 
+        }));
       }
       
-      setIsFavoriteMovie(false);
-    } else {
-      // Add to favorites
-      const result = await movieAPI.addToFavorites(movie.tmdb_id || movie.id);
-      
-      // Check if API returned an error object
-      if (result && result.error) {
-        const { showError } = await import('@/utils/api');
-        showError('Error', result.error);
-        return;
-      }
-      
-      setIsFavoriteMovie(true);
+    } catch (error) {
+      console.error('Error toggling favorite:', error);
+      // Revert local state if the API call failed
+      setIsFavoriteMovie(!newFavoriteState);
     }
   };
 
   const handleWatchlist = async () => {
     if (!movie) return;
     
-    if (isWatchlistedMovie) {
-      // Remove from watchlist
-      let result;
-      if (movie.watchlist_id) {
-        result = await movieAPI.removeFromWatchlist(movie.watchlist_id);
+    // Update local state immediately for instant feedback
+    const newWatchlistState = !isWatchlistedMovie;
+    setIsWatchlistedMovie(newWatchlistState);
+    
+    try {
+      if (isWatchlistedMovie) {
+        // Remove from watchlist
+        let result;
+        if (movie.watchlist_id) {
+          result = await movieAPI.removeFromWatchlist(movie.watchlist_id);
+        } else {
+          result = await movieAPI.removeFromWatchlistByMovie(movie.tmdb_id || movie.id);
+        }
+        
+        // Check if API returned an error object
+        if (result && result.error) {
+          const { showError } = await import('@/utils/api');
+          showError('Error', result.error);
+          // Revert local state if API call failed
+          setIsWatchlistedMovie(!newWatchlistState);
+          return;
+        }
       } else {
-        result = await movieAPI.removeFromWatchlistByMovie(movie.tmdb_id || movie.id);
+        // Add to watchlist
+        const result = await movieAPI.addToWatchlist(movie.tmdb_id || movie.id);
+        
+        // Check if API returned an error object
+        if (result && result.error) {
+          const { showError } = await import('@/utils/api');
+          showError('Error', result.error);
+          // Revert local state if API call failed
+          setIsWatchlistedMovie(!newWatchlistState);
+          return;
+        }
       }
       
-      // Check if API returned an error object
-      if (result && result.error) {
-        const { showError } = await import('@/utils/api');
-        showError('Error', result.error);
-        return;
+      // Clear cache and dispatch global event
+      clearApiCache();
+      
+      // Dispatch global event to notify other components
+      if (typeof window !== 'undefined') {
+        window.dispatchEvent(new CustomEvent('watchlistUpdated', { 
+          detail: { 
+            movieId: movie.tmdb_id || movie.id,
+            action: isWatchlistedMovie ? 'removed' : 'added',
+            forceRefresh: true
+          } 
+        }));
       }
       
-      setIsWatchlistedMovie(false);
-    } else {
-      // Add to watchlist
-      const result = await movieAPI.addToWatchlist(movie.tmdb_id || movie.id);
-      
-      // Check if API returned an error object
-      if (result && result.error) {
-        const { showError } = await import('@/utils/api');
-        showError('Error', result.error);
-        return;
-      }
-      
-      setIsWatchlistedMovie(true);
+    } catch (error) {
+      console.error('Error toggling watchlist:', error);
+      // Revert local state if the API call failed
+      setIsWatchlistedMovie(!newWatchlistState);
     }
   };
 

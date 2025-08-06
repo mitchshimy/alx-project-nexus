@@ -503,7 +503,7 @@ const Hero = ({ isSidebarOpen = false }: HeroProps) => {
             key={movie.id}
             $isActive={index === currentIndex}
             $bg={movie.backdrop_path 
-              ? `https://image.tmdb.org/t/p/original${movie.backdrop_path}`
+              ? `https://image.tmdb.org/t/p/w1280${movie.backdrop_path}` // Changed from original to w1280 for faster loading
               : 'https://images.unsplash.com/photo-1606112219348-204d7d8b94ee?auto=format&fit=crop&w=1920&q=80'
             }
           />

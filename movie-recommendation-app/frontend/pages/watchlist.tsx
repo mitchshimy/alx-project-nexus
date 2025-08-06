@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/router';
 import styled from 'styled-components';
-import { movieAPI, getAuthToken, clearApiCache } from '@/utils/api';
+import { movieAPI, getAuthToken, clearApiCache, clearWatchlistCache } from '@/utils/api';
 import MovieCard from '@/components/MovieCard';
 
 const MovieGrid = styled.div`
@@ -142,12 +142,14 @@ export default function Watchlist() {
   const [loading, setLoading] = useState(true);
   const [isAuthenticated, setIsAuthenticated] = useState(false);
 
-  const loadWatchlist = async () => {
+  const loadWatchlist = async (showLoading = false) => {
     try {
-      setLoading(true);
+      if (showLoading) {
+        setLoading(true);
+      }
       
-      // Don't clear cache every time - only clear if there's an error
-      // clearApiCache();
+      // Clear watchlist cache to ensure fresh data
+      clearWatchlistCache();
       
       const data = await movieAPI.getWatchlist();
       
@@ -184,22 +186,24 @@ export default function Watchlist() {
       console.error('Error loading watchlist:', err);
       setWatchlist([]);
       // Only clear cache on error
-      clearApiCache();
+      clearWatchlistCache();
     } finally {
-      setLoading(false);
+      if (showLoading) {
+        setLoading(false);
+      }
     }
   };
 
   const handleWatchlistToggle = () => {
     // Refresh the watchlist when an item is toggled
-    // Reduce delay for better responsiveness
+    // Use a longer delay for better user experience
     setTimeout(() => {
-      loadWatchlist();
-    }, 200); // Reduced from 500ms to 200ms
+      loadWatchlist(false);
+    }, 1000); // Increased delay to avoid jarring updates
   };
 
   const handleManualRefresh = () => {
-    loadWatchlist();
+    loadWatchlist(true);
   };
 
   useEffect(() => {
@@ -212,7 +216,7 @@ export default function Watchlist() {
       return;
     }
 
-    loadWatchlist();
+    loadWatchlist(true);
     
     // Add focus event listener to refresh data when user returns to the page
     // Use a debounced approach to prevent excessive API calls
@@ -222,15 +226,26 @@ export default function Watchlist() {
         // Debounce the focus event to prevent multiple rapid calls
         clearTimeout(focusTimeout);
         focusTimeout = setTimeout(() => {
-          loadWatchlist();
+          loadWatchlist(false);
         }, 1000); // Wait 1 second before making the API call
       }
     };
     
+    // Listen for global watchlist update events
+    const handleWatchlistUpdated = (event: Event) => {
+      console.log('Watchlist updated globally, refreshing watchlist page');
+      // Update immediately without showing loading state
+      setTimeout(() => {
+        loadWatchlist(false);
+      }, 500); // Small delay to let the API call complete
+    };
+    
     window.addEventListener('focus', handleFocus);
+    window.addEventListener('watchlistUpdated', handleWatchlistUpdated);
     
     return () => {
       window.removeEventListener('focus', handleFocus);
+      window.removeEventListener('watchlistUpdated', handleWatchlistUpdated);
       clearTimeout(focusTimeout);
     };
   }, [isAuthenticated]);

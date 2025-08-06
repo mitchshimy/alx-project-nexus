@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/router';
 import styled from 'styled-components';
-import { movieAPI, getAuthToken, clearApiCache } from '@/utils/api';
+import { movieAPI, getAuthToken, clearApiCache, clearFavoritesCache } from '@/utils/api';
 import MovieCard from '@/components/MovieCard';
 
 const MovieGrid = styled.div`
@@ -148,12 +148,14 @@ export default function Favorites() {
   const [loading, setLoading] = useState(true);
   const [isAuthenticated, setIsAuthenticated] = useState(false);
 
-  const loadFavorites = async () => {
+  const loadFavorites = async (showLoading = false) => {
     try {
-      setLoading(true);
+      if (showLoading) {
+        setLoading(true);
+      }
       
-      // Don't clear cache every time - only clear if there's an error
-      // clearApiCache();
+      // Clear favorites cache to ensure fresh data
+      clearFavoritesCache();
       
       const data = await movieAPI.getFavorites();
       
@@ -190,9 +192,11 @@ export default function Favorites() {
       console.error('Error loading favorites:', err);
       setFavorites([]);
       // Only clear cache on error
-      clearApiCache();
+      clearFavoritesCache();
     } finally {
-      setLoading(false);
+      if (showLoading) {
+        setLoading(false);
+      }
     }
   };
 
@@ -206,7 +210,7 @@ export default function Favorites() {
       return;
     }
 
-    loadFavorites();
+    loadFavorites(true);
     
     // Add focus event listener to refresh data when user returns to the page
     // Use a debounced approach to prevent excessive API calls
@@ -216,15 +220,26 @@ export default function Favorites() {
         // Debounce the focus event to prevent multiple rapid calls
         clearTimeout(focusTimeout);
         focusTimeout = setTimeout(() => {
-          loadFavorites();
+          loadFavorites(false);
         }, 1000); // Wait 1 second before making the API call
       }
     };
     
+    // Listen for global favorites update events
+    const handleFavoritesUpdated = (event: Event) => {
+      console.log('Favorites updated globally, refreshing favorites page');
+      // Update immediately without showing loading state
+      setTimeout(() => {
+        loadFavorites(false);
+      }, 500); // Small delay to let the API call complete
+    };
+    
     window.addEventListener('focus', handleFocus);
+    window.addEventListener('favoritesUpdated', handleFavoritesUpdated);
     
     return () => {
       window.removeEventListener('focus', handleFocus);
+      window.removeEventListener('favoritesUpdated', handleFavoritesUpdated);
       clearTimeout(focusTimeout);
     };
   }, [isAuthenticated]);
@@ -233,14 +248,14 @@ export default function Favorites() {
 
   const handleFavoriteToggle = () => {
     // Refresh the favorites list when an item is toggled
-    // Reduce delay for better responsiveness
+    // Use a longer delay for better user experience
     setTimeout(() => {
-      loadFavorites();
-    }, 200); // Reduced from 500ms to 200ms
+      loadFavorites(false);
+    }, 1000); // Increased delay to avoid jarring updates
   };
 
   const handleManualRefresh = () => {
-    loadFavorites();
+    loadFavorites(true);
   };
 
   const handleSignIn = () => {

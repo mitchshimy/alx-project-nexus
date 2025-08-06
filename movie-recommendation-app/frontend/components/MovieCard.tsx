@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef } from 'react';
 import { useRouter } from 'next/router';
 import styled from 'styled-components';
-import { movieAPI, getAuthToken } from '@/utils/api';
+import { movieAPI, getAuthToken, clearApiCache, debugCache } from '@/utils/api';
 import { shouldAutoPlayTrailer } from '@/utils/videoPlayer';
 import { getMobileAutoPlayTrailers } from '@/utils/settings';
 import TrailerPreview from './TrailerPreview';
@@ -59,8 +59,8 @@ const Skeleton = styled.div`
   height: 100%;
   background: linear-gradient(90deg, #1a1a1a 25%, #2a2a2a 50%, #1a1a1a 75%);
   background-size: 200% 100%;
-  animation: shimmer 4s infinite; // Further slowed down for better performance
-  opacity: 0.1; // Further reduced for better performance
+  animation: shimmer 2s infinite; // Reduced from 4s to 2s for better performance
+  opacity: 0.05; // Further reduced for better performance
   pointer-events: none;
   
   @keyframes shimmer {
@@ -481,14 +481,35 @@ const MovieCard = ({ movie, onFavoriteToggle, onWatchlistToggle }: MovieCardProp
       return;
     }
 
+    // Update local state immediately for instant feedback
+    const newFavoriteState = !isFavorite;
+    setIsFavorite(newFavoriteState);
     setIsLoading(true);
+
     try {
       if (isFavorite) {
         await movieAPI.removeFromFavoritesByMovie(movie.tmdb_id);
-        setIsFavorite(false);
       } else {
         await movieAPI.addToFavorites(movie.tmdb_id);
-        setIsFavorite(true);
+      }
+      
+      console.log('Favorite toggle completed, clearing cache...');
+      debugCache();
+      
+      // Clear favorites cache to ensure fresh data
+      clearApiCache();
+      
+      console.log('Cache cleared, dispatching event...');
+      
+      // Dispatch global event to notify other components
+      if (typeof window !== 'undefined') {
+        window.dispatchEvent(new CustomEvent('favoritesUpdated', { 
+          detail: { 
+            movieId: movie.tmdb_id,
+            action: isFavorite ? 'removed' : 'added',
+            forceRefresh: true
+          } 
+        }));
       }
       
       // Call the parent callback if provided
@@ -497,6 +518,8 @@ const MovieCard = ({ movie, onFavoriteToggle, onWatchlistToggle }: MovieCardProp
       }
     } catch (error) {
       console.error('Error toggling favorite:', error);
+      // Revert local state if the API call failed
+      setIsFavorite(!newFavoriteState);
     } finally {
       setIsLoading(false);
     }
@@ -513,14 +536,30 @@ const MovieCard = ({ movie, onFavoriteToggle, onWatchlistToggle }: MovieCardProp
       return;
     }
 
+    // Update local state immediately for instant feedback
+    const newWatchlistState = !isInWatchlist;
+    setIsInWatchlist(newWatchlistState);
     setIsLoading(true);
+
     try {
       if (isInWatchlist) {
         await movieAPI.removeFromWatchlistByMovie(movie.tmdb_id);
-        setIsInWatchlist(false);
       } else {
         await movieAPI.addToWatchlist(movie.tmdb_id);
-        setIsInWatchlist(true);
+      }
+      
+      // Clear watchlist cache to ensure fresh data
+      clearApiCache();
+      
+      // Dispatch global event to notify other components
+      if (typeof window !== 'undefined') {
+        window.dispatchEvent(new CustomEvent('watchlistUpdated', { 
+          detail: { 
+            movieId: movie.tmdb_id,
+            action: isInWatchlist ? 'removed' : 'added',
+            forceRefresh: true
+          } 
+        }));
       }
       
       // Call the parent callback if provided
@@ -529,6 +568,8 @@ const MovieCard = ({ movie, onFavoriteToggle, onWatchlistToggle }: MovieCardProp
       }
     } catch (error) {
       console.error('Error toggling watchlist:', error);
+      // Revert local state if the API call failed
+      setIsInWatchlist(!newWatchlistState);
     } finally {
       setIsLoading(false);
     }
@@ -550,7 +591,7 @@ const MovieCard = ({ movie, onFavoriteToggle, onWatchlistToggle }: MovieCardProp
   }, []);
 
   const posterUrl = movie.poster_path
-    ? `https://image.tmdb.org/t/p/w342${movie.poster_path}` // Changed from w500 to w342 for faster loading
+    ? `https://image.tmdb.org/t/p/w185${movie.poster_path}` // Changed from w342 to w185 for faster loading
     : 'https://via.placeholder.com/300x450/1a1a1a/666666?text=No+Image';
 
   // Handle both movie and TV show titles

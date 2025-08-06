@@ -17,7 +17,7 @@ const ImageContainer = styled.div<{ isLoaded: boolean }>`
   overflow: hidden;
   background: linear-gradient(90deg, #1E1E1E 25%, #2A2A2A 50%, #1E1E1E 75%);
   background-size: 200% 100%;
-  animation: ${props => !props.isLoaded ? 'shimmer 1.5s infinite' : 'none'};
+  animation: ${props => !props.isLoaded ? 'shimmer 1s infinite' : 'none'}; // Reduced from 1.5s to 1s
   
   @keyframes shimmer {
     0% {
@@ -63,7 +63,7 @@ const LazyImage: React.FC<LazyImageProps> = ({
         }
       },
       {
-        rootMargin: '50px 0px',
+        rootMargin: '100px 0px', // Reduced from 50px to 100px for better performance
         threshold: 0.1
       }
     );
