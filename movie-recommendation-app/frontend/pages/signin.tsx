@@ -333,12 +333,7 @@ export default function SignIn() {
             {loading ? t('auth.signingIn') : t('auth.signIn')}
           </Button>
         </Form>
-        <Divider>
-          <span>or</span>
-        </Divider>
-        <SocialButton type="button" disabled={loading}>
-          Continue with Google
-        </SocialButton>
+
         <Footer>
           {t('auth.noAccount')} <Link href="/signup">{t('auth.signUp')}</Link>
         </Footer>

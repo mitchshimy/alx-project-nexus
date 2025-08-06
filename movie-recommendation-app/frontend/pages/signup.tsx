@@ -386,13 +386,7 @@ export default function SignUp() {
           </Button>
         </Form>
 
-        <Divider>
-          <span>or</span>
-        </Divider>
 
-        <SocialButton type="button" disabled={loading}>
-          Continue with Google
-        </SocialButton>
 
         <Footer>
           Already have an account? <Link href="/signin">Sign In</Link>

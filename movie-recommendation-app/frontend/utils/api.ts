@@ -180,22 +180,41 @@ export const clearFavoritesCache = () => {
 
 // Function to clear watchlist cache specifically
 export const clearWatchlistCache = () => {
-  const keysToDelete: string[] = [];
-  const authToken = getAuthToken();
-  
-  console.log('Current cache keys:', Array.from(cache.keys()));
-  
+  // Clear all watchlist-related cache entries
   for (const [key] of cache.entries()) {
-    if (key.startsWith('watchlist:')) {
-      keysToDelete.push(key);
+    if (key.startsWith('watchlist:') || key.startsWith('api:/movies/watchlist/')) {
+      cache.delete(key);
     }
   }
   
-  keysToDelete.forEach(key => {
-    cache.delete(key);
-    console.log(`Deleted cache key: ${key}`);
-  });
-  console.log(`Cleared ${keysToDelete.length} watchlist cache entries`);
+  // Also clear session storage for watchlist
+  if (typeof window !== 'undefined') {
+    for (let i = 0; i < sessionStorage.length; i++) {
+      const key = sessionStorage.key(i);
+      if (key && (key.startsWith('watchlist:') || key.startsWith('api:/movies/watchlist/'))) {
+        sessionStorage.removeItem(key);
+      }
+    }
+  }
+};
+
+export const clearMovieDetailsCache = () => {
+  // Clear all movie details cache entries
+  for (const [key] of cache.entries()) {
+    if (key.startsWith('movie_details:')) {
+      cache.delete(key);
+    }
+  }
+  
+  // Also clear session storage for movie details
+  if (typeof window !== 'undefined') {
+    for (let i = 0; i < sessionStorage.length; i++) {
+      const key = sessionStorage.key(i);
+      if (key && key.startsWith('movie_details:')) {
+        sessionStorage.removeItem(key);
+      }
+    }
+  }
 };
 
 // Cache warming function to preload popular data
@@ -641,12 +660,22 @@ export const movieAPI = {
 
   // Get movie details
   getMovieDetails: async (tmdbId: number) => {
+    // Add caching for movie details to improve performance
+    const cacheKey = `movie_details:${tmdbId}`;
+    const cached = getCachedResponse(cacheKey);
+    if (cached) {
+      return cached;
+    }
+    
     const response = await apiRequest(`/movies/${tmdbId}/`);
     
     // Check if response has error property
     if (response && response.error) {
       return { error: response.error, errorTitle: response.errorTitle };
     }
+    
+    // Cache movie details for 10 minutes (longer than user data but shorter than static data)
+    setCachedResponse(cacheKey, response, 'memory');
     
     return response;
   },

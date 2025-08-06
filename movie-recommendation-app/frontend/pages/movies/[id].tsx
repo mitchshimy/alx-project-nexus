@@ -3,7 +3,7 @@ import { useEffect, useState, useRef } from 'react';
 import styled from 'styled-components';
 import { SkeletonPoster, SkeletonTitle, SkeletonText } from '@/components/Skeleton';
 import { TMDBMovie, TMDBCast } from '@/types/tmdb';
-import { movieAPI, clearApiCache } from '@/utils/api';
+import { movieAPI, clearApiCache, clearMovieDetailsCache } from '@/utils/api';
 import { buildYouTubeEmbedUrl, getOptimalQuality, getQualityDisplayName } from '@/utils/videoPlayer';
 import { FaStar, FaRegStar, FaImdb, FaPlay } from 'react-icons/fa';
 import { MdDateRange, MdAccessTime, MdLanguage, MdMoney } from 'react-icons/md';
@@ -857,51 +857,6 @@ export default function MovieDetailPage({ isSidebarOpen = false }: { isSidebarOp
         
         setMovie(movieData);
         
-        // Check if movie is in favorites and watchlist using the same logic as MovieCard
-        const checkUserLists = async () => {
-          try {
-            // Check favorites
-            const favorites = await movieAPI.getFavorites();
-            let favoritesArray: any[] = [];
-            if (favorites && favorites.results && Array.isArray(favorites.results)) {
-              favoritesArray = favorites.results;
-            } else if (Array.isArray(favorites)) {
-              favoritesArray = favorites;
-            }
-            
-            const isInFavorites = favoritesArray.some((fav: any) => {
-              const favMovie = fav.movie || fav;
-              return favMovie.tmdb_id === movieData.tmdb_id;
-            });
-            setIsFavoriteMovie(isInFavorites);
-            
-            // Check watchlist
-            const watchlist = await movieAPI.getWatchlist();
-            let watchlistArray: any[] = [];
-            if (watchlist && watchlist.results && Array.isArray(watchlist.results)) {
-              watchlistArray = watchlist.results;
-            } else if (Array.isArray(watchlist)) {
-              watchlistArray = watchlist;
-            }
-            
-            const isInWatchlist = watchlistArray.some((item: any) => {
-              const watchlistMovie = item.movie || item;
-              return watchlistMovie.tmdb_id === movieData.tmdb_id;
-            });
-            setIsWatchlistedMovie(isInWatchlist);
-            
-            console.log('Movie details page - Favorites check:', { isInFavorites, movieId: movieData.tmdb_id });
-            console.log('Movie details page - Watchlist check:', { isInWatchlist, movieId: movieData.tmdb_id });
-          } catch (error) {
-            console.error('Error checking user lists:', error);
-            // Fallback to backend data if API calls fail
-            setIsFavoriteMovie(movieData.is_favorite || false);
-            setIsWatchlistedMovie(movieData.is_watchlisted || false);
-          }
-        };
-        
-        checkUserLists();
-
         // Set cast if available
         if (movieData.credits?.cast) {
           const allCast = movieData.credits.cast;
@@ -929,6 +884,56 @@ export default function MovieDetailPage({ isSidebarOpen = false }: { isSidebarOp
           setSimilarMovies(validSimilarMovies.slice(0, 10));
         }
         
+        // Stop loading here so user sees the movie data immediately
+        setLoading(false);
+        
+        // Check if movie is in favorites and watchlist using the same logic as MovieCard
+        const checkUserLists = async () => {
+          try {
+            // Make both API calls in parallel for better performance
+            const [favorites, watchlist] = await Promise.all([
+              movieAPI.getFavorites(),
+              movieAPI.getWatchlist()
+            ]);
+            
+            let favoritesArray: any[] = [];
+            if (favorites && favorites.results && Array.isArray(favorites.results)) {
+              favoritesArray = favorites.results;
+            } else if (Array.isArray(favorites)) {
+              favoritesArray = favorites;
+            }
+            
+            const isInFavorites = favoritesArray.some((fav: any) => {
+              const favMovie = fav.movie || fav;
+              return favMovie.tmdb_id === movieData.tmdb_id;
+            });
+            setIsFavoriteMovie(isInFavorites);
+            
+            let watchlistArray: any[] = [];
+            if (watchlist && watchlist.results && Array.isArray(watchlist.results)) {
+              watchlistArray = watchlist.results;
+            } else if (Array.isArray(watchlist)) {
+              watchlistArray = watchlist;
+            }
+            
+            const isInWatchlist = watchlistArray.some((item: any) => {
+              const watchlistMovie = item.movie || item;
+              return watchlistMovie.tmdb_id === movieData.tmdb_id;
+            });
+            setIsWatchlistedMovie(isInWatchlist);
+            
+            console.log('Movie details page - Favorites check:', { isInFavorites, movieId: movieData.tmdb_id });
+            console.log('Movie details page - Watchlist check:', { isInWatchlist, movieId: movieData.tmdb_id });
+          } catch (error) {
+            console.error('Error checking user lists:', error);
+            // Fallback to backend data if API calls fail
+            setIsFavoriteMovie(movieData.is_favorite || false);
+            setIsWatchlistedMovie(movieData.is_watchlisted || false);
+          }
+        };
+        
+        checkUserLists();
+        
       } catch (err: any) {
         console.error('Error fetching movie details:', err);
         console.error('Error details:', {
@@ -937,7 +942,6 @@ export default function MovieDetailPage({ isSidebarOpen = false }: { isSidebarOp
           id: id
         });
         setError(err.message || 'Failed to fetch movie details');
-      } finally {
         setLoading(false);
       }
     };
@@ -1055,6 +1059,7 @@ export default function MovieDetailPage({ isSidebarOpen = false }: { isSidebarOp
       
       // Clear cache and dispatch global event
       clearApiCache();
+      clearMovieDetailsCache(); // Clear movie details cache
       
       // Dispatch global event to notify other components
       if (typeof window !== 'undefined') {
@@ -1115,6 +1120,7 @@ export default function MovieDetailPage({ isSidebarOpen = false }: { isSidebarOp
       
       // Clear cache and dispatch global event
       clearApiCache();
+      clearMovieDetailsCache(); // Clear movie details cache
       
       // Dispatch global event to notify other components
       if (typeof window !== 'undefined') {

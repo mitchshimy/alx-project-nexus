@@ -651,7 +651,8 @@ class TMDBService:
         data = self._make_request(f'/movie/{movie_id}', {
             'append_to_response': 'credits,videos,reviews,similar'
         })
-        self._set_cached_data(cache_key, data)
+        # Cache movie details for 6 hours 
+        self._set_cached_data(cache_key, data, timeout=21600)  # 6 hours = 21600 seconds
         return data
     
     def get_genres(self):
