@@ -5,12 +5,15 @@ import os
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = False
 
-# Render will provide the external hostname
+
 ALLOWED_HOSTS = [
     'localhost',
     '127.0.0.1',
     '.onrender.com',  # Allow all Render subdomains
     '.render.com',     # Allow all Render domains
+    '.vercel.app',
+    '.pythonanywhere.com',  # Allow PythonAnywhere domains
+    '.herokuapp.com',  # Allow Heroku domains
 ]
 
 # Database
@@ -71,15 +74,15 @@ X_FRAME_OPTIONS = 'DENY'
 
 # CORS settings for production
 CORS_ALLOWED_ORIGINS = [
-    "https://your-frontend-domain.com",  # Replace with your frontend domain
     "http://localhost:3000",
     "http://127.0.0.1:3000",
+    "https://shimymovies.vercel.app",
 ]
 
 CSRF_TRUSTED_ORIGINS = [
-    "https://your-frontend-domain.com",  # Replace with your frontend domain
     "http://localhost:3000",
     "http://127.0.0.1:3000",
+    "https://shimymovies.vercel.app",
 ]
 
 # Logging configuration
@@ -95,4 +98,44 @@ LOGGING = {
         'handlers': ['console'],
         'level': 'INFO',
     },
-} 
+}
+
+# Swagger Settings for Production
+SWAGGER_SETTINGS = {
+    'SECURITY_DEFINITIONS': {
+        'Bearer': {
+            'type': 'apiKey',
+            'name': 'Authorization',
+            'in': 'header'
+        }
+    },
+    'USE_SESSION_AUTH': False,
+    'SUPPORTED_SUBMIT_METHODS': [
+        'get',
+        'post',
+        'put',
+        'delete',
+        'patch'
+    ],
+    'OPERATIONS_SORTER': 'alpha',
+    'TAGS_SORTER': 'alpha',
+    'DOC_EXPANSION': 'none',
+    'DEEP_LINKING': True,
+    'DISPLAY_OPERATION_ID': False,
+    'DEFAULT_MODEL_RENDERING': 'example',
+    'DEFAULT_INFO': 'Movie Recommendation API',
+    'DEFAULT_API_URL': None,
+}
+
+# Ensure static files are served in production
+MIDDLEWARE = [
+    'corsheaders.middleware.CorsMiddleware',
+    'django.middleware.security.SecurityMiddleware',
+    'whitenoise.middleware.WhiteNoiseMiddleware',  # Add this for static files
+    'django.contrib.sessions.middleware.SessionMiddleware',
+    'django.middleware.common.CommonMiddleware',
+    'django.middleware.csrf.CsrfViewMiddleware',
+    'django.contrib.auth.middleware.AuthenticationMiddleware',
+    'django.contrib.messages.middleware.MessageMiddleware',
+    'django.middleware.clickjacking.XFrameOptionsMiddleware',
+] 

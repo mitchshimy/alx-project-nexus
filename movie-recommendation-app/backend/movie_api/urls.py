@@ -15,6 +15,8 @@ Including another URLconf
 """
 from django.contrib import admin
 from django.urls import path, include
+from django.http import JsonResponse
+from django.conf import settings
 from rest_framework_simplejwt.views import TokenRefreshView
 from drf_yasg.views import get_schema_view
 from drf_yasg import openapi
@@ -72,6 +74,40 @@ schema_view = get_schema_view(
     ],
 )
 
+# Debug view to check if static files are being served
+def debug_static_files(request):
+    """Debug endpoint to check static files configuration"""
+    import os
+    from django.conf import settings
+    
+    static_root = getattr(settings, 'STATIC_ROOT', None)
+    static_url = getattr(settings, 'STATIC_URL', '/static/')
+    debug = getattr(settings, 'DEBUG', False)
+    
+    # Check if static files directory exists
+    static_files_exist = os.path.exists(static_root) if static_root else False
+    
+    # List some static files if they exist
+    static_files = []
+    if static_files_exist and static_root:
+        try:
+            for root, dirs, files in os.walk(static_root):
+                for file in files[:10]:  # Limit to first 10 files
+                    static_files.append(os.path.join(root, file))
+        except Exception as e:
+            static_files = [f"Error listing files: {str(e)}"]
+    
+    return JsonResponse({
+        'debug': debug,
+        'static_root': static_root,
+        'static_url': static_url,
+        'static_files_exist': static_files_exist,
+        'static_files_count': len(static_files),
+        'sample_static_files': static_files[:5],
+        'swagger_settings': getattr(settings, 'SWAGGER_SETTINGS', {}),
+        'installed_apps': [app for app in settings.INSTALLED_APPS if 'swagger' in app.lower() or 'yasg' in app.lower()],
+    })
+
 urlpatterns = [
     path('admin/', admin.site.urls),
     
@@ -82,6 +118,9 @@ urlpatterns = [
     
     # JWT Token refresh
     path('api/v1/token/refresh/', TokenRefreshView.as_view(), name='token_refresh'),
+    
+    # Debug endpoint
+    path('debug/static/', debug_static_files, name='debug-static'),
     
     # Swagger Documentation
     path('swagger<format>/', schema_view.without_ui(cache_timeout=0), name='schema-json'),
