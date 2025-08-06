@@ -477,7 +477,9 @@ const MovieCard = ({ movie, onFavoriteToggle, onWatchlistToggle }: MovieCardProp
     // Check if user is authenticated
     const token = getAuthToken();
     if (!token) {
-      router.push('/signin');
+      // Store current path and redirect to sign-in page
+      const { redirectToSignIn } = await import('@/utils/api');
+      redirectToSignIn(router.asPath);
       return;
     }
 
@@ -532,7 +534,9 @@ const MovieCard = ({ movie, onFavoriteToggle, onWatchlistToggle }: MovieCardProp
     // Check if user is authenticated
     const token = getAuthToken();
     if (!token) {
-      router.push('/signin');
+      // Store current path and redirect to sign-in page
+      const { redirectToSignIn } = await import('@/utils/api');
+      redirectToSignIn(router.asPath);
       return;
     }
 

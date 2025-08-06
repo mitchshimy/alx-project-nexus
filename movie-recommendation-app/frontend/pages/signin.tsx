@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useRouter } from 'next/router';
 import Link from 'next/link';
 import styled from 'styled-components';
@@ -223,6 +223,14 @@ export default function SignIn() {
   const [emailError, setEmailError] = useState('');
   const [passwordError, setPasswordError] = useState('');
 
+  // Reset session expired modal flag when user visits login page
+  useEffect(() => {
+    // Dispatch an event to reset the session expired modal flag
+    if (typeof window !== 'undefined') {
+      window.dispatchEvent(new CustomEvent('resetSessionExpiredModal'));
+    }
+  }, []);
+
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -258,9 +266,17 @@ export default function SignIn() {
       
       // setSuccess('Sign in successful! Redirecting...'); // Removed unused success state
     
-      // Redirect to home page after successful login without page reload
+      // Check if there's a redirect path stored
+      const redirectPath = sessionStorage.getItem('redirectAfterLogin');
+      
+      // Redirect to stored path or home page after successful login
       setTimeout(() => {
-        router.push('/');
+        if (redirectPath) {
+          sessionStorage.removeItem('redirectAfterLogin'); // Clear the stored path
+          router.push(redirectPath);
+        } else {
+          router.push('/');
+        }
       }, 1000);
       
     } catch (err: any) {

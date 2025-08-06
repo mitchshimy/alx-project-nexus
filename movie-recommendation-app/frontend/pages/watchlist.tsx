@@ -253,7 +253,9 @@ export default function Watchlist() {
   
 
   const handleSignIn = () => {
-    router.push('/signin');
+    // Store current path and redirect to sign-in page
+    const { redirectToSignIn } = require('@/utils/api');
+    redirectToSignIn(router.asPath);
   };
 
   if (!isAuthenticated) {

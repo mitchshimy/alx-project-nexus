@@ -19,16 +19,36 @@ export const getAuthToken = (): string | null => {
   return null;
 };
 
+// Utility function to redirect to sign-in page with current path stored
+export const redirectToSignIn = (currentPath?: string) => {
+  if (typeof window !== 'undefined') {
+    const pathToStore = currentPath || window.location.pathname + window.location.search;
+    sessionStorage.setItem('redirectAfterLogin', pathToStore);
+    window.location.href = '/signin';
+  }
+};
+
 export const setAuthToken = (token: string): void => {
   if (typeof window !== 'undefined') {
+    // Preserve redirect path before clearing sessionStorage
+    const redirectPath = sessionStorage.getItem('redirectAfterLogin');
+    
     // Clear any existing user data before setting new token
     clearApiCache();
     sessionStorage.clear();
+    
+    // Restore redirect path if it exists
+    if (redirectPath) {
+      sessionStorage.setItem('redirectAfterLogin', redirectPath);
+    }
     
     localStorage.setItem('access_token', token);
     
     // Reset error count on successful login
     resetErrorCount();
+    
+    // Reset session expired modal flag on successful login
+    hasShownSessionExpiredModal = false;
     
     // Dispatch custom event to notify components of auth state change
     window.dispatchEvent(new CustomEvent('authStateChanged', { detail: { isAuthenticated: true } }));
@@ -38,8 +58,20 @@ export const setAuthToken = (token: string): void => {
 export const removeAuthToken = (): void => {
   if (typeof window !== 'undefined') {
     localStorage.removeItem('access_token');
+    // Reset session expired modal flag on manual logout
+    hasShownSessionExpiredModal = false;
   }
 };
+
+// Track if we've already shown the session expired modal
+let hasShownSessionExpiredModal = false;
+
+// Listen for reset events
+if (typeof window !== 'undefined') {
+  window.addEventListener('resetSessionExpiredModal', () => {
+    hasShownSessionExpiredModal = false;
+  });
+}
 
 // Automatic logout function for expired tokens
 export const handleTokenExpiration = () => {
@@ -63,11 +95,20 @@ export const handleTokenExpiration = () => {
       } 
     }));
     
-    showError(
-      'Session Expired', 
-      'Your session has expired. Please log in again to continue.',
-      'warning'
-    );
+    // Only show the session expired modal once per session
+    if (!hasShownSessionExpiredModal) {
+      hasShownSessionExpiredModal = true;
+      showError(
+        'Session Expired', 
+        'Your session has expired. Please log in again to continue.',
+        'warning'
+      );
+      
+      // Reset the flag after 5 seconds to allow showing again if needed
+      setTimeout(() => {
+        hasShownSessionExpiredModal = false;
+      }, 5000);
+    }
   }
 };
 
@@ -339,9 +380,16 @@ const apiRequest = async (endpoint: string, options: RequestInit = {}) => {
 
     if (!response.ok) {
       if (response.status === 401) {
-        // Token expired or invalid - automatically logout the user
-        handleTokenExpiration();
-        return { error: 'Your session has expired. Please log in again.', errorTitle: 'Session Expired' };
+        // Check if user was authenticated in the first place
+        const token = getAuthToken();
+        if (token) {
+          // Token expired or invalid - automatically logout the user
+          handleTokenExpiration();
+          return { error: 'Your session has expired. Please log in again.', errorTitle: 'Session Expired' };
+        } else {
+          // User was never authenticated, just return error without showing modal
+          return { error: 'Authentication required. Please log in to continue.', errorTitle: 'Authentication Required' };
+        }
       }
       
       // Try to get error details from response

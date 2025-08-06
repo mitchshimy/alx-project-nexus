@@ -327,7 +327,6 @@ export default function Layout({ children }: LayoutProps) {
       
       // If token expired, we might want to redirect to login
       if (reason === 'token_expired') {
-        console.log('Token expired, user should be redirected to login');
         // You can add redirect logic here if needed
       }
     };

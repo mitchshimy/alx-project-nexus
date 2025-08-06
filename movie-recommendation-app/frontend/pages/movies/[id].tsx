@@ -890,11 +890,30 @@ export default function MovieDetailPage({ isSidebarOpen = false }: { isSidebarOp
         // Check if movie is in favorites and watchlist using the same logic as MovieCard
         const checkUserLists = async () => {
           try {
+            // Check if user is authenticated before making API calls
+            const { getAuthToken } = await import('@/utils/api');
+            const token = getAuthToken();
+            
+            if (!token) {
+              // User is not authenticated, set default states
+              setIsFavoriteMovie(false);
+              setIsWatchlistedMovie(false);
+              return;
+            }
+            
             // Make both API calls in parallel for better performance
             const [favorites, watchlist] = await Promise.all([
               movieAPI.getFavorites(),
               movieAPI.getWatchlist()
             ]);
+            
+            // Check if either API call returned an error (like session expired)
+            if ((favorites && favorites.error) || (watchlist && watchlist.error)) {
+              console.log('Session expired or API error, setting default states');
+              setIsFavoriteMovie(false);
+              setIsWatchlistedMovie(false);
+              return;
+            }
             
             let favoritesArray: any[] = [];
             if (favorites && favorites.results && Array.isArray(favorites.results)) {
@@ -1018,8 +1037,18 @@ export default function MovieDetailPage({ isSidebarOpen = false }: { isSidebarOp
     return stars;
   };
 
-  const handleFavorite = async () => {
-    if (!movie) return;
+          const handleFavorite = async () => {
+          if (!movie) return;
+          
+          // Check if user is authenticated before proceeding
+          const { getAuthToken, redirectToSignIn } = await import('@/utils/api');
+          const token = getAuthToken();
+          
+          if (!token) {
+            // Store current path and redirect to sign-in page
+            redirectToSignIn(router.asPath);
+            return;
+          }
     
     // Update local state immediately for instant feedback
     const newFavoriteState = !isFavoriteMovie;
@@ -1079,8 +1108,18 @@ export default function MovieDetailPage({ isSidebarOpen = false }: { isSidebarOp
     }
   };
 
-  const handleWatchlist = async () => {
-    if (!movie) return;
+          const handleWatchlist = async () => {
+          if (!movie) return;
+          
+          // Check if user is authenticated before proceeding
+          const { getAuthToken, redirectToSignIn } = await import('@/utils/api');
+          const token = getAuthToken();
+          
+          if (!token) {
+            // Store current path and redirect to sign-in page
+            redirectToSignIn(router.asPath);
+            return;
+          }
     
     // Update local state immediately for instant feedback
     const newWatchlistState = !isWatchlistedMovie;

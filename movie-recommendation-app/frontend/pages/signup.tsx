@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useRouter } from 'next/router';
 import styled from 'styled-components';
 import Link from 'next/link';
@@ -224,6 +224,14 @@ export default function SignUp() {
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
 
+  // Reset session expired modal flag when user visits signup page
+  useEffect(() => {
+    // Dispatch an event to reset the session expired modal flag
+    if (typeof window !== 'undefined') {
+      window.dispatchEvent(new CustomEvent('resetSessionExpiredModal'));
+    }
+  }, []);
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
@@ -276,18 +284,40 @@ export default function SignUp() {
           // Check if login was successful
           if (loginResult && loginResult.error) {
             console.error('Auto-login error:', loginResult.error);
-            // If auto-login fails, redirect to sign in page
-            router.push('/signin');
+            // If auto-login fails, redirect to sign in page with redirect path preserved
+            const redirectPath = sessionStorage.getItem('redirectAfterLogin');
+            if (redirectPath) {
+              // Keep the redirect path for manual sign-in
+              router.push('/signin');
+            } else {
+              router.push('/signin');
+            }
             return;
           }
           
-          // Redirect to home page after successful auto-login
-          router.push('/');
+          // Check if there's a redirect path stored
+          const redirectPath = sessionStorage.getItem('redirectAfterLogin');
+          
+          // Redirect to stored path or home page after successful auto-login
+          setTimeout(() => {
+            if (redirectPath) {
+              sessionStorage.removeItem('redirectAfterLogin'); // Clear the stored path
+              router.push(redirectPath);
+            } else {
+              router.push('/');
+            }
+          }, 1000);
           // Remove page reload to avoid splash screen
         } catch (loginError) {
           console.error('Auto-login error:', loginError);
-          // If auto-login fails, redirect to sign in page
-          router.push('/signin');
+          // If auto-login fails, redirect to sign in page with redirect path preserved
+          const redirectPath = sessionStorage.getItem('redirectAfterLogin');
+          if (redirectPath) {
+            // Keep the redirect path for manual sign-in
+            router.push('/signin');
+          } else {
+            router.push('/signin');
+          }
         }
       }, 1500);
       
