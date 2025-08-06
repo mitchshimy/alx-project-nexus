@@ -3,6 +3,36 @@ import styled from 'styled-components';
 import Link from 'next/link';
 import dynamic from 'next/dynamic';
 
+const Container = styled.div<{ isSidebarOpen?: boolean }>`
+  max-width: ${({ isSidebarOpen }) =>
+    isSidebarOpen ? 'calc(100vw - 320px)' : '1200px'};
+  margin: ${({ isSidebarOpen }) =>
+    isSidebarOpen ? '20px' : '40px auto'};
+  padding: 2rem;
+  
+  @media (max-width: 768px) {
+    max-width: ${({ isSidebarOpen }) =>
+      isSidebarOpen ? 'calc(100vw - 300px)' : 'calc(100vw - 100px)'};
+    padding: 1rem;
+  }
+  
+  @media (min-width: 1920px) {
+    max-width: ${({ isSidebarOpen }) =>
+      isSidebarOpen ? 'calc(100vw - 400px)' : '1400px'};
+    margin: ${({ isSidebarOpen }) =>
+      isSidebarOpen ? '40px' : '60px auto'};
+    padding: 3rem;
+  }
+  
+  @media (min-width: 2560px) {
+    max-width: ${({ isSidebarOpen }) =>
+      isSidebarOpen ? 'calc(100vw - 500px)' : '1600px'};
+    margin: ${({ isSidebarOpen }) =>
+      isSidebarOpen ? '60px' : '80px auto'};
+    padding: 4rem;
+  }
+`;
+
 
 // Create a loading component for the help page
 const HelpLoading = () => (
@@ -17,7 +47,7 @@ const HelpLoading = () => (
 );
 
 // Main help component
-function HelpContent() {
+function HelpContent({ isSidebarOpen }: { isSidebarOpen?: boolean }) {
   const [searchTerm, setSearchTerm] = useState('');
   const [openItems, setOpenItems] = useState<{ [key: string]: boolean }>({});
 
@@ -78,7 +108,7 @@ function HelpContent() {
   };
 
   return (
-    <>
+    <Container isSidebarOpen={isSidebarOpen}>
       <HelpContainer>
         <HelpHeader>
           <h1>Help Center</h1>
@@ -193,7 +223,7 @@ function HelpContent() {
           <Link href="/contact">Contact Support</Link>
         </ContactSection>
       </HelpContainer>
-    </>
+    </Container>
   );
 }
 

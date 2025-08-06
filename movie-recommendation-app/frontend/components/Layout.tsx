@@ -35,6 +35,14 @@ const ContentWrapper = styled.div<{ isSidebarOpen: boolean }>`
   @media (max-width: 768px) {
     margin-left: 0;
   }
+  
+  @media (min-width: 1920px) {
+    margin-left: ${({ isSidebarOpen }) => (isSidebarOpen ? '320px' : '100px')};
+  }
+  
+  @media (min-width: 2560px) {
+    margin-left: ${({ isSidebarOpen }) => (isSidebarOpen ? '400px' : '120px')};
+  }
 `;
 
 const MainContent = styled.main`
@@ -65,6 +73,16 @@ const MainContent = styled.main`
   
   @media (max-width: 480px) {
     padding: 8rem 0.5rem 1.5rem;
+  }
+  
+  @media (min-width: 1920px) {
+    max-width: 1600px;
+    padding: 10rem 3rem 4rem;
+  }
+  
+  @media (min-width: 2560px) {
+    max-width: 1800px;
+    padding: 12rem 4rem 5rem;
   }
 `;
 

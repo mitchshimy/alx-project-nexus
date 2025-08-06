@@ -26,6 +26,18 @@ const Container = styled.div<{ isSidebarOpen?: boolean }>`
     padding: 24px;
     margin: 20px;
   }
+  
+  @media (min-width: 1920px) {
+    max-width: ${props => props.isSidebarOpen ? 'calc(100vw - 400px)' : '1400px'};
+    margin: ${props => props.isSidebarOpen ? '40px' : '60px auto'};
+    padding: 48px;
+  }
+  
+  @media (min-width: 2560px) {
+    max-width: ${props => props.isSidebarOpen ? 'calc(100vw - 500px)' : '1600px'};
+    margin: ${props => props.isSidebarOpen ? '60px' : '80px auto'};
+    padding: 64px;
+  }
 `;
 
 const MovieHeader = styled.div`

@@ -31,9 +31,11 @@ const MainHeading = styled.h1`
 const Container = styled.div<{ isSidebarOpen?: boolean }>`
   padding: 2rem;
   max-width: ${({ isSidebarOpen }) => 
-    isSidebarOpen ? 'calc(100vw - 320px)' : 'calc(100vw - 120px)'
+    isSidebarOpen ? 'calc(100vw - 320px)' : '1200px'
   };
-  margin: 0 auto;
+  margin: ${({ isSidebarOpen }) => 
+    isSidebarOpen ? '20px' : '40px auto'
+  };
   
   @media (max-width: 1024px) {
     max-width: ${({ isSidebarOpen }) => 
@@ -49,6 +51,26 @@ const Container = styled.div<{ isSidebarOpen?: boolean }>`
   
   @media (max-width: 480px) {
     padding: 0.5rem;
+  }
+  
+  @media (min-width: 1920px) {
+    max-width: ${({ isSidebarOpen }) => 
+      isSidebarOpen ? 'calc(100vw - 400px)' : '1400px'
+    };
+    margin: ${({ isSidebarOpen }) => 
+      isSidebarOpen ? '40px' : '60px auto'
+    };
+    padding: 3rem;
+  }
+  
+  @media (min-width: 2560px) {
+    max-width: ${({ isSidebarOpen }) => 
+      isSidebarOpen ? 'calc(100vw - 500px)' : '1600px'
+    };
+    margin: ${({ isSidebarOpen }) => 
+      isSidebarOpen ? '60px' : '80px auto'
+    };
+    padding: 4rem;
   }
 `;
 

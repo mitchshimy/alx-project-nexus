@@ -4,6 +4,36 @@ import styled from 'styled-components';
 import { movieAPI, getAuthToken, clearFavoritesCache } from '@/utils/api';
 import MovieCard from '@/components/MovieCard';
 
+const Container = styled.div<{ isSidebarOpen?: boolean }>`
+  max-width: ${({ isSidebarOpen }) =>
+    isSidebarOpen ? 'calc(100vw - 320px)' : '1200px'};
+  margin: ${({ isSidebarOpen }) =>
+    isSidebarOpen ? '20px' : '40px auto'};
+  padding: 2rem;
+  
+  @media (max-width: 768px) {
+    max-width: ${({ isSidebarOpen }) =>
+      isSidebarOpen ? 'calc(100vw - 300px)' : 'calc(100vw - 100px)'};
+    padding: 1rem;
+  }
+  
+  @media (min-width: 1920px) {
+    max-width: ${({ isSidebarOpen }) =>
+      isSidebarOpen ? 'calc(100vw - 400px)' : '1400px'};
+    margin: ${({ isSidebarOpen }) =>
+      isSidebarOpen ? '40px' : '60px auto'};
+    padding: 3rem;
+  }
+  
+  @media (min-width: 2560px) {
+    max-width: ${({ isSidebarOpen }) =>
+      isSidebarOpen ? 'calc(100vw - 500px)' : '1600px'};
+    margin: ${({ isSidebarOpen }) =>
+      isSidebarOpen ? '60px' : '80px auto'};
+    padding: 4rem;
+  }
+`;
+
 const MovieGrid = styled.div`
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
@@ -136,7 +166,7 @@ const HeaderContainer = styled.div`
   }
 `;
 
-export default function Favorites() {
+export default function Favorites({ isSidebarOpen }: { isSidebarOpen?: boolean }) {
   const router = useRouter();
   const [favorites, setFavorites] = useState<Array<{
     tmdb_id?: number;
@@ -266,30 +296,30 @@ export default function Favorites() {
 
   if (!isAuthenticated) {
     return (
-      <>
+      <Container isSidebarOpen={isSidebarOpen}>
         <h1>Your Favorites</h1>
         <AuthPrompt>
           <h2>Sign in to view your favorites</h2>
           <p>You need to be signed in to access your favorite movies and TV shows.</p>
           <button onClick={handleSignIn}>Sign In</button>
         </AuthPrompt>
-      </>
+      </Container>
     );
   }
 
   if (loading) {
     return (
-      <>
+      <Container isSidebarOpen={isSidebarOpen}>
         <h1>Your Favorites</h1>
         <div>Loading your favorites...</div>
-      </>
+      </Container>
     );
   }
 
 
 
   return (
-    <>
+    <Container isSidebarOpen={isSidebarOpen}>
       <HeaderContainer>
         <h1>Your Favorites</h1>
         <RefreshButton onClick={handleManualRefresh} disabled={loading}>
@@ -318,6 +348,6 @@ export default function Favorites() {
           ))}
         </MovieGrid>
       )}
-    </>
+    </Container>
   );
 }
