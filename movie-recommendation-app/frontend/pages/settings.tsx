@@ -29,16 +29,16 @@ const MainHeading = styled.h1`
 `;
 
 const Container = styled.div<{ isSidebarOpen?: boolean }>`
-  padding: 2rem;
-  max-width: ${({ isSidebarOpen }) => 
+  max-width: ${({ isSidebarOpen }) =>
     isSidebarOpen ? 'calc(100vw - 320px)' : '1200px'
   };
-  margin: ${({ isSidebarOpen }) => 
+  margin: ${({ isSidebarOpen }) =>
     isSidebarOpen ? '20px' : '40px auto'
   };
+  padding: 2rem;
   
   @media (max-width: 1024px) {
-    max-width: ${({ isSidebarOpen }) => 
+    max-width: ${({ isSidebarOpen }) =>
       isSidebarOpen ? 'calc(100vw - 300px)' : 'calc(100vw - 100px)'
     };
     padding: 1.5rem;
@@ -46,6 +46,7 @@ const Container = styled.div<{ isSidebarOpen?: boolean }>`
   
   @media (max-width: 768px) {
     max-width: 100%;
+    margin: 0;
     padding: 1rem;
   }
   
@@ -54,20 +55,20 @@ const Container = styled.div<{ isSidebarOpen?: boolean }>`
   }
   
   @media (min-width: 1920px) {
-    max-width: ${({ isSidebarOpen }) => 
+    max-width: ${({ isSidebarOpen }) =>
       isSidebarOpen ? 'calc(100vw - 400px)' : '1400px'
     };
-    margin: ${({ isSidebarOpen }) => 
+    margin: ${({ isSidebarOpen }) =>
       isSidebarOpen ? '40px' : '60px auto'
     };
     padding: 3rem;
   }
   
   @media (min-width: 2560px) {
-    max-width: ${({ isSidebarOpen }) => 
+    max-width: ${({ isSidebarOpen }) =>
       isSidebarOpen ? 'calc(100vw - 500px)' : '1600px'
     };
-    margin: ${({ isSidebarOpen }) => 
+    margin: ${({ isSidebarOpen }) =>
       isSidebarOpen ? '60px' : '80px auto'
     };
     padding: 4rem;
@@ -127,12 +128,12 @@ const SettingItem = styled.div`
     padding: 0.8rem 0;
     flex-direction: column;
     align-items: flex-start;
-    gap: 0.8rem;
+    gap: 0.5rem;
   }
   
   @media (max-width: 480px) {
     padding: 0.6rem 0;
-    gap: 0.6rem;
+    gap: 0.4rem;
   }
 `;
 

@@ -397,6 +397,55 @@ const LogoutButton = styled.button`
   }
 `;
 
+const UserProfile = styled.div`
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  color: #FFFFFF;
+  
+  @media (max-width: 768px) {
+    display: none;
+  }
+`;
+
+const UserAvatar = styled.div`
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, #00D4FF 0%, #7C3AED 100%);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 600;
+  font-size: 1rem;
+  color: #FFFFFF;
+  border: 2px solid rgba(255, 255, 255, 0.2);
+`;
+
+const AvatarImage = styled.img`
+  width: 100%;
+  height: 100%;
+  border-radius: 50%;
+  object-fit: cover;
+`;
+
+const UserInfo = styled.div`
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+`;
+
+const UserName = styled.span`
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: #FFFFFF;
+`;
+
+const UserEmail = styled.span`
+  font-size: 0.8rem;
+  color: rgba(255, 255, 255, 0.6);
+`;
+
 const AccountIcon = styled(Link)`
   background: rgba(255, 255, 255, 0.1);
   border: 1px solid rgba(255, 255, 255, 0.2);
@@ -421,6 +470,42 @@ const AccountIcon = styled(Link)`
     color: #00D4FF;
     transform: translateY(-1px);
     box-shadow: 0 8px 32px rgba(0, 212, 255, 0.3);
+  }
+  
+  @media (max-width: 768px) {
+    display: flex; /* Show on mobile */
+  }
+  
+  @media (max-width: 480px) {
+    width: 40px;
+    height: 40px;
+    font-size: 1rem;
+  }
+`;
+
+const AccountButton = styled.button`
+  background: rgba(255, 255, 255, 0.1);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  border-radius: 12px;
+  font-size: 1.2rem;
+  cursor: pointer;
+  padding: 0.75rem;
+  color: #FFFFFF;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  display: none; /* Hidden by default on desktop */
+  backdrop-filter: blur(20px);
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.3);
+  align-items: center;
+  justify-content: center;
+  width: 44px;
+  height: 44px;
+
+  &:hover {
+    background: rgba(239, 68, 68, 0.15);
+    border-color: rgba(239, 68, 68, 0.4);
+    color: #EF4444;
+    transform: translateY(-1px);
+    box-shadow: 0 8px 32px rgba(239, 68, 68, 0.3);
   }
   
   @media (max-width: 768px) {
@@ -471,8 +556,6 @@ const MobileLogoutButton = styled.button`
     padding: 0.75rem 0.75rem;
   }
 `;
-
-
 
 // Mobile Search Overlay Components
 const MobileSearchOverlay = styled.div<{ isOpen: boolean }>`
@@ -616,166 +699,69 @@ const MobileSearchCloseButton = styled.button`
 
 const MobileSearchForm = styled.form`
   display: flex;
-  flex-direction: column;
-  gap: 16px;
+  align-items: center;
+  background: rgba(255, 255, 255, 0.1);
+  border-radius: 25px;
+  padding: 8px;
+  backdrop-filter: blur(10px);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  transition: all 0.3s ease;
+  
+  &:focus-within {
+    background: rgba(255, 255, 255, 0.15);
+    border-color: rgba(0, 212, 255, 0.5);
+    box-shadow: 0 0 20px rgba(0, 212, 255, 0.3);
+  }
 `;
 
 const MobileSearchInput = styled.input`
-  width: 100%;
-  padding: 18px 22px;
-  background: rgba(255, 255, 255, 0.08);
-  border: 1px solid rgba(255, 255, 255, 0.15);
-  border-radius: 18px;
+  flex: 1;
+  background: transparent;
+  border: none;
   color: #FFFFFF;
-  font-size: 1.2rem;
+  padding: 8px 16px;
+  font-size: 1rem;
   outline: none;
-  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-  backdrop-filter: blur(10px);
-  
-  &::placeholder {
-    color: rgba(255, 255, 255, 0.5);
-    font-weight: 400;
-  }
   
   &:focus {
-    border-color: rgba(106, 17, 203, 0.6);
-    box-shadow: 
-      0 0 25px rgba(106, 17, 203, 0.4),
-      0 0 0 1px rgba(106, 17, 203, 0.2) inset;
-    background: rgba(255, 255, 255, 0.12);
-    transform: scale(1.02);
+    outline: none;
+    border: none;
+    box-shadow: none;
+  }
+  
+  &::placeholder {
+    color: rgba(255, 255, 255, 0.6);
   }
 `;
 
 const MobileSearchButton = styled.button`
-  padding: 20px 32px;
-  background: linear-gradient(135deg, #6a11cb 0%, #2575fc 100%);
+  background: linear-gradient(135deg, #00D4FF 0%, #0099CC 100%);
   border: none;
-  border-radius: 18px;
-  color: #FFFFFF;
-  font-size: 1.2rem;
-  font-weight: 700;
+  color: #000;
+  padding: 8px 16px;
+  border-radius: 20px;
   cursor: pointer;
-  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-  box-shadow: 0 8px 25px rgba(106, 17, 203, 0.3);
-  position: relative;
-  overflow: hidden;
-  min-height: 60px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  
-  &::before {
-    content: '';
-    position: absolute;
-    top: 0;
-    left: -100%;
-    width: 100%;
-    height: 100%;
-    background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.2), transparent);
-    transition: left 0.5s;
-  }
+  font-weight: 600;
+  transition: all 0.3s ease;
   
   &:hover {
-    transform: translateY(-2px);
-    box-shadow: 0 12px 35px rgba(106, 17, 203, 0.4);
-    
-    &::before {
-      left: 100%;
-    }
-  }
-  
-  &:active {
-    transform: translateY(0);
-    box-shadow: 0 4px 15px rgba(106, 17, 203, 0.3);
+    transform: translateY(-1px);
+    box-shadow: 0 4px 15px rgba(0, 212, 255, 0.4);
   }
   
   &:disabled {
-    opacity: 0.5;
+    opacity: 0.6;
     cursor: not-allowed;
     transform: none;
-    background: rgba(255, 255, 255, 0.2);
-    box-shadow: none;
   }
-`;
-
-const MobileSearchSuggestions = styled.div`
-  margin-top: 15px;
-  max-height: 300px;
-  overflow-y: auto;
-  border-radius: 15px;
-  background: rgba(255, 255, 255, 0.05);
-  backdrop-filter: blur(10px);
-`;
-
-const MobileSuggestionItem = styled.div`
-  padding: 16px 22px;
-  color: #FFFFFF;
-  cursor: pointer;
-  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
-  user-select: none;
-  -webkit-tap-highlight-color: transparent;
-  position: relative;
-  overflow: hidden;
-  
-  &::before {
-    content: '';
-    position: absolute;
-    top: 0;
-    left: -100%;
-    width: 100%;
-    height: 100%;
-    background: linear-gradient(90deg, transparent, rgba(106, 17, 203, 0.1), transparent);
-    transition: left 0.3s ease;
-  }
-  
-  &:hover {
-    background: rgba(106, 17, 203, 0.08);
-    transform: translateX(4px);
-    
-    &::before {
-      left: 100%;
-    }
-  }
-  
-  &:active {
-    background: rgba(106, 17, 203, 0.15);
-    transform: translateX(2px);
-  }
-  
-  &:last-child {
-    border-bottom: none;
-  }
-`;
-
-const MobileSuggestionTitle = styled.div`
-  font-weight: 700;
-  font-size: 1.1rem;
-  margin-bottom: 6px;
-  color: #FFFFFF;
-  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.3);
-`;
-
-const MobileSuggestionType = styled.div`
-  font-size: 0.95rem;
-  color: rgba(255, 255, 255, 0.8);
-  font-weight: 500;
-  display: flex;
-  align-items: center;
-  gap: 8px;
 `;
 
 const MobileSearchTypeContainer = styled.div`
   display: flex;
   align-items: center;
   gap: 10px;
-  margin-top: 15px;
-  padding: 10px 15px;
-  background: rgba(255, 255, 255, 0.08);
-  border-radius: 12px;
-  border: 1px solid rgba(255, 255, 255, 0.15);
-  backdrop-filter: blur(10px);
+  margin-top: 20px;
+  margin-bottom: 20px;
 `;
 
 const MobileSearchTypeLabel = styled.span`
@@ -785,28 +771,71 @@ const MobileSearchTypeLabel = styled.span`
 
 const MobileSearchTypeButtons = styled.div`
   display: flex;
-  gap: 8px;
+  gap: 10px;
 `;
 
 const MobileSearchTypeButton = styled.button<{ active: boolean }>`
-  padding: 6px 12px;
   background: ${props => props.active ? 'linear-gradient(135deg, #00D4FF 0%, #0099CC 100%)' : 'rgba(255, 255, 255, 0.1)'};
-  border: 1px solid ${props => props.active ? 'rgba(0, 212, 255, 0.4)' : 'rgba(255, 255, 255, 0.2)'};
-  border-radius: 10px;
+  border: 1px solid ${props => props.active ? 'rgba(0, 212, 255, 0.5)' : 'rgba(255, 255, 255, 0.2)'};
+  border-radius: 12px;
   color: ${props => props.active ? '#000' : '#FFFFFF'};
+  padding: 8px 12px;
   font-weight: 600;
   cursor: pointer;
-  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  transition: all 0.3s ease;
+  font-size: 0.9rem;
   backdrop-filter: blur(10px);
-  box-shadow: ${props => props.active ? '0 4px 16px rgba(0, 212, 255, 0.3)' : 'none'};
+  box-shadow: ${props => props.active ? '0 0 20px rgba(0, 212, 255, 0.3)' : 'none'};
 
   &:hover {
-    background: ${props => props.active ? 'linear-gradient(135deg, #00D4FF 0%, #0099CC 100%)' : 'rgba(0, 212, 255, 0.15)'};
-    border-color: ${props => props.active ? 'rgba(0, 212, 255, 0.4)' : 'rgba(0, 212, 255, 0.4)'};
-    color: ${props => props.active ? '#000' : '#00D4FF'};
+    background: ${props => props.active ? 'linear-gradient(135deg, #00D4FF 0%, #0099CC 100%)' : 'rgba(255, 255, 255, 0.2)'};
+    border-color: ${props => props.active ? 'rgba(0, 212, 255, 0.5)' : 'rgba(255, 255, 255, 0.3)'};
+    color: ${props => props.active ? '#000' : '#FFFFFF'};
     transform: translateY(-1px);
-    box-shadow: ${props => props.active ? '0 8px 32px rgba(0, 212, 255, 0.3)' : 'none'};
+    box-shadow: ${props => props.active ? '0 0 20px rgba(0, 212, 255, 0.3)' : 'none'};
   }
+`;
+
+const MobileSearchSuggestions = styled.div`
+  position: absolute;
+  top: 100%;
+  left: 0;
+  right: 0;
+  background: rgba(26, 26, 26, 0.95);
+  border-radius: 12px;
+  margin-top: 8px;
+  backdrop-filter: blur(20px);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4);
+  z-index: 1000;
+  max-height: 300px;
+  overflow-y: auto;
+`;
+
+const MobileSuggestionItem = styled.div`
+  padding: 12px 16px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+  
+  &:hover {
+    background: rgba(255, 255, 255, 0.1);
+  }
+  
+  &:last-child {
+    border-bottom: none;
+  }
+`;
+
+const MobileSuggestionTitle = styled.div`
+  color: #FFFFFF;
+  font-weight: 500;
+  margin-bottom: 4px;
+`;
+
+const MobileSuggestionType = styled.div`
+  color: rgba(255, 255, 255, 0.6);
+  font-size: 0.85rem;
 `;
 
 
@@ -1178,15 +1207,23 @@ export default function Header({ toggleSidebar }: HeaderProps) {
             </SearchIcon>
             {isAuthenticated ? (
               <>
-                <UserSection>
-                  <span>{user?.first_name || user?.username || 'User'}</span>
-                  <span>{user?.email}</span>
-                </UserSection>
+                <UserProfile>
+                  <UserAvatar>
+                    {user?.avatar_url ? (
+                      <AvatarImage src={user.avatar_url} alt="Profile" />
+                    ) : (
+                      user?.username?.charAt(0).toUpperCase() || 'U'
+                    )}
+                  </UserAvatar>
+                  <UserInfo>
+                    <UserName>{user?.username || 'User'}</UserName>
+                    <UserEmail>{user?.email || 'user@example.com'}</UserEmail>
+                  </UserInfo>
+                </UserProfile>
                 <LogoutButton onClick={handleLogout}>
                   Logout
                 </LogoutButton>
-                {/* Mobile logout button for authenticated users */}
-                <MobileLogoutButton onClick={handleLogout} title="Logout">
+                <MobileLogoutButton onClick={handleLogout}>
                   Logout
                 </MobileLogoutButton>
               </>
@@ -1194,7 +1231,7 @@ export default function Header({ toggleSidebar }: HeaderProps) {
               <>
                 <AuthButton href="/signin">Sign In</AuthButton>
                 <PrimaryAuthButton href="/signup">Sign Up</PrimaryAuthButton>
-                {/* AccountIcon only shows on mobile for non-authenticated users */}
+                {/* AccountIcon shows on mobile for non-authenticated users */}
                 <AccountIcon href="/signin" title="Account">
                   👤
                 </AccountIcon>
