@@ -420,6 +420,32 @@ const UserAvatar = styled.div`
   font-size: 1rem;
   color: #FFFFFF;
   border: 2px solid rgba(255, 255, 255, 0.2);
+  cursor: pointer;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+
+  &:hover {
+    transform: scale(1.05);
+    border-color: rgba(0, 212, 255, 0.5);
+    box-shadow: 0 4px 16px rgba(0, 212, 255, 0.3);
+  }
+`;
+
+const UserAvatarLink = styled(Link)`
+  text-decoration: none;
+  color: inherit;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  
+  &:focus {
+    outline: none;
+    box-shadow: none;
+  }
+  
+  &:focus-visible {
+    outline: none;
+    box-shadow: none;
+  }
 `;
 
 const AvatarImage = styled.img`
@@ -1208,13 +1234,15 @@ export default function Header({ toggleSidebar }: HeaderProps) {
             {isAuthenticated ? (
               <>
                 <UserProfile>
-                  <UserAvatar>
-                    {user?.avatar_url ? (
-                      <AvatarImage src={user.avatar_url} alt="Profile" />
-                    ) : (
-                      user?.username?.charAt(0).toUpperCase() || 'U'
-                    )}
-                  </UserAvatar>
+                  <UserAvatarLink href="/profile">
+                    <UserAvatar>
+                      {user?.avatar_url ? (
+                        <AvatarImage src={user.avatar_url} alt="Profile" />
+                      ) : (
+                        user?.username?.charAt(0).toUpperCase() || 'U'
+                      )}
+                    </UserAvatar>
+                  </UserAvatarLink>
                   <UserInfo>
                     <UserName>{user?.username || 'User'}</UserName>
                     <UserEmail>{user?.email || 'user@example.com'}</UserEmail>
